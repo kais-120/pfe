@@ -21,9 +21,12 @@ const User = sequelize.define("users",{
     allowNull:false,
     },
     role:{
-    type:DataTypes.ENUM(["client","admin"]),
+    type:DataTypes.ENUM(["client","admin","agent","partner"]),
     defaultValue:"client"
-
+    },
+    phone:{
+        type:DataTypes.STRING,
+        allowNull:false,
     },
     password:{
     type:DataTypes.STRING,
@@ -31,6 +34,10 @@ const User = sequelize.define("users",{
     },
     verified_at:{
     type:DataTypes.DATE,
+    },
+    deleted_at:{
+        type:DataTypes.DATE,
+        allowNull:true
     }
 
 })

@@ -13,7 +13,7 @@ const Home = () => {
       <Flex flex="1">
         <Sidebar />
 
-        <Box flex="1" p={6}>
+        <Box bg={"#f5f6fa"} flex="1" p={6}>
           Content Here
         </Box>
       </Flex>

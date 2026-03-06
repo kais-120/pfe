@@ -17,25 +17,26 @@ const RoleReq = ({allow}) => {
                 const response = await AxiosToken.get("/auth/profile");
                 setUser(response.data.data)
             }catch{
-                console.err("error")
                 navigate("/",{replace:true});
             }
         }
         getUser();
-    },[])    
+    },[])
+    
   return (
     !token ? (
         <Navigate to={"/"} replace={true}/>
     ) :
-    (user) ? 
-        (user.role.includes(allow)) ? 
+    (!user) ? 
+        (
+            <p>loading ...</p>
+        ) :
+        (allow.includes(user?.role)) ? 
             (
                 <Outlet />
             ) :
         (
         <Navigate to={"/"} replace={true}/>
-        ) : (
-            <p>loading ...</p>
         )
   )
 }

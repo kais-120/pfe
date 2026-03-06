@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken")
 const bcrypt = require("bcryptjs");
 const { otpSend } = require("../util/sendEmail");
 const { OtpRegisterCreate } = require("./OtpController");
+const { PartnerFile } = require("../models");
 
 
 exports.Register =[
@@ -49,7 +50,7 @@ exports.Login = [
         const isMatch = await bcrypt.compare(password,user.password);
         if(!isMatch) return res.status(400).json({ message: "Invalid credentials" });
         const token = jwt.sign({sub:user.id,iss:"domain",aud:"name"},process.env.JWTKEY);
-        return res.status(200).json({ message: "valid credentials" , token : token });
+        return res.status(200).json({ message: "valid credentials" , token : token , role : user.role });
        
     }catch(err){
         return res.status(500).json({message:err});
@@ -70,5 +71,44 @@ exports.Profile = async (req,res) => {
     }catch{
         return res.status(500).send({message:"server error"})
     }
-
 }
+exports.PartnerRegister =[
+    body("firstName").notEmpty().withMessage("first name is required"),
+    body("lastName").notEmpty().withMessage("last name is required"),
+    body("phone").notEmpty().withMessage("phone number is required")
+    .isLength(8).withMessage("phone number should be 8")
+    .isNumeric().withMessage("phone number should be a number"),
+    body("email").notEmpty().withMessage("email is required"),
+    body("sector").notEmpty().withMessage("sector is required")
+    .isIn(["agence de voyage","location de voitures","hôtel","compagnies aériennes","voyages circuits"]).withMessage("sector not match"),
+    body("password").notEmpty().withMessage("password required")
+    .isLength({min:6}).withMessage("password should at least be 6")
+    ,async (req,res) => {
+        const errors = validationResult(req);
+        if(!errors.isEmpty()){
+            return res.status(422).json({ errors: errors.array().map(err => err.msg) });
+        }
+        try{
+        const {firstName,lastName,email,password,phone,sector} = req.body;
+        const existEmail = await User.findOne({where:{email}});
+        const existPhone = await User.findOne({where:{phone}});
+        if(existEmail){
+            return res.status(422).json({message:"email is already used"});
+        }
+        if(existPhone){
+            return res.status(422).json({message:"phone is already used"});
+        }
+        const hashed = await bcrypt.hash(password,10)
+        const user = await User.create({first_name:firstName,last_name:lastName,email,password:hashed,role:"partner",phone});
+        await PartnerFile.create({sector,partner_id:user.id})
+        const fullName = `${firstName} ${lastName}`
+        const otp = await OtpRegisterCreate(user.id);
+        otpSend(email,fullName,otp.code)
+        return res.status(201).json({message:"account created",token:otp.hash});
+    }catch(err){
+        console.log(err)
+        return res.status(500).json({message:"server error"});
+    }
+    }
+]
+ 

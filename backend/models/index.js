@@ -1,5 +1,11 @@
+const Agence = require("./Agence");
+const Compagnie = require("./Compagnie");
+const Hotel = require("./Hotel");
+const Location = require("./Location");
 const Otp = require("./Otp");
+const PartnerFile = require("./PartnerFiles");
 const User = require("./User");
+const Voyage = require("./Voyage");
 
 User.hasMany(Otp, {
     foreignKey: "user_id",
@@ -10,5 +16,56 @@ Otp.belongsTo(User, {
     foreignKey: "user_id",
     as: "user"
 });
+User.hasMany(Agence, {
+    foreignKey:"partenaire_id",
+    as:"partner"
+});
+Agence.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "agence"
+})
 
-module.exports = { User, Otp };
+User.hasMany(Compagnie, {
+    foreignKey:"partenaire_id",
+    as:"partnerCompagnie"
+});
+Compagnie.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "compagnie"
+})
+
+User.hasMany(Location, {
+    foreignKey:"partenaire_id",
+    as:"partnerLocation"
+});
+Location.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "location"
+})
+
+User.hasMany(Hotel, {
+    foreignKey:"partenaire_id",
+    as:"partnerHotel"
+});
+Hotel.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "hotel"
+})
+User.hasMany(Voyage, {
+    foreignKey:"partenaire_id",
+    as:"partnerVoyage"
+});
+Voyage.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "voyage"
+})
+User.hasMany(PartnerFile, {
+    foreignKey:"partner_id",
+    as:"partnerInfo"
+});
+PartnerFile.belongsTo(User, {
+    foreignKey: "partner_id",
+    as: "PartnerFile"
+})
+
+module.exports = { User, Otp,Agence,PartnerFile,Hotel,Compagnie,Voyage};

@@ -21,10 +21,11 @@ const Topbar = () => {
     console.log(user)
   return (
     
-    <Box padding={1} height={16} className='flex items-center justify-end shadow-2xl'>
+    <Box padding={3} className='flex items-center justify-end'>
         {
         user && (
-            <>        <Menu.Root>
+            <>        
+            <Menu.Root>
         <Menu.Trigger asChild>
             <Avatar.Root className="!cursor-pointer">
             <Avatar.Fallback focusRing="outside" name={user.first_name + " " + user.last_name} />

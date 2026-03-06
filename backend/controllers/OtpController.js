@@ -47,6 +47,7 @@ exports.VerifyOtp = [
                 otpUser.destroy();
                 return res.send({message:"account verified"});
             }
+
         }catch(err){
             return res.status(500).json({message:"server error"});
         }

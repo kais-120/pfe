@@ -32,6 +32,9 @@ const Login = () => {
         setLoading(true);
         const response = await Axios.post("/auth/login",values);
         cookie.set("auth",response.data.token);
+        if(response.data.role){
+          navigate("/dashboard")
+        }
         navigate("/")
         window.location.reload();
       }catch{
