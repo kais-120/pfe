@@ -13,22 +13,20 @@ const PartnerFileReq = () => {
     const verifiedPartner = async () =>{
       try{
         const response = await AxiosToken("/user/verify/partner");
-        console.log(response)
         setStatus(response.status)
       }catch(err){
-        console.log(err.status)
         setStatus(err.status)
       }
     }
     verifiedPartner();
 
   },[])
-  console.log(status)
+  console.log("first")
   return (
     !status ? (
        <p>loading ...</p>
       ) : (
-        status === 200 ? (
+        (status === 200) ? (
           <Outlet />
         ) : (
           <Navigate to="/partner" replace={true} />

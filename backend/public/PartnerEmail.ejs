@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Statut du Partenaire</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Sora', sans-serif;
+      background: #f4f6fb;
+      padding: 48px 20px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .wrapper { max-width: 480px; margin: 0 auto; }
+
+    .logo-row { text-align: center; margin-bottom: 28px; }
+    .logo { display: inline-flex; align-items: center; gap: 8px; }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: #1d6bf3; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-name { font-size: 16px; font-weight: 600; color: #0f172a; letter-spacing: -0.02em; }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 48px 44px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 8px 32px rgba(0,0,0,0.06);
+    }
+
+    .eyebrow {
+      font-size: 11px; font-weight: 500;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: #1d6bf3; margin-bottom: 12px;
+    }
+    .heading {
+      font-size: 22px; font-weight: 600;
+      color: #0f172a; letter-spacing: -0.03em; margin-bottom: 12px;
+    }
+    .subtext {
+      font-size: 13.5px; color: #94a3b8;
+      font-weight: 300; line-height: 1.6; margin-bottom: 24px;
+    }
+
+    .status {
+      font-weight: 600;
+      color: <%= status === 'rejetée' ? '#f87171' : '#34d399' %>;
+    }
+
+    .note {
+      background: #f8faff; border-radius: 12px; padding: 16px 20px; margin-bottom: 28px;
+      font-size: 13px; color: #64748b; line-height: 1.6;
+    }
+    .note span {
+      display: block; font-weight: 500; margin-bottom: 6px;
+    }
+
+    .divider { height: 1px; background: #f1f5f9; margin: 28px 0; }
+
+    .footer {
+      font-size: 13px; color: #94a3b8; line-height: 1.8; text-align: center;
+    }
+    .footer strong { color: #0f172a; font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+
+    <div class="logo-row">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M9 2L15 5.5V12.5L9 16L3 12.5V5.5L9 2Z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+            <circle cx="9" cy="9" r="2" fill="white"/>
+          </svg>
+        </div>
+        <span class="logo-name">MonApp</span>
+      </div>
+    </div>
+
+    <div class="card">
+
+      <div class="eyebrow">Partenariat</div>
+      <div class="heading">Bonjour, <%= name %></div>
+      <div class="subtext">
+        Votre demande de partenariat a été <span class="status"><%= status %></span>.
+      </div>
+
+      <% if (message && message.length) { %>
+        <div class="note">
+          <strong>Note :</strong>
+          <% message.forEach(function(msg) { %>
+            <span>- <%= msg %></span>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <% if (status === 'acceptée') { %>
+        <p class="subtext">Nous sommes ravis de vous accueillir en tant que partenaire. Vous recevrez prochainement tous les détails nécessaires.</p>
+      <% } else { %>
+        <p class="subtext">Nous regrettons de vous informer que votre demande de partenariat a été refusée. Vous pouvez soumettre une nouvelle demande ultérieurement ou contacter le support pour plus d'informations.</p>
+      <% } %>
+
+      <div class="divider"></div>
+
+      <div class="footer">
+        Merci,<br>
+        <strong>L'équipe MonApp</strong>
+      </div>
+
+    </div>
+
+  </div>
+</body>
+</html>

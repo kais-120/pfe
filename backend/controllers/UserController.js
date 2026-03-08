@@ -3,6 +3,9 @@ const bcrypt = require("bcryptjs");
 const { User, PartnerFile } = require("../models");
 const fs = require("fs");
 const path = require("path");
+const { partnerMail } = require("../util/sendEmail");
+const RefuseReason = require("../models/RefuseReason");
+const { Op } = require("sequelize");
 
 exports.AddAgent = [
     body("firstName").notEmpty().withMessage("first name is required"),
@@ -55,10 +58,27 @@ exports.UpdateFiles = [
             return res.status(422).json({ errors: errors.array().map(err => err.msg) });
         }
         try{
+        const partner_id = req.userId;
         const {rip,cin,matricule_fiscale} = req.body;
-        const existCin = await PartnerFile.findOne({where :{cin}});
-        const existRip = await PartnerFile.findOne({where :{rip}});
-        const existMatriculeFiscale = await PartnerFile.findOne({where :{matricule_fiscale}});
+        const existPartner = await PartnerFile.findOne({where :{partner_id}});
+        const existCin = await PartnerFile.findOne({
+             where: {
+                cin,
+                partner_id: {
+                [Op.ne]: partner_id
+                }
+            }
+        });
+        const existRip = await PartnerFile.findOne({where :{rip,
+             partner_id: {
+                [Op.ne]: partner_id
+                }
+        }});
+        const existMatriculeFiscale = await PartnerFile.findOne({where :{matricule_fiscale,
+             partner_id: {
+                [Op.ne]: partner_id
+                }
+        }});
         if(existCin){
             if(req.files?.partner_doc){
                 req.files.partner_doc.forEach(file=>{
@@ -83,15 +103,24 @@ exports.UpdateFiles = [
             }
             return res.status(422).send({message:"matricule fiscale used"})
         }
-        const partner_id = req.userId;
-        const partner = await PartnerFile.findOne({where:{partner_id}})
         const files = req.files.partner_doc;
-        const keys = ["cin_recto","cin_verso","matricule_fiscale_image","register_commerce_image","autorisation_ONTT_image"]
-        const data = {cin,rip,matricule_fiscale,partner_id}
+        const keys = ["cin_recto","cin_verso","matricule_fiscale_image","register_commerce","autorisation_ONTT"]
+        const data = {cin,rip,matricule_fiscale,partner_id,status:"en attente"}
         files.forEach((element,index) => {
             data[keys[index]] = element.filename
         });
-        await partner.update(data)
+        if(existPartner){
+            console.log(existPartner.cin_recto)
+            fs.unlinkSync(path.join("uploads/partner_files",existPartner.cin_recto))
+            fs.unlinkSync(path.join("uploads/partner_files",existPartner.cin_verso))
+            fs.unlinkSync(path.join("uploads/partner_files",existPartner.matricule_fiscale_image))
+            fs.unlinkSync(path.join("uploads/partner_files",existPartner.register_commerce))
+            fs.unlinkSync(path.join("uploads/partner_files",existPartner.autorisation_ONTT))
+            await existPartner.update(data)
+        }
+        else{
+            await PartnerFile.create(data)
+        }
         return res.send({message:"file updated"})
     }catch(err){
         console.log(err)
@@ -104,14 +133,123 @@ exports.VerifyPartner = async (req,res) => {
     try{
         const partner_id = req.userId;
         const user = await PartnerFile.findOne({where: {partner_id}});
-        if(user.status === "accepted"){
+        if(user.status === "accepté"){
             return res.send({message:"partner verified"});
         }
-        else if(user.status === "pending"){
+        else if(user.status === "en attente"){
             return res.status(202).send({message:"partner files pending"});
         }
-            return res.status(403).send({message:"partner refused"});
+            return res.status(405).send({message:"partner refused"});
     }catch(err){
         return res.status(500).send({message:"error server"})
     }
 }
+exports.Users = async (req,res) =>{
+    try{
+        const userId = req.userId;
+        const user = await User.findByPk(userId);
+        if(user.role === "admin"){
+            const users = await User.findAll({
+                attributes:{
+                    exclude:"password"
+                }
+            });
+            return res.send({message:"list of users",users})
+        }
+        const users = await User.findAll({where: {role:"partner"}});
+            return res.send({message:"list of users",users})
+
+    }catch{
+        return res.status(500).send({message:"error server"})
+    }
+}
+exports.GetUser = async (req,res) =>{
+    try{
+        const userId = req.userId;
+        const user = await User.findByPk(userId);
+        if(user.role === "admin"){
+            const users = User.findAll();
+            return res.send({message:"list of users",users})
+        }
+        const users = User.findAll({where: {role:"partner"}});
+            return res.send({message:"list of users",users})
+
+    }catch{
+        return res.status(500).send({message:"error server"})
+    }
+}
+exports.PartnerFile = async (req,res) =>{
+    try{
+        const partnerFiles = await PartnerFile.findAll(
+            {
+                include:[
+                    {
+                        model:User,
+                        as:"users"
+                    }
+                ]
+            }
+        );
+        return res.send({message:"list of documents",partnerFiles})
+
+    }catch(err){
+        return res.status(500).send({message:"error server"})
+    }
+}
+exports.GetPartnerFile = async (req,res) =>{
+    try{
+        const { id } = req.params;
+        const partnerFiles = await PartnerFile.findByPk(id);
+        if(!partnerFiles){
+            return res.status(404).send({message:"documents not found"})
+        }
+        return res.send({message:"documents found",partnerFiles})
+
+    }catch(err){
+        return res.status(500).send({message:"error server"})
+    }
+}
+exports.AcceptFile = async (req,res) => {
+        try{
+            const { id } = req.params;
+            const userId = req.userId
+            const partnerFiles = await PartnerFile.findByPk(id);
+            if(!partnerFiles){
+                return res.status(404).send({message:"partner file not found"})
+            }
+            partnerFiles.update({status:"accepté",accepted_by:userId});
+            return res.send({message:"partner file updated"})
+
+        }catch{
+            return res.status(500).send({message:"error server"})
+        }
+}
+
+exports.RefuseFile = [
+    body("reason").notEmpty().withMessage("reason required")
+    ,async (req,res) => {
+        const errors = validationResult(req);
+        if(!errors.isEmpty()){
+            return res.status(422).json({ errors: errors.array().map(err => err.msg) });
+        }
+        try{
+            const { reason } = req.body;
+            const { id } = req.params;
+            const userId = req.userId;
+            const reasonData = reason.split(".")
+            const partnerFiles = await PartnerFile.findByPk(id);
+            if(!partnerFiles){
+                return res.status(404).send({message:"partner file not found"})
+            }
+            const {email,first_name} = await User.findByPk(partnerFiles.partner_id)
+            partnerMail(email,first_name,reasonData,"rejetée");
+            partnerFiles.update({status:"rejetée"});
+           await RefuseReason.create({message:reason,file_id:id,rejected_by:userId})
+            return res.send({message:"partner file updated"})
+
+        }catch(err){
+            console.log(err)
+            return res.status(500).send({message:"error server"})
+        }
+}
+]

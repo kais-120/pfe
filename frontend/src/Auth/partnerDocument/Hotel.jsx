@@ -4,6 +4,8 @@ import { useState } from "react"
 import { LuFileImage } from "react-icons/lu"
 import * as Yup from 'yup'
 import { AxiosToken } from "../../Api/Api"
+import { useNavigate } from "react-router-dom"
+import { Check } from "lucide-react"
 
 const FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const SUPPORTED_FORMATS = ["image/jpg", "image/jpeg", "image/png"]
@@ -80,8 +82,9 @@ const step3Schema = Yup.object({
 })
 
 const Hotel = () => {
-  const [step, setStep] = useState(0)
-  const [loading,setLoading] = useState(false)
+  const [step, setStep] = useState(0);
+  const [loading,setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const getStepSchema = () => {
   if(step === 0) return step1Schema
@@ -327,7 +330,7 @@ const handleStepChange = async (details) => {
       bg="green.100"
       mb={4}
     >
-      ✓
+      <Check />
     </Box>
 
     <Text fontSize="2xl" fontWeight="bold" mb={2}>
@@ -339,7 +342,7 @@ const handleStepChange = async (details) => {
       Vous recevrez une email après validation.
     </Text>
 
-    <Button colorScheme="green">
+    <Button onClick={()=>navigate("/")} colorScheme="green">
       Retour au page de accueil
     </Button>
 

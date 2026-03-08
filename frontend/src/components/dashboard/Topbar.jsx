@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AxiosToken } from '../../Api/Api';
 
+
 const Topbar = () => {
      const [user,setUser] = useState(null);
     const navigate = useNavigate();
@@ -18,7 +19,6 @@ const Topbar = () => {
         }
         userData();
     },[navigate]);
-    console.log(user)
   return (
     
     <Box padding={3} className='flex items-center justify-end'>
@@ -26,6 +26,7 @@ const Topbar = () => {
         user && (
             <>        
             <Menu.Root>
+                
         <Menu.Trigger asChild>
             <Avatar.Root className="!cursor-pointer">
             <Avatar.Fallback focusRing="outside" name={user.first_name + " " + user.last_name} />

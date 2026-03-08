@@ -7,8 +7,8 @@ module.exports = async (req,res,next) => {
         if(!user){
             return res.status(404).send({message:"user not found"});
         }
-        if(user.role === "agent"){
-            next();
+        if(user.role === "agent" || user.role === "admin"){
+           return next();
         }
             return res.status(403).send({message:"Forbidden"});
     }catch{

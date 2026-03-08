@@ -1,7 +1,9 @@
 import { Box, Button, Text } from "@chakra-ui/react"
 import { LuCheck } from "react-icons/lu"
+import { useNavigate } from "react-router-dom"
 
 const PendingSend = () => {
+  const navigate = useNavigate();
   return (
     <Box
         height={"100vh"}
@@ -36,7 +38,7 @@ const PendingSend = () => {
           Vous recevrez une email après validation.
         </Text>
     
-        <Button colorScheme="green">
+        <Button onClick={()=>navigate("/")} colorScheme="green">
           Retour au page de accueil
         </Button>
     </Box>

@@ -1,7 +1,7 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../configs/db");
 
-const PartnerFile = sequelize.define("PartnerFile",{
+const PartnerFile = sequelize.define("partner_files",{
     id:{
         type:DataTypes.BIGINT,
         autoIncrement:true,
@@ -48,15 +48,6 @@ const PartnerFile = sequelize.define("PartnerFile",{
     type: DataTypes.STRING(100),
     allowNull: true,
     },
-    // car
-    carte_grise: {
-    type: DataTypes.STRING(100),
-    allowNull: true,
-    },
-    assurance_voiture: {
-    type: DataTypes.STRING(100),
-    allowNull: true,
-    },
     // Compagnie 
     licence_avion: {
     type: DataTypes.STRING(100),
@@ -69,7 +60,7 @@ const PartnerFile = sequelize.define("PartnerFile",{
     },
     
     status:{
-        type:DataTypes.ENUM('pending','accepted','rejected'),
+        type:DataTypes.ENUM('en attente','accepté','rejetée'),
         allowNull:true
     },
     partner_id:{
@@ -79,7 +70,16 @@ const PartnerFile = sequelize.define("PartnerFile",{
             key:"id"
         },
         onDelete:"CASCADE"
-    }
+    },
+    accepted_by: {
+            type: DataTypes.BIGINT,
+            allowNull: true,
+            references:{
+                model:"users",
+                key:"id"
+            },
+            onDelete:"SET NULL"
+        },
 },{
     tableName:"partner_files"
 });

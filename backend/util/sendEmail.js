@@ -31,3 +31,16 @@ exports.otpSend = async (to,name,code) => {
     html,
   });
 }
+exports.partnerMail = async (to,name,reason,status) => {
+     const html = await ejs.renderFile(
+    path.join(__dirname, '../public/PartnerEmail.ejs'),
+    { name, status,message:reason }
+  );
+
+ await transporter.sendMail({
+    from: '"Booking" <bookig@info.com>',
+    to,
+    subject: 'Code!',
+    html,
+  });
+}

@@ -1,6 +1,7 @@
 import { Box, Flex } from "@chakra-ui/react";
 import Topbar from "../components/dashboard/Topbar";
 import Sidebar from "../components/dashboard/Sidebar";
+import { Outlet } from "react-router-dom";
 
 const Home = () => {
   return (
@@ -14,7 +15,7 @@ const Home = () => {
         <Sidebar />
 
         <Box bg={"#f5f6fa"} flex="1" p={6}>
-          Content Here
+          <Outlet />
         </Box>
       </Flex>
 
