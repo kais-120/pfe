@@ -44,7 +44,7 @@ const Header = () => {
             <Menu.Root>
                 <Menu.Trigger>
                 <Avatar.Root className="cursor-pointer">
-                    <Avatar.Fallback focusRing="outside" name={user.first_name + " " + user.last_name}/>
+                    <Avatar.Fallback focusRing="outside" name={user.name}/>
                 </Avatar.Root>
                 </Menu.Trigger>
                 <Portal>

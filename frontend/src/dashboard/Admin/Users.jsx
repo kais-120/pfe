@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react"
-import { Table, Box, Badge, Button, Dialog, Portal, CloseButton } from "@chakra-ui/react"
+import { Table, Box, Badge, Button, Dialog, Portal, CloseButton, Input, Flex, Pagination, ButtonGroup, IconButton } from "@chakra-ui/react"
 import { AxiosToken } from "../../Api/Api"
 import { useNavigate } from "react-router-dom"
+import { Plus, Trash2 } from "lucide-react"
+import { LuChevronLeft, LuChevronRight } from "react-icons/lu"
 
 const Users = () => {
 
 
 const [data,setData] = useState([])
+const [search,setSearch] = useState("")
 
 const navigate = useNavigate();
 
@@ -23,6 +26,28 @@ const handleViewDoc = (id) =>{
 }
 return (
 <Box bg="white" p={5} borderRadius="lg">
+
+{/* Header */}
+<Flex justify="space-between" mb={4} gap={4}>
+
+<Input
+rounded={"lg"}
+placeholder="Rechercher utilisateur..."
+maxW="300px"
+value={search}
+onChange={(e)=>setSearch(e.target.value)}
+/>
+
+<Button
+rounded={"lg"}
+colorPalette="blue"
+onClick={()=>navigate("create")}
+>
+  <Plus size={16} />
+Ajouter utilisateur
+</Button>
+
+</Flex>
 
 <Table.Root size="sm">
 <Table.Header>
@@ -45,7 +70,7 @@ return (
 </Table.Cell>
 
 <Table.Cell>
-{doc?.first_name} {doc?.last_name}
+{doc?.name}
 </Table.Cell>
 
 <Table.Cell>
@@ -63,7 +88,7 @@ return (
   <Dialog.Root>
       <Dialog.Trigger asChild>
     <Button size="xs" colorPalette="red">
-    Supprime
+    <Trash2 />
     </Button>
      </Dialog.Trigger>
       <Portal>
@@ -71,7 +96,7 @@ return (
         <Dialog.Positioner>
           <Dialog.Content>
             <Dialog.Header>
-              <Dialog.Title>Supprimer l'utilisateur {doc.first_name}</Dialog.Title>
+              <Dialog.Title>Supprimer l'utilisateur {doc.name}</Dialog.Title>
             </Dialog.Header>
             <Dialog.Body>
               <p>
@@ -100,6 +125,31 @@ return (
 
 </Table.Body>
 </Table.Root>
+<Box marginTop={5} width={"full"} className="flex justify-center">
+<Pagination.Root count={data.length} pageSize={10} defaultPage={1}>
+      <ButtonGroup variant="ghost" size="sm">
+        <Pagination.PrevTrigger asChild>
+          <IconButton>
+            <LuChevronLeft />
+          </IconButton>
+        </Pagination.PrevTrigger>
+
+        <Pagination.Items
+          render={(page) => (
+            <IconButton variant={{ base: "ghost", _selected: "outline" }}>
+              {page.value}
+            </IconButton>
+          )}
+        />
+
+        <Pagination.NextTrigger asChild>
+          <IconButton>
+            <LuChevronRight />
+          </IconButton>
+        </Pagination.NextTrigger>
+      </ButtonGroup>
+    </Pagination.Root>
+    </Box>
 
 </Box>
 )

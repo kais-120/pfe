@@ -1,7 +1,8 @@
-import { Avatar, Box, Menu, Portal, Text } from '@chakra-ui/react'
+import { Avatar, Box, Group, IconButton, Menu, Portal, Text } from '@chakra-ui/react'
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AxiosToken } from '../../Api/Api';
+import { LuChevronDown } from 'react-icons/lu';
 
 
 const Topbar = () => {
@@ -28,12 +29,22 @@ const Topbar = () => {
             <Menu.Root>
                 
         <Menu.Trigger asChild>
-            <Avatar.Root className="!cursor-pointer">
-            <Avatar.Fallback focusRing="outside" name={user.first_name + " " + user.last_name} />
+            <Avatar.Root>
+            <Avatar.Fallback focusRing="outside" name={user.name} />
             </Avatar.Root>
         </Menu.Trigger>
 
-        <Portal>
+        </Menu.Root>
+        <Menu.Root>
+            <Group attached>
+                <Menu.Trigger asChild>
+                    <Box className='flex items-center cursor-pointer'>
+                    <Text  marginStart={3} marginEnd={2}>{user.name}</Text>
+                    <LuChevronDown />
+                    </Box>
+                </Menu.Trigger>
+            </Group>
+            <Portal>
             <Menu.Positioner>
             <Menu.Content>
                 <Link to="/setting">
@@ -46,8 +57,8 @@ const Topbar = () => {
             </Menu.Content>
             </Menu.Positioner>
         </Portal>
+
         </Menu.Root>
-        <Text marginStart={3}>{user.first_name + " " + user.last_name}</Text>
         </>
         )}
     </Box>

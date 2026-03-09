@@ -5,6 +5,7 @@ const Location = require("./Location");
 const Otp = require("./Otp");
 const PartnerFile = require("./PartnerFiles");
 const RefuseReason = require("./RefuseReason");
+const Room = require("./Room");
 const User = require("./User");
 const Voyage = require("./Voyage");
 
@@ -69,7 +70,7 @@ PartnerFile.belongsTo(User, {
     as: "users"
 })
 
-PartnerFile.belongsTo(RefuseReason, {
+PartnerFile.hasMany(RefuseReason, {
     foreignKey: "file_id",
     as: "RefuseReason"
 })
@@ -78,4 +79,13 @@ RefuseReason.belongsTo(PartnerFile, {
     as: "PartnerFileRefuseReason"
 })
 
-module.exports = { User, Otp,Agence,PartnerFile,Hotel,Compagnie,Voyage};
+Hotel.hasMany(Room, {
+    foreignKey: "file_id",
+    as: "room"
+})
+Room.belongsTo(Hotel, {
+    foreignKey: "file_id",
+    as: "hotelRoom"
+})
+
+module.exports = { User, Otp,Agence,PartnerFile,Hotel,Compagnie,Voyage,RefuseReason,Room};

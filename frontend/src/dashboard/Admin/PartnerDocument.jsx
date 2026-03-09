@@ -50,7 +50,7 @@ return (
 </Table.Cell>
 
 <Table.Cell>
-{doc.users?.first_name} {doc.users?.last_name}
+{doc.users?.name}
 </Table.Cell>
 
 <Table.Cell>

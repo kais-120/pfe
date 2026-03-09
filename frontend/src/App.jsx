@@ -15,6 +15,7 @@ import Users from "./dashboard/Admin/Users";
 import PartnerDocument from "./dashboard/Admin/PartnerDocument";
 import PartnerDocumentInfo from "./dashboard/Admin/PartnerDocumentInfo";
 import { Toaster } from "./components/ui/toaster";
+import AddAgent from "./dashboard/Admin/AddAgent";
 
 function App() {
   const route = window.location.host;
@@ -35,19 +36,21 @@ function App() {
     }
     <Route path="/verify/:hash" element={<OtpPage />}/>
   </Route>
-  <Route element={<RoleReq allow={["admin","partner"]} />}>
+  <Route element={<RoleReq allow={["partner"]} />}>
   <Route element={<PartnerFileReq />}>
     <Route path="/partner/dashboard" element={<HomeDashboard/>}>
     </Route>
   </Route>
-  <Route element={<RoleReq allow={["admin"]} />}>
+  </Route>
+
+  <Route element={<RoleReq allow={["admin","agent"]} />}>
     <Route path="/dashboard" element={<HomeDashboard/>}>
       <Route path="users" element={<Users />} />
+      <Route path="users/create" element={<AddAgent />} />
       <Route path="document/partner" element={<PartnerDocument />} />
       <Route path="document/partner/:id" element={<PartnerDocumentInfo />} />
     </Route>
     </Route>
-  </Route>
 </Routes>
 </>
    

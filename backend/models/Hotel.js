@@ -11,10 +11,6 @@ const Hotel = sequelize.define("hotels",{
         type:DataTypes.STRING(100),
         allowNull:false,
     },
-    price:{
-        type:DataTypes.DOUBLE,
-        allowNull:false,
-    },
     detail:{
         type:DataTypes.STRING(255),
         allowNull:false,
@@ -22,10 +18,10 @@ const Hotel = sequelize.define("hotels",{
     status:{
         type:DataTypes.ENUM("En attente","refuse","accept"),
         allowNull:false,
-        defaultValue:"En attente"
+        defaultValue:"accept"
     },
     address:{
-         type:DataTypes.STRING(150),
+        type:DataTypes.STRING,
         allowNull:false,
     },
     partner_id:{

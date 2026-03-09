@@ -110,12 +110,13 @@ exports.UpdateFiles = [
             data[keys[index]] = element.filename
         });
         if(existPartner){
-            console.log(existPartner.cin_recto)
+            if(existPartner.cin_recto && existPartner.cin_verso && existPartner.matricule_fiscale_image && existPartner.register_commerce && existPartner.autorisation_ONTT){
             fs.unlinkSync(path.join("uploads/partner_files",existPartner.cin_recto))
             fs.unlinkSync(path.join("uploads/partner_files",existPartner.cin_verso))
             fs.unlinkSync(path.join("uploads/partner_files",existPartner.matricule_fiscale_image))
             fs.unlinkSync(path.join("uploads/partner_files",existPartner.register_commerce))
             fs.unlinkSync(path.join("uploads/partner_files",existPartner.autorisation_ONTT))
+            }
             await existPartner.update(data)
         }
         else{
