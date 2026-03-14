@@ -38,7 +38,7 @@ return (
 
 <Table.Body>
 
-{data.map((doc,index)=>(
+{data && data.length > 0 ? data.map((doc,index)=>(
 <Table.Row key={doc.id}>
 
 <Table.Cell>
@@ -72,7 +72,11 @@ Voir
 
 
 </Table.Row>
-))}
+)) :
+<Table.Row>
+    <Table.Cell textAlign="center" colSpan={6}>il n'a pas de documents</Table.Cell>
+</Table.Row>
+}
 
 </Table.Body>
 </Table.Root>

@@ -8,8 +8,7 @@ import { ring } from 'ldrs'
 import * as yup from "yup"
 
 const validationSchema = yup.object().shape({
-  firstName:yup.string().min(3,"Le nom doit min 3 caractére").required("Nom est require"),
-  lastName:yup.string().min(3,"Le prenom doit min 3 caractére").required("Prenom est require"),
+  name:yup.string().min(3,"Le nom doit min 3 caractére").required("nom est require"),
   phone:yup.string().length(8,"numéro de téléphone doit min 8 chiffre").required("Le numéro de téléphone est require").matches(/^\d+$/,"Le numéro de téléphone doit etre numerique"),
   email:yup.string().matches(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,"Il faut email").required("Email est require"),
   password:yup.string().min(6,"Mot de passe doit etre 6").required("mot de passe est require"),
@@ -25,8 +24,7 @@ const PartnerSignUp = () => {
     
       const formik = useFormik({
         initialValues:{
-            firstName:"",
-            lastName:"",
+            name:"",
             email:"",
             password:"",
             phone:"",
@@ -70,20 +68,11 @@ console.log(formik.errors)
       <form className="w-full max-w-md" onSubmit={formik.handleSubmit}>
         <Box className="shadow-2xs">
             <Box className="flex" marginBottom={5}>
-                <Box marginEnd={4}>
-                <Field.Root invalid={formik.touched.firstName && formik.errors.firstName}>
+              <Field.Root invalid={formik.touched.name && formik.errors.name}>
                 <Field.Label>Nom</Field.Label>
-                <Input name="firstName" value={formik.values.firstName} onChange={formik.handleChange} onBlur={formik.handleBlur}  placeholder="donner votre nom"/>
-                <Field.ErrorText>{formik.errors.firstName}</Field.ErrorText>
-              </Field.Root>
-            </Box>
-            <Box>
-              <Field.Root invalid={formik.touched.lastName && formik.errors.lastName}>
-                <Field.Label>Prénom</Field.Label>
-                <Input name="lastName" value={formik.values.lastName} onChange={formik.handleChange} onBlur={formik.handleBlur} type="text" placeholder="donner votre prenom"/>
-                <Field.ErrorText>{formik.errors.lastName}</Field.ErrorText>
+                <Input name="name" value={formik.values.name} onChange={formik.handleChange} onBlur={formik.handleBlur} type="text" placeholder="donner votre nom"/>
+                <Field.ErrorText>{formik.errors.name}</Field.ErrorText>
             </Field.Root>
-          </Box>
 
             </Box>
             <Box marginBottom={5}>

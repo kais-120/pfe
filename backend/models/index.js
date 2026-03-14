@@ -1,6 +1,9 @@
 const Agence = require("./Agence");
+const Booking = require("./Booking");
 const Compagnie = require("./Compagnie");
 const Hotel = require("./Hotel");
+const HotelBookingDetails = require("./HotelBookingDetails");
+const ImageService = require("./ImageServices");
 const Location = require("./Location");
 const Otp = require("./Otp");
 const PartnerFile = require("./PartnerFiles");
@@ -19,46 +22,46 @@ Otp.belongsTo(User, {
     as: "user"
 });
 User.hasMany(Agence, {
-    foreignKey:"partenaire_id",
+    foreignKey:"partner_id",
     as:"partner"
 });
 Agence.belongsTo(User, {
-    foreignKey: "user_id",
+    foreignKey: "partner_id",
     as: "agence"
 })
 
 User.hasMany(Compagnie, {
-    foreignKey:"partenaire_id",
+    foreignKey:"partner_id",
     as:"partnerCompagnie"
 });
 Compagnie.belongsTo(User, {
-    foreignKey: "user_id",
+    foreignKey: "partner_id",
     as: "compagnie"
 })
 
 User.hasMany(Location, {
-    foreignKey:"partenaire_id",
+    foreignKey:"partner_id",
     as:"partnerLocation"
 });
 Location.belongsTo(User, {
-    foreignKey: "user_id",
+    foreignKey: "partner_id",
     as: "location"
 })
 
 User.hasMany(Hotel, {
-    foreignKey:"partenaire_id",
-    as:"partnerHotel"
+    foreignKey:"partner_id",
+    as:"hotelPartner"
 });
 Hotel.belongsTo(User, {
-    foreignKey: "user_id",
-    as: "hotel"
+    foreignKey: "partner_id",
+    as: "partnerHotel"
 })
 User.hasMany(Voyage, {
-    foreignKey:"partenaire_id",
+    foreignKey:"partner_id",
     as:"partnerVoyage"
 });
 Voyage.belongsTo(User, {
-    foreignKey: "user_id",
+    foreignKey: "partner_id",
     as: "voyage"
 })
 User.hasMany(PartnerFile, {
@@ -80,12 +83,51 @@ RefuseReason.belongsTo(PartnerFile, {
 })
 
 Hotel.hasMany(Room, {
-    foreignKey: "file_id",
-    as: "room"
+    foreignKey: "hotel_id",
+    as: "rooms"
 })
 Room.belongsTo(Hotel, {
-    foreignKey: "file_id",
+    foreignKey: "hotel_id",
     as: "hotelRoom"
 })
+User.hasMany(Booking,{
+    foreignKey:"client_id",
+    as:"bookingUser"
+});
+Booking.belongsTo(User,{
+    foreignKey:"client_id",
+    as:"userBooking"
+})
 
-module.exports = { User, Otp,Agence,PartnerFile,Hotel,Compagnie,Voyage,RefuseReason,Room};
+Booking.hasMany(HotelBookingDetails,{
+    foreignKey:"booking_id",
+    as:"bookingHotelDetails"
+})
+HotelBookingDetails.belongsTo(Booking,{
+    foreignKey:"booking_id",
+    as:"HotelDetailsBooking"
+})
+
+Room.hasMany(HotelBookingDetails,{
+    foreignKey:"room_id",
+    as:"HotelBookingDetails"
+})
+HotelBookingDetails.belongsTo(Room,{
+    foreignKey:"room_id",
+    as:"RoomHotelBooking"
+})
+
+Hotel.hasMany(ImageService, {
+  foreignKey: "service_id",
+  as: "imagesHotel"
+})
+
+ImageService.belongsTo(Hotel, {
+  foreignKey: "service_id",
+  as: "hotelImages"
+
+})
+
+
+
+module.exports = { User, Otp,Agence,PartnerFile,Hotel,Compagnie,Voyage,RefuseReason,Room,Booking,HotelBookingDetails,ImageService};

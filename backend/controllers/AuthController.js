@@ -32,7 +32,7 @@ exports.Register =[
         const user = await User.create({name,email,password:hashed,phone});
         const fullName = `${firstName} ${lastName}`
         const otp = await OtpRegisterCreate(user.id);
-        otpSend(email,fullName,otp.code)
+        otpSend(email,fullName,otp.code.toString())
         return res.status(201).json({message:"account created",token:otp.hash});
     }catch(err){
         console.log(err)
@@ -106,7 +106,7 @@ exports.PartnerRegister =[
         const user = await User.create({name,email,password:hashed,role:"partner",phone});
         await PartnerFile.create({sector,partner_id:user.id})
         const otp = await OtpRegisterCreate(user.id);
-        otpSend(email,name,otp.code)
+        otpSend(email,name,otp.code.toString())
         return res.status(201).json({message:"account created",token:otp.hash});
     }catch(err){
         console.log(err)

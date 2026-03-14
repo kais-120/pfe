@@ -21,7 +21,7 @@ const transporter = nodemailer.createTransport({
 exports.otpSend = async (to,name,code) => {
      const html = await ejs.renderFile(
     path.join(__dirname, '../public/OtpMail.ejs'),
-    { name, otp:code }
+    { name, code }
   );
 
  await transporter.sendMail({

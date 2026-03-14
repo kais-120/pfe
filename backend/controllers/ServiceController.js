@@ -1,11 +1,116 @@
 const { body, validationResult } = require("express-validator");
-const { Hotel } = require("../models");
+const { Hotel, User } = require("../models");
 const Room = require("../models/Room");
+const ImageService = require("../models/ImageServices");
 
+exports.GetAllHotel = async (req,res) => {
+        try{
+           const hotel = await Hotel.findAll({
+            limit: 9,
+            include:[
+                {
+                    model:ImageService,
+                    where: { type: "hotel" },
+                    as:"imagesHotel"
+                },{
+                    model:Room,
+                    as:"rooms"
+                }
+            ]
+        });
+            return res.json({message:"hotel found",hotel});
+        }catch(err){
+            console.log(err)
+            return res.status(500).send({message:"error server"})
+        }
+
+    }
+exports.GetHotel = async (req,res) => {
+        try{
+            const { id } = req.params
+           const hotel = await Hotel.findByPk(id,{
+            include:[
+                {
+                    model:ImageService,
+                    where: { type: "hotel" },
+                    as:"imagesHotel"
+                }
+            ]
+        });
+            return res.json({message:"hotel found",hotel});
+        }catch(err){
+            console.log(err)
+            return res.status(500).send({message:"error server"})
+        }
+
+    }
+exports.GetAllServices = async (req,res) => {
+        try{
+            const hotel = await Hotel.findAll({
+                include:[
+                { 
+                    model:User,
+                    as:"partnerHotel",
+                    attributes: { exclude: ["password"] }
+                }
+            ]
+            });
+            return res.json({message:"hotel found",hotel});
+        }catch(err){
+            console.log(err)
+            return res.status(500).send({message:"error server"})
+        }
+
+    }
+exports.GetHotel = async (req,res) => {
+        try{
+            const partner_id = req.userId;
+            const hotel = await Hotel.findOne({partner_id,
+                include:[
+                    {
+                        model:Room,
+                        as:"rooms"
+                    }
+                ]
+            });
+            if(!hotel){
+                return res.status(404).json({message:"hotel not found"});
+            }
+            const images = await ImageService.findAll({where :{type:"hotel",service_id:hotel.id}})
+            const data = {...hotel.toJSON(),images}
+            return res.json({message:"hotel found",hotel:data});
+        }catch(err){
+            console.log(err)
+            return res.status(500).send({message:"error server"})
+        }
+
+    }
 exports.AddHotel = [
-    
-    ,
+     body("name").notEmpty().withMessage("name is required"),
+    body("description").notEmpty().withMessage("description is required"),
+    body("address").notEmpty().withMessage("address by day is required"),
+    body("equipments").notEmpty().withMessage("equipments by day is required"),
     async (req,res) => {
+         const errors = validationResult(req);
+            if(!errors.isEmpty()){
+                return res.status(422).json({ errors: errors.array().map(err => err.msg) });
+        }
+        try{
+            const partner_id = req.userId;
+            const {name,description,address,equipments} = req.body;
+            const hotel = await Hotel.create({name,description,address,equipments,partner_id});
+            const files = req.files.service_doc;
+            for (const element of files) {
+            await ImageService.create({
+                image_url: element.filename,
+                type: "hotel",
+                service_id: hotel.id
+            });
+            }
+            return res.json({message:"hotel created"});
+        }catch(err){
+            return res.status(500).send({message:"error server"})
+        }
 
     }
 ]
@@ -24,17 +129,17 @@ exports.AddRoom = [
             if(!errors.isEmpty()){
                 return res.status(422).json({ errors: errors.array().map(err => err.msg) });
         }
+        try{
         const {name,capacity,price_by_day,count,price_by_children,price_by_adult} = req.body;
-        const { id } = req.params;
         const userId = req.userId;
-        const hotel = await Hotel.findByPk(id);
-        if(hotel){
+        const hotel = await Hotel.findOne({where : {partner_id:userId}});
+        if(!hotel){
             return res.status(404).json({message:"hotel not found"});
         }
-        if(hotel.partner_id !== userId){
-            return res.status(403).json({message:"Forbidden"});
-        }
-        await Room.create({name,capacity,price_by_day,price_by_adult,price_by_children,count});
-        return res.status(404).json({message:"hotel not found"});
+        await Room.create({name,capacity,price_by_day,price_by_adult,price_by_children,count,hotel_id:hotel.id});
+        return res.json({message:"hotel created"});
+    }catch{
+            return res.status(500).send({message:"error server"})
+    }
     }
 ]

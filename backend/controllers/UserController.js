@@ -182,7 +182,9 @@ exports.GetUser = async (req,res) =>{
 exports.PartnerFile = async (req,res) =>{
     try{
         const partnerFiles = await PartnerFile.findAll(
-            {
+            {where : {status :{
+                [Op.ne] : null
+            }},
                 include:[
                     {
                         model:User,

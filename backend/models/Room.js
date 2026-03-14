@@ -30,14 +30,10 @@ const Room = sequelize.define("room", {
   count: {
     type: DataTypes.INTEGER,
   },
-  features: {
-    type: DataTypes.JSON,
-    allowNull: true,
-  },
-  partner_id:{
+  hotel_id:{
         type:DataTypes.BIGINT,
         references:{
-            model:"users",
+            model:"hotels",
             key:"id"
         },
         onDelete:"CASCADE"

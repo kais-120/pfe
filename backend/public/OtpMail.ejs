@@ -123,12 +123,9 @@
       <div class="otp-block">
         <div class="otp-label">Code d'inscription</div>
         <div class="otp-digits">
-          <div class="digit"><%= code[0] %></div>
-          <div class="digit"><%= code[1] %></div>
-          <div class="digit"><%= code[2] %></div>
-          <div class="digit"><%= code[3] %></div>
-          <div class="digit"><%= code[4] %></div>
-          <div class="digit"><%= code[5] %></div>
+          <% code.split("").forEach(d => { %>
+            <div class="digit"><%= d %></div>
+          <% }) %>
         </div>
         <div class="otp-expiry">Expire dans <strong>5 minutes</strong></div>
       </div>

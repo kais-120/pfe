@@ -1,0 +1,44 @@
+const { DataTypes } = require("sequelize");
+const sequelize = require("../configs/db");
+
+const Booking = sequelize.define("booking",{
+    id:{
+        type:DataTypes.BIGINT,
+        autoIncrement:true,
+        primaryKey:true
+    },
+    total_price:{
+        type:DataTypes.DOUBLE,
+        allowNull:false,
+    },
+    status:{
+        type:DataTypes.ENUM("en attente", "confirmé","annulé"),
+        allowNull:false,
+        defaultValue:"en attente"
+    },
+    type:{
+        type:DataTypes.ENUM("agence de voyage","location de voitures","hotel","compagnies aériennes","voyages circuits"),
+        allowNull:false,
+    },
+    method_payment:{
+        type:DataTypes.ENUM("en ligne","en espèce"),
+        allowNull:true,
+    },
+    client_id:{
+        type:DataTypes.BIGINT,
+        allowNull:false,
+        references:{
+            model:"users",
+            key:"id"
+        },
+        onDelete:'CASCADE',
+    },
+    deleted_at:{
+        type:DataTypes.DATE,
+        allowNull:true
+    }
+    
+},{
+        tableName:"booking"
+});
+module.exports = Booking;

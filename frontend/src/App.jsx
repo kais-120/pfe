@@ -16,29 +16,33 @@ import PartnerDocument from "./dashboard/Admin/PartnerDocument";
 import PartnerDocumentInfo from "./dashboard/Admin/PartnerDocumentInfo";
 import { Toaster } from "./components/ui/toaster";
 import AddAgent from "./dashboard/Admin/AddAgent";
+import AddHotel from "./dashboard/Partner/Service/Add/AddHotel";
+import ServiceHotel from "./dashboard/Partner/Service/Fetsh/ServiceHotel";
+import AddRoom from "./dashboard/Partner/Service/Add/AddRoom";
+import Booking from "./dashboard/Partner/booking";
 
 function App() {
-  const route = window.location.host;
-  const subdomain = route.split(".");
   return (
     <>
   <Toaster />
     <Routes>
-  <Route path="/test" element={<PartnerFileReq/>} />
+  <Route path="/test" element={<Test/>} />
   <Route path="/" element={<Home/>} />
   <Route path="/partner" element={<DocumentPartner/>} />
   <Route element={<AuthReq />}>
     <Route path="/login" element={<Login/>} />
-    {subdomain.includes("partner") ? 
-    <Route path="/signup" element={<PartnerSignUp />} />
-    :
+    <Route path="/signup/partner" element={<PartnerSignUp />} />
     <Route path="/signup" element={<SignUp/>} />
-    }
     <Route path="/verify/:hash" element={<OtpPage />}/>
   </Route>
   <Route element={<RoleReq allow={["partner"]} />}>
   <Route element={<PartnerFileReq />}>
     <Route path="/partner/dashboard" element={<HomeDashboard/>}>
+      <Route path="service" element={<ServiceHotel />} />
+      <Route path="service/add" element={<AddHotel/>} />
+      <Route path="bookings" element={<Booking/>} />
+      <Route path="service/hotel/room/add" element={<AddRoom/>} />
+
     </Route>
   </Route>
   </Route>

@@ -38,7 +38,6 @@ exports.VerifyOtp = [
                 return res.status(410).send({message:"otp gone"});
             }
             else if(code !== otpUser.code){
-                console.log(otpUser.code)
                 return res.status(403).send({message:"otp is wrong"});
             }
             else{
@@ -70,8 +69,7 @@ exports.ResendOtp = [
             }
             const user = await User.findByPk(userOtp.user_id);
             const code = crypto.randomInt(100000, 1000000);
-            const fullName = `${user.first_name} ${user.last_name}`;
-            otpSend(user.email,fullName,code);
+            otpSend(user.email,user.name,code.toString());
             const expire_at = new Date(Date.now() + 5 * 60 * 1000);
             userOtp.update({created_at:date,code,expire_at})
             return res.send({message:"code updated"});

@@ -7,16 +7,12 @@ const Hotel = sequelize.define("hotels",{
         autoIncrement:true,
         primaryKey:true
     },
-    name:{
-        type:DataTypes.STRING(100),
-        allowNull:false,
-    },
-    detail:{
-        type:DataTypes.STRING(255),
+    description:{
+        type:DataTypes.TEXT,
         allowNull:false,
     },
     status:{
-        type:DataTypes.ENUM("En attente","refuse","accept"),
+        type:DataTypes.ENUM("refuse","accept"),
         allowNull:false,
         defaultValue:"accept"
     },
@@ -24,6 +20,10 @@ const Hotel = sequelize.define("hotels",{
         type:DataTypes.STRING,
         allowNull:false,
     },
+     equipments: {
+    type: DataTypes.JSON,
+    allowNull: true,
+  },
     partner_id:{
         type:DataTypes.BIGINT,
         allowNull:false,

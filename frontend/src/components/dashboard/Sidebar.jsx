@@ -1,5 +1,5 @@
 import { Box, Text, VStack } from "@chakra-ui/react"
-import { Files, Gauge, User } from 'lucide-react';
+import { Building, Building2, CalendarCheck2, Files, Gauge, User } from 'lucide-react';
 import { useEffect, useState } from "react";
 import {  NavLink } from "react-router-dom";
 import { AxiosToken } from "../../Api/Api";
@@ -23,11 +23,12 @@ const Sidebar = () => {
         {icon:Gauge,label:"Table de board",link:"",end:true},
         {icon:User,label:"Utilisateurs",link:"users",end:false},
         {icon:Files,label:"Documents partenaires",link:"document/partner",end:false},
+        {icon:Building2,label:"Services",link:"service",end:false},
     ]
    const partnerList = [
-        {icon:Gauge,label:"Table de board",link:"/partner/dashboard",end:false},
-        {icon:User,label:"offre",link:"offre",end:false},
-        {icon:Files,label:"Documents partenaires",link:"document/partner",end:false},
+        {icon:Gauge,label:"Table de board",link:"/partner/dashboard",end:true},
+        {icon:Building,label:"Service",link:"service",end:false},
+        {icon:CalendarCheck2,label:"Réservation",link:"bookings",end:false},
     ]
     const sideBarList = user && user === "admin" ? adminList : partnerList;
   return (

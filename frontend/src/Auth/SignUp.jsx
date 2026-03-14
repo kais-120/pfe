@@ -36,7 +36,8 @@ const SignUp = () => {
       try{
         setEmailError(false)
         setLoading(true)
-        const response = await Axios.post("/auth/register",values);
+        const name = values.firstName + " " + values.lastName;
+        const response = await Axios.post("/auth/register",{...values,name});
         console.log(response)
         navigate(`/verify/${response.data.token}`);
         
@@ -54,7 +55,7 @@ const SignUp = () => {
     <Header />
     <div className="w-full h-screen flex justify-center items-center">
       <form className="w-full max-w-md" onSubmit={formik.handleSubmit}>
-        <Box className="shadow-2xs">
+        <Box bg={"white"} shadow={"2xl"} padding={6} rounded={"md"} className="shadow-2xs">
             <Box className="flex" marginBottom={5}>
                 <Box marginEnd={4}>
                 <Field.Root invalid={formik.touched.firstName && formik.errors.firstName}>
