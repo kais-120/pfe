@@ -1,7 +1,7 @@
 import { Badge, Box, Button, Flex, Grid, Text, VStack, Spinner } from "@chakra-ui/react"
 import { useState, useEffect } from "react"
 import { FaHotel, FaMapMarkerAlt, FaMoon, FaBed, FaCalendarAlt, FaEye } from "react-icons/fa"
-import { AxiosToken } from "./Api/Api" // تأكد ملف AxiosToken
+import { AxiosToken } from "../../Api/Api"
 
 const STATUS_CONFIG = {
   "en attente": { label: "En attente", color: "orange" },
@@ -10,7 +10,7 @@ const STATUS_CONFIG = {
   "terminée":  { label: "Terminée", color: "gray" },
 }
 
-const Test = () => {
+const BookingClientInfo = () => {
   const [filter, setFilter] = useState("all")
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
@@ -169,4 +169,4 @@ function BookingCard({ booking }) {
   )
 }
 
-export default Test
+export default BookingClientInfo

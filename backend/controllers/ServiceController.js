@@ -1,7 +1,136 @@
 const { body, validationResult } = require("express-validator");
-const { Hotel, User } = require("../models");
+const { Hotel, User, Booking, HotelBookingDetails } = require("../models");
 const Room = require("../models/Room");
 const ImageService = require("../models/ImageServices");
+const { Op, where } = require("sequelize");
+
+exports.GetPublicHotel = async (req,res) => {
+        try{
+            const { id } = req.params
+           const hotel = await Hotel.findByPk(id,{
+            include:[
+                {
+                    model:ImageService,
+                    where: { type: "hotel" },
+                    as:"imagesHotel"
+                },{
+                        model:Room,
+                        as:"rooms"
+                }
+            ]
+        });
+        if(!hotel){
+            return res.status(404).json({message:"hotel not found"});
+        }
+            return res.json({message:"hotel found",hotel});
+        }catch(err){
+            console.log(err)
+            return res.status(500).send({message:"error server"})
+        }
+
+    }
+
+
+exports.GetSearchHotels = [
+  body("destination").notEmpty().withMessage("destination is required"),
+  body("checkIn").notEmpty().isDate().withMessage("checkIn should be date"),
+  body("checkOut").notEmpty().isDate().withMessage("checkOut should be date"),
+  body("rooms").notEmpty().isArray().withMessage("rooms should be array"),
+
+  async (req, res) => {
+    const errors = validationResult(req)
+
+    if (!errors.isEmpty()) {
+      return res.status(422).json({
+        errors: errors.array().map(err => err.msg)
+      })
+    }
+
+    try {
+      const { destination, checkIn, checkOut, rooms } = req.body
+
+      const nights =
+        (new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)
+
+      const hotels = await Hotel.findAll({
+        where: { government: destination },
+        attributes: ["id", "government"],
+        include: [
+          {
+            model: Room,
+            as: "rooms"
+          }
+        ]
+      })
+
+      const availableHotels = hotels
+        .map(hotel => {
+
+          let totalPrice = 0
+          let selectedRooms = []
+
+          const isValid = rooms.every(roomRequest => {
+
+            const [adults, children] = roomRequest
+            const guests = adults + children
+
+            const room = hotel.rooms.find(r => r.capacity >= guests)
+
+            if (!room) return false
+
+            const pricePerNight =
+              room.price_by_day +
+              adults * room.price_by_adult +
+              children * room.price_by_children
+
+            totalPrice += pricePerNight * nights
+
+            selectedRooms.push({
+              roomId: room.id,
+              name: room.name,
+              capacity: room.capacity,
+              priceByDay: room.price_by_day,
+              priceByAdult: room.price_by_adult,
+              priceByChildren: room.price_by_children,
+              requestedAdults: adults,
+              requestedChildren: children,
+              pricePerNight
+            })
+
+            return true
+          })
+
+          if (!isValid) return null
+
+          return {
+            ...hotel.toJSON(),
+            nights,
+            totalPrice,
+            selectedRooms
+          }
+
+        })
+        .filter(Boolean)
+
+      if (availableHotels.length === 0) {
+        return res.status(404).json({
+          message: "no hotel available"
+        })
+      }
+
+      return res.json({
+        message: "hotel found",
+        hotels: availableHotels
+      })
+
+    } catch (err) {
+      console.log(err)
+      return res.status(500).json({
+        message: "server error"
+      })
+    }
+  }
+]
 
 exports.GetAllHotel = async (req,res) => {
         try{
@@ -11,29 +140,11 @@ exports.GetAllHotel = async (req,res) => {
                 {
                     model:ImageService,
                     where: { type: "hotel" },
-                    as:"imagesHotel"
+                    as:"imagesHotel",
+                    required:false
                 },{
                     model:Room,
                     as:"rooms"
-                }
-            ]
-        });
-            return res.json({message:"hotel found",hotel});
-        }catch(err){
-            console.log(err)
-            return res.status(500).send({message:"error server"})
-        }
-
-    }
-exports.GetHotel = async (req,res) => {
-        try{
-            const { id } = req.params
-           const hotel = await Hotel.findByPk(id,{
-            include:[
-                {
-                    model:ImageService,
-                    where: { type: "hotel" },
-                    as:"imagesHotel"
                 }
             ]
         });

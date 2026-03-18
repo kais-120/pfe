@@ -206,7 +206,7 @@ function UserMenu({ user, dashboard, onLogout }) {
                 alignItems="center"
                 gap={3}
               >
-                <Box as={FaSignOutAlt} boxSize="13px" />
+                <Box onClick={onLogout} as={FaSignOutAlt} boxSize="13px" />
                 Déconnexion
               </Menu.Item>
             </Box>

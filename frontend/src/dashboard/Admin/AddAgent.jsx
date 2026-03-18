@@ -1,122 +1,236 @@
 import { Helmet } from "react-helmet"
-import { Box, Button, Field, Input, Text } from "@chakra-ui/react"
+import {
+  Box, Button, Field, Input, Text,
+  Flex, Grid, VStack,
+} from "@chakra-ui/react"
 import { useFormik } from "formik"
 import * as yup from "yup"
 import { useNavigate } from "react-router-dom"
-import { Axios } from "../../Api/Api"
+import { AxiosToken } from "../../Api/Api"
 import { useState } from "react"
-import { ring } from 'ldrs'
-
+import {
+  LuUser, LuMail, LuPhone, LuLock,
+  LuChevronLeft, LuCheck,
+  LuUserPlus,
+} from "react-icons/lu"
+import { LucideAlertCircle } from "lucide-react"
 
 const validationSchema = yup.object().shape({
-  firstName:yup.string().min(3,"Le nom doit min 3 caractére").required("Nom est require"),
-  lastName:yup.string().min(3,"Le prenom doit min 3 caractére").required("Prenom est require"),
-  email:yup.string().matches(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,"Il faut email").required("Email est require"),
-  phone:yup.string().matches(/^\d+$/,"Le numéro de téléphone doit etre numerique").length(8,"numéro de téléphone doit min 8 chiffre").required("Le numéro de téléphone est require"),
-  password:yup.string().min(6,"Mot de passe doit etre 6").required("mot de passe est require"),
-  confirmPassword:yup.string().required("Confirme mot de passe est require").oneOf([yup.ref("password"),null],"Le mot de passe not match"),
+  firstName:       yup.string().min(3, "Minimum 3 caractères").required("Le nom est requis"),
+  lastName:        yup.string().min(3, "Minimum 3 caractères").required("Le prénom est requis"),
+  email:           yup.string().email("Email invalide").required("L'email est requis"),
+  phone:           yup.string().matches(/^\d+$/, "Chiffres uniquement").length(8, "Doit contenir 8 chiffres").required("Le téléphone est requis"),
+  password:        yup.string().min(6, "Minimum 6 caractères").required("Le mot de passe est requis"),
+  confirmPassword: yup.string().required("Confirmation requise").oneOf([yup.ref("password"), null], "Les mots de passe ne correspondent pas"),
 })
 
+/* ── Reusable styled input ──────────────────────────────────────── */
+function FormField({ formik, name, label, type = "text", placeholder, icon: Icon, isInvalid }) {
+  const invalid = isInvalid || (formik.touched[name] && !!formik.errors[name])
+  return (
+    <Field.Root invalid={invalid} w="full">
+      <Field.Label>
+        <Text fontSize="xs" fontWeight={700} color="gray.600"
+          textTransform="uppercase" letterSpacing="wider">
+          {label}
+        </Text>
+      </Field.Label>
+      <Flex
+        w="full" align="center"
+        border="1.5px solid"
+        borderColor={invalid ? "red.400" : "gray.200"}
+        borderRadius="xl" bg="white" px={3}
+        transition="all 0.15s"
+        _focusWithin={{
+          borderColor: invalid ? "red.400" : "blue.400",
+          boxShadow: invalid
+            ? "0 0 0 3px rgba(245,101,101,0.12)"
+            : "0 0 0 3px rgba(49,130,206,0.12)",
+        }}
+      >
+        {Icon && (
+          <Box color={invalid ? "red.400" : "gray.400"} mr={2} flexShrink={0}>
+            <Icon size={14} />
+          </Box>
+        )}
+        <Input
+          name={name} type={type}
+          value={formik.values[name]}
+          onChange={formik.handleChange}
+          onBlur={formik.handleBlur}
+          placeholder={placeholder}
+          border="none" bg="transparent" px={0} h="42px" flex={1}
+          fontSize="sm" color="gray.800"
+          _focus={{ boxShadow: "none" }}
+          _placeholder={{ color: "gray.300" }}
+        />
+      </Flex>
+      {formik.touched[name] && formik.errors[name] && (
+        <Field.ErrorText fontSize="xs" color="red.500" mt={1}>
+          {formik.errors[name]}
+        </Field.ErrorText>
+      )}
+    </Field.Root>
+  )
+}
+
 const AddAgent = () => {
-  const [emailError,setEmailError] = useState(false);
-  const [loading,setLoading] = useState(false);
+  const [emailError, setEmailError] = useState(false)
   const navigate = useNavigate()
-  ring.register()
 
   const formik = useFormik({
-    initialValues:{
-        firstName:"",
-        lastName:"",
-        email:"",
-        password:"",
-        phone:"",
-        confirmPassword:""
+    initialValues: {
+      firstName: "", lastName: "",
+      email: "", phone: "",
+      password: "", confirmPassword: "",
     },
     validationSchema,
-    onSubmit: async (values)=>{
-      try{
+    onSubmit: async (values) => {
+      try {
         setEmailError(false)
-        setLoading(true)
-        const response = await Axios.post("/auth/register",values);
-        console.log(response)
-        navigate(`/verify/${response.data.token}`);
-        
-      }catch{
+        const name = `${values.firstName} ${values.lastName}`
+        await AxiosToken.post("/auth/register", { ...values, name })
+        navigate(-1)
+      } catch {
         setEmailError(true)
-        setLoading(false)
       }
     }
-  });
+  })
+
   return (
     <>
-    <Helmet>
-      <title>Ajouter agent</title>
-    </Helmet>
-    <div className="w-full h-screen flex justify-center">
-      <form className="w-full max-w-md" onSubmit={formik.handleSubmit}>
-        <Box className="shadow-2xs">
-            <Box className="flex" marginBottom={5}>
-                <Box marginEnd={4}>
-                <Field.Root invalid={formik.touched.firstName && formik.errors.firstName}>
-                <Field.Label>Nom</Field.Label>
-                <Input name="firstName" value={formik.values.firstName} onChange={formik.handleChange} onBlur={formik.handleBlur}  placeholder="donner votre nom"/>
-                <Field.ErrorText>{formik.errors.firstName}</Field.ErrorText>
-              </Field.Root>
-            </Box>
-            <Box>
-              <Field.Root invalid={formik.touched.lastName && formik.errors.lastName}>
-                <Field.Label>Prénom</Field.Label>
-                <Input name="lastName" value={formik.values.lastName} onChange={formik.handleChange} onBlur={formik.handleBlur} type="text" placeholder="donner votre prenom"/>
-                <Field.ErrorText>{formik.errors.lastName}</Field.ErrorText>
-            </Field.Root>
-          </Box>
+      <Helmet><title>Ajouter un agent</title></Helmet>
 
-            </Box>
-            <Box marginBottom={5}>
-              <Field.Root invalid={(formik.touched.email && formik.errors.email) || emailError}>
-                <Field.Label>Email</Field.Label>
-                <Input name="email" value={formik.values.email} onChange={formik.handleChange} onBlur={formik.handleBlur}  placeholder="donner votre email"/>
-                <Field.ErrorText>{formik.errors.email}</Field.ErrorText>
-                <Field.ErrorText>{emailError && "le email est déja utlisé"}</Field.ErrorText>
-              </Field.Root>
-            </Box>
-            <Box marginBottom={5} >
-              <Field.Root invalid={formik.touched.phone && formik.errors.phone}>
-                <Field.Label>Numero de telephone</Field.Label>
-                <Input name="phone" value={formik.values.phone} onChange={formik.handleChange} onBlur={formik.handleBlur} type="text" placeholder="donner votre mot de passe"/>
-                <Field.ErrorText>{formik.errors.phone}</Field.ErrorText>
-            </Field.Root>
-          </Box>
-            <Box marginBottom={5} >
-              <Field.Root invalid={formik.touched.password && formik.errors.password}>
-                <Field.Label>Mot de passe</Field.Label>
-                <Input name="password" value={formik.values.password} onChange={formik.handleChange} onBlur={formik.handleBlur} type="password" placeholder="donner votre mot de passe"/>
-                <Field.ErrorText>{formik.errors.password}</Field.ErrorText>
-            </Field.Root>
-          </Box>
-            <Box marginBottom={5} >
-              <Field.Root invalid={formik.touched.confirmPassword && formik.errors.confirmPassword}>
-                <Field.Label>Confirme mot de passe</Field.Label>
-                <Input name="confirmPassword" value={formik.values.confirmPassword} onChange={formik.handleChange} onBlur={formik.handleBlur} type="password" placeholder="Confirme votre mot de passe"/>
-                <Field.ErrorText>{formik.errors.confirmPassword}</Field.ErrorText>
-            </Field.Root>
-          </Box>
-        <Button disabled={loading} type="submit" className="w-full bg-amber-400">
-           { loading ? <l-ring
-              size="25"
-              stroke="3"
-              bgOpacity="0"
-              speed="2"
-              color="white" 
-            />
-          :
-          "Ajoute"
-          }
-          </Button>
+      <Box w={"full"}>
+
+        {/* Back */}
+        <Flex
+          as="button" type="button"
+          align="center" gap={1.5}
+          color="gray.400" fontSize="sm" mb={6}
+          _hover={{ color: "blue.500" }} transition="color 0.15s"
+          onClick={() => navigate(-1)}
+        >
+          <LuChevronLeft size={14} />
+          Retour
+        </Flex>
+
+        {/* Page header */}
+        <Box  mb={8}>
+          <Text fontSize="xs" fontWeight={700} color="blue.500"
+            textTransform="uppercase" letterSpacing="widest" mb={1}>
+            Gestion des utilisateurs
+          </Text>
+          <Text fontSize="2xl" fontWeight={900} color="gray.900" letterSpacing="-0.5px">
+            Ajouter un agent
+          </Text>
+          <Text fontSize="sm" color="gray.400" mt={1}>
+            Créez un nouveau compte agent pour votre équipe
+          </Text>
         </Box>
-      </form>
 
-    </div>
+        {/* Error banner */}
+        {emailError && (
+          <Flex align="center" gap={2.5} bg="red.50"
+            border="1px solid" borderColor="red.200"
+            borderRadius="xl" px={4} py={3} mb={5}
+          >
+            <Box color="red.500" flexShrink={0}><LucideAlertCircle size={15} /></Box>
+            <Text fontSize="sm" color="red.600" fontWeight={500}>
+              Cet email est déjà utilisé. Veuillez en choisir un autre.
+            </Text>
+          </Flex>
+        )}
+
+        <form onSubmit={formik.handleSubmit}>
+          <VStack gap={4} w={"full"} align="stretch">
+
+            {/* Identity card */}
+            <Box
+              bg="white" borderRadius="2xl" p={6}
+              border="1px solid" borderColor="gray.100"
+              boxShadow="0 1px 8px rgba(0,0,0,0.05)"
+            >
+              <Flex align="center" gap={2} mb={5}>
+                <Flex w="28px" h="28px" borderRadius="lg" bg="blue.50"
+                  color="blue.500" align="center" justify="center">
+                  <LuUser size={14} />
+                </Flex>
+                <Text fontSize="sm" fontWeight={700} color="gray.700">
+                  Identité
+                </Text>
+              </Flex>
+
+              <VStack gap={4} align="stretch">
+                <Grid templateColumns="1fr 1fr" gap={4}>
+                  <FormField formik={formik} name="firstName" label="Nom"
+                    placeholder="Nom" icon={LuUser} />
+                  <FormField formik={formik} name="lastName" label="Prénom"
+                    placeholder="Prénom" icon={LuUser} />
+                </Grid>
+
+                <Grid templateColumns="1fr 1fr" gap={4}>
+                  <FormField formik={formik} name="email" label="Adresse email"
+                    placeholder="agent@example.com" icon={LuMail}
+                    isInvalid={emailError} />
+                  <FormField formik={formik} name="phone" label="Téléphone"
+                    placeholder="12345678" icon={LuPhone} />
+                </Grid>
+              </VStack>
+            </Box>
+
+            {/* Security card */}
+            <Box
+              bg="white" borderRadius="2xl" p={6}
+              border="1px solid" borderColor="gray.100"
+              boxShadow="0 1px 8px rgba(0,0,0,0.05)"
+            >
+              <Flex align="center" gap={2} mb={5}>
+                <Flex w="28px" h="28px" borderRadius="lg" bg="green.50"
+                  color="green.500" align="center" justify="center">
+                  <LuLock size={14} />
+                </Flex>
+                <Text fontSize="sm" fontWeight={700} color="gray.700">
+                  Sécurité
+                </Text>
+              </Flex>
+
+              <Grid templateColumns="1fr 1fr" gap={4}>
+                <FormField formik={formik} name="password" label="Mot de passe"
+                  type="password" placeholder="••••••••" icon={LuLock} />
+                <FormField formik={formik} name="confirmPassword" label="Confirmation"
+                  type="password" placeholder="••••••••" icon={LuLock} />
+              </Grid>
+            </Box>
+
+            {/* Actions */}
+            <Flex gap={3} justify="flex-end">
+              <Button
+                type="button" variant="outline"
+                borderRadius="xl" px={6}
+                color="gray.500" borderColor="gray.200"
+                _hover={{ bg: "gray.50" }}
+                onClick={() => navigate(-1)}
+              >
+                Annuler
+              </Button>
+              <Button
+                type="submit"
+                colorScheme="blue" borderRadius="xl"
+                px={8} fontWeight={700}
+                loading={formik.isSubmitting}
+                loadingText="Création…"
+              >
+                <Flex align="center" gap={2}>
+                  <LuUserPlus size={14} />
+                  Créer l'agent
+                </Flex>
+              </Button>
+            </Flex>
+
+          </VStack>
+        </form>
+      </Box>
     </>
   )
 }

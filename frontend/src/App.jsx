@@ -20,6 +20,11 @@ import AddHotel from "./dashboard/Partner/Service/Add/AddHotel";
 import ServiceHotel from "./dashboard/Partner/Service/Fetsh/ServiceHotel";
 import AddRoom from "./dashboard/Partner/Service/Add/AddRoom";
 import Booking from "./dashboard/Partner/booking";
+import HotelInfo from "./Pages/ServiceInfo/HotelInfo";
+import SearchHotels from "./Pages/Search/SearchHotels";
+import DatePicker from "./components/ui/DatePicker";
+import RoomSelector from "./components/ui/RoomSelector";
+import BookingClientInfo from "./Pages/Booking/BookingClientInfo";
 
 function App() {
   return (
@@ -27,7 +32,9 @@ function App() {
   <Toaster />
     <Routes>
   <Route path="/test" element={<Test/>} />
+  <Route path="/search" element={<SearchHotels/>} />
   <Route path="/" element={<Home/>} />
+  <Route path="/hotel/:id" element={<HotelInfo/>} />
   <Route path="/partner" element={<DocumentPartner/>} />
   <Route element={<AuthReq />}>
     <Route path="/login" element={<Login/>} />
@@ -47,6 +54,9 @@ function App() {
   </Route>
   </Route>
 
+  <Route element={<RoleReq allow={["client"]} />}>
+    <Route path="/booking" element={<BookingClientInfo />} />
+  </Route>
   <Route element={<RoleReq allow={["admin","agent"]} />}>
     <Route path="/dashboard" element={<HomeDashboard/>}>
       <Route path="users" element={<Users />} />

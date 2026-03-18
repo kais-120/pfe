@@ -55,7 +55,7 @@ function Counter({ label, sublabel, value, onIncrease, onDecrease, min = 0 }) {
   )
 }
 
-export default function RoomSelector() {
+export default function RoomSelector({room}) {
   const [open, setOpen] = useState(false)
   const [rooms, setRooms] = useState([{ adults: 2, children: 0 }])
   const ref = useRef(null)
@@ -69,16 +69,34 @@ export default function RoomSelector() {
   }, [])
 
   function updateRoom(idx, field, val) {
-    setRooms(prev => prev.map((r, i) => i === idx ? { ...r, [field]: val } : r))
-  }
+  setRooms(prev => {
+    const updated = prev.map((r, i) =>
+      i === idx ? { ...r, [field]: val } : r
+    )
 
-  function addRoom() {
-    setRooms(prev => [...prev, { adults: 2, children: 0 }])
-  }
+    room(updated)
 
-  function removeRoom(idx) {
-    setRooms(prev => prev.filter((_, i) => i !== idx))
+    return updated
+  })
+}
+
+function addRoom() {
+  if (rooms.length <= 4) {
+    setRooms(prev => {
+      const updated = [...prev, { adults: 2, children: 0 }]
+      room(updated)
+      return updated
+    })
   }
+}
+
+ function removeRoom(idx) {
+  setRooms(prev => {
+    const updated = prev.filter((_, i) => i !== idx)
+    room(updated)
+    return updated
+  })
+}
 
   const totalRooms    = rooms.length
   const totalAdults   = rooms.reduce((s, r) => s + r.adults, 0)
@@ -113,16 +131,12 @@ export default function RoomSelector() {
           <path d="M4 21v-1a8 8 0 0116 0v1" strokeWidth="1.8" strokeLinecap="round"/>
         </Box>
         <Box flex={1} overflow="hidden">
-          <Text fontSize="9px" fontWeight="bold" color="gray.500" textTransform="uppercase" letterSpacing="wide" lineHeight={1.2}>
-            Chambres
-          </Text>
           <Text fontSize="sm" fontWeight="semibold" color="gray.800" noOfLines={1}>
             {totalRooms} Chambre{totalRooms > 1 ? "s" : ""}, {totalAdults} Adulte{totalAdults > 1 ? "s" : ""}, {totalChildren} Enfant{totalChildren > 1 ? "s" : ""}
           </Text>
         </Box>
       </Box>
 
-      {/* ── Dropdown ── */}
       {open && (
         <Box
           position="absolute"
@@ -181,6 +195,7 @@ export default function RoomSelector() {
           ))}
 
           {/* Add room */}
+          {rooms.length <= 4 &&
           <Box
             as="button"
             onClick={addRoom}
@@ -196,8 +211,8 @@ export default function RoomSelector() {
           >
             + Ajouter une autre chambre
           </Box>
+          }
 
-          {/* Valider button */}
           <Flex justify="flex-end" mt={3} pt={3} borderTop="1px solid" borderColor="gray.100">
             <Box
               as="button"

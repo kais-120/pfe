@@ -1,7 +1,6 @@
 const { body, validationResult } = require("express-validator");
 const { Room, Booking, Hotel, User } = require("../models");
 const HotelBookingDetails = require("../models/HotelBookingDetails");
-const { where } = require("sequelize");
 
 exports.BookingHotel = [
     body("check_in_date").notEmpty().withMessage("check in date is required")
@@ -31,6 +30,7 @@ exports.BookingHotel = [
             for(const r of rooms){
                 const room = await Room.findByPk(r);
                     if(!room){
+                        booking.destroy();
                         return res.status(404).send({message:"room not found"});
                     }
                     const checkIn = new Date(check_in_date);
@@ -103,9 +103,8 @@ exports.GetClientBooking = async (req,res) => {
                                 {
                                     model:Hotel,
                                     as:"hotelRoom",
-                                    where:{partner_id},
                                     required: true,
-                                    attributes: [] 
+                                    attributes: ["name","address"] 
                                 }
                             ]
                         }

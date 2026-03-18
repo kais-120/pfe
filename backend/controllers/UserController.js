@@ -202,7 +202,14 @@ exports.PartnerFile = async (req,res) =>{
 exports.GetPartnerFile = async (req,res) =>{
     try{
         const { id } = req.params;
-        const partnerFiles = await PartnerFile.findByPk(id);
+        const partnerFiles = await PartnerFile.findByPk(id,{
+            include:[
+                {
+                    model:User,
+                    as:"users"
+                }
+            ]
+        });
         if(!partnerFiles){
             return res.status(404).send({message:"documents not found"})
         }
