@@ -15,31 +15,29 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 const validationSchema = Yup.object({
-  name:        Yup.string().required("Le nom de l'hôtel est requis"),
-  description: Yup.string().required("La description est requise"),
-  address:     Yup.string().required("L'adresse est requise"),
-  equipments:  Yup.array().min(1, "Veuillez sélectionner au moins un équipement"),
-  images:      Yup.array()
+  name:Yup.string().required("Le nom de l'hôtel est requis"),
+  description:Yup.string().required("La description est requise"),
+  address:Yup.string().required("L'adresse est requise"),
+  equipments:Yup.array().min(1, "Veuillez sélectionner au moins un équipement"),
+  images:Yup.array()
     .min(1, "Veuillez ajouter au moins une image")
     .max(15, "Maximum 15 images autorisées"),
 });
 
-/* ── Equipment options with icons ───────────────────────────────── */
 const EQUIPMENTS = [
-  { value: "wifi",          label: "Wi-Fi",         Icon: FaWifi        },
-  { value: "piscine",       label: "Piscine",        Icon: FaSwimmingPool},
-  { value: "gym",           label: "Gym",            Icon: FaDumbbell    },
-  { value: "spa",           label: "Spa",            Icon: FaSpa         },
-  { value: "climatisation", label: "Climatisation",  Icon: FaSnowflake   },
-  { value: "restaurant",    label: "Restaurant",     Icon: FaUtensils    },
-  { value: "parking",       label: "Parking",        Icon: FaParking     },
+  { value:"wifi",label:"Wi-Fi",Icon:FaWifi},
+  { value:"piscine",label:"Piscine",Icon:FaSwimmingPool},
+  { value:"gym",label:"Gym",Icon:FaDumbbell},
+  { value:"spa",label:"Spa",Icon:FaSpa},
+  { value:"climatisation", label:"Climatisation",Icon:FaSnowflake},
+  { value:"restaurant",label:"Restaurant",Icon:FaUtensils},
+  { value:"parking",label:"Parking", Icon:FaParking},
 ]
 
 const equipmentsList = createListCollection({
   items: EQUIPMENTS.map(e => ({ label: e.label, value: e.value })),
 })
 
-/* ── Text field wrapper ─────────────────────────────────────────── */
 function FormField({ formik, name, label, icon: Icon, children, hint }) {
   const isInvalid = formik.touched[name] && formik.errors[name]
   return (
@@ -84,7 +82,6 @@ function FormField({ formik, name, label, icon: Icon, children, hint }) {
   )
 }
 
-/* ── Image preview grid ─────────────────────────────────────────── */
 function ImagePreview({ files, onRemove }) {
   if (!files?.length) return null
   return (
@@ -167,7 +164,7 @@ const AddHotel = () => {
   }
 
   return (
-    <Container maxW="720px" py={2}>
+    <Container py={2}>
 
       {/* Back */}
       <Flex as="button" type="button" align="center" gap={1.5}
@@ -219,6 +216,7 @@ const AddHotel = () => {
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   border="none" bg="transparent" px={0} h="42px"
+                  outline={"none"}
                   flex={1} w="full"
                   fontSize="sm" color="gray.800"
                   _focus={{ boxShadow: "none" }}
@@ -232,6 +230,7 @@ const AddHotel = () => {
                   value={formik.values.address}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
+                  outline={"none"}
                   border="none" bg="transparent" px={0} h="42px"
                   flex={1} w="full"
                   fontSize="sm" color="gray.800"
@@ -247,6 +246,7 @@ const AddHotel = () => {
                   value={formik.values.description}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
+                  outline={"none"}
                   border="none" bg="transparent" px={0}
                   flex={1} w="full"
                   minH="120px" fontSize="sm" color="gray.800"

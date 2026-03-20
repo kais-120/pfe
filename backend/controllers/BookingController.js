@@ -58,10 +58,12 @@ exports.GetPartnerBookingHotel = async (req,res) => {
                 {
                     model:HotelBookingDetails,
                     as:"bookingHotelDetails",
+                    required: true,
                     include:[
                         {
                             model:Room,
                             as:"RoomHotelBooking",
+                            required: true,
                             include:[
                                 {
                                     model:Hotel,

@@ -11,7 +11,7 @@ import { LucideCheckCircle, LucideXCircle } from "lucide-react"
 const STATUS_STYLE = {
   "en attente": { colorScheme: "yellow", icon: LuClock,       label: "En attente" },
   "accepté":    { colorScheme: "green",  icon: LucideCheckCircle, label: "Accepté"    },
-  "refusé":     { colorScheme: "red",    icon: LucideXCircle,     label: "Refusé"     },
+  "rejetée":     { colorScheme: "red",    icon: LucideXCircle,     label: "rejetée"     },
 }
 
 const PartnerDocument = () => {
@@ -44,7 +44,7 @@ const PartnerDocument = () => {
 
   const pending  = data.filter(d => d.status === "en attente").length
   const accepted = data.filter(d => d.status === "accepté").length
-  const refused  = data.filter(d => d.status === "refusé").length
+  const refused  = data.filter(d => d.status === "rejetée").length
 
   return (
     <Box>
@@ -66,7 +66,7 @@ const PartnerDocument = () => {
             { label: "Total",       value: data.length, color: "blue"   },
             { label: "En attente",  value: pending,     color: "yellow" },
             { label: "Acceptés",    value: accepted,    color: "green"  },
-            { label: "Refusés",     value: refused,     color: "red"    },
+            { label: "Rejetées",     value: refused,     color: "red"    },
           ].map(({ label, value, color }) => (
             <Flex
               key={label}

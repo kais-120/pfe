@@ -25,6 +25,11 @@ import SearchHotels from "./Pages/Search/SearchHotels";
 import DatePicker from "./components/ui/DatePicker";
 import RoomSelector from "./components/ui/RoomSelector";
 import BookingClientInfo from "./Pages/Booking/BookingClientInfo";
+import Service from "./dashboard/Partner/Service";
+import AddLocation from "./dashboard/Partner/Service/Add/AddLocation";
+import AddVehicle from "./dashboard/Partner/Service/Add/AddVehicle";
+import AddAgency from "./dashboard/Partner/Service/Add/AddAgency";
+import AddOffer from "./dashboard/Partner/Service/Add/AddOffer";
 
 function App() {
   return (
@@ -45,10 +50,16 @@ function App() {
   <Route element={<RoleReq allow={["partner"]} />}>
   <Route element={<PartnerFileReq />}>
     <Route path="/partner/dashboard" element={<HomeDashboard/>}>
-      <Route path="service" element={<ServiceHotel />} />
-      <Route path="service/add" element={<AddHotel/>} />
-      <Route path="bookings" element={<Booking/>} />
+      <Route path="service" element={<Service />} />
+      <Route path="service/hotel/add" element={<AddHotel/>} />
       <Route path="service/hotel/room/add" element={<AddRoom/>} />
+
+      <Route path="service/agency/add" element={<AddAgency/>} />
+      <Route path="service/agency/offer/add" element={<AddOffer />} />
+
+      <Route path="service/location/add" element={<AddLocation />} />
+      <Route path="service/location/vehicle/add" element={<AddVehicle />} />
+      <Route path="bookings" element={<Booking/>} />
 
     </Route>
   </Route>

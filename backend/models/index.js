@@ -5,11 +5,14 @@ const Hotel = require("./Hotel");
 const HotelBookingDetails = require("./HotelBookingDetails");
 const ImageService = require("./ImageServices");
 const Location = require("./Location");
+const Offer = require("./Offer");
 const Otp = require("./Otp");
 const PartnerFile = require("./PartnerFiles");
 const RefuseReason = require("./RefuseReason");
+const Reviews = require("./Reviews");
 const Room = require("./Room");
 const User = require("./User");
+const Vehicle = require("./Vehicle");
 const Voyage = require("./Voyage");
 
 User.hasMany(Otp, {
@@ -64,6 +67,7 @@ Voyage.belongsTo(User, {
     foreignKey: "partner_id",
     as: "voyage"
 })
+
 User.hasMany(PartnerFile, {
     foreignKey:"partner_id",
     as:"partnerInfo"
@@ -73,6 +77,15 @@ PartnerFile.belongsTo(User, {
     as: "users"
 })
 
+User.hasMany(PartnerFile, {
+    foreignKey:"accepted_by",
+    as:"acceptedBy"
+});
+PartnerFile.belongsTo(User, {
+    foreignKey: "accepted_by",
+    as: "responsibleAccepted"
+})
+
 PartnerFile.hasMany(RefuseReason, {
     foreignKey: "file_id",
     as: "RefuseReason"
@@ -80,6 +93,15 @@ PartnerFile.hasMany(RefuseReason, {
 RefuseReason.belongsTo(PartnerFile, {
     foreignKey: "file_id",
     as: "PartnerFileRefuseReason"
+})
+
+User.belongsTo(RefuseReason, {
+    foreignKey: "rejected_by",
+    as: "rejectedBy"
+})
+RefuseReason.belongsTo(User, {
+    foreignKey: "rejected_by",
+    as: "responsibleRejected"
 })
 
 Hotel.hasMany(Room, {
@@ -128,6 +150,67 @@ ImageService.belongsTo(Hotel, {
 
 })
 
+User.hasMany(Reviews,{
+    foreignKey:"client_id",
+    as:"review"
+}),
+Reviews.belongsTo(User,{
+    foreignKey:"client_id",
+    as:"clientReview"
+})
 
+Hotel.hasMany(Reviews,{
+    foreignKey:"service_id",
+    as:"hotelReview"
+}),
+Reviews.belongsTo(Hotel,{
+    foreignKey:"client_id",
+    as:"reviewHotel"
+})
 
-module.exports = { User, Otp,Agence,PartnerFile,Hotel,Compagnie,Voyage,RefuseReason,Room,Booking,HotelBookingDetails,ImageService};
+Vehicle.hasMany(ImageService, {
+  foreignKey: "service_id",
+  as: "imagesVehicle"
+})
+
+ImageService.belongsTo(Vehicle, {
+  foreignKey: "service_id",
+  as: "vehicleImages"
+
+})
+
+Location.hasMany(Vehicle, {
+  foreignKey: "location_id",
+  as: "vehicle"
+})
+
+Vehicle.belongsTo(Location, {
+  foreignKey: "location_id",
+  as: "locationVehicle"
+
+})
+
+Offer.hasMany(ImageService, {
+  foreignKey: "service_id",
+  as: "imagesOffer"
+})
+
+ImageService.belongsTo(Offer, {
+  foreignKey: "service_id",
+  as: "offerImages"
+
+})
+
+Agence.hasMany(Offer, {
+  foreignKey: "location_id",
+  as: "offers"
+})
+
+Offer.belongsTo(Location, {
+  foreignKey: "location_id",
+  as: "agencyOffer"
+})
+
+module.exports = {  User, Otp,Agence,PartnerFile,Hotel,Compagnie,Voyage,
+                    RefuseReason,Room,Booking,HotelBookingDetails,ImageService,
+                    Reviews,Location,Vehicle,Offer};

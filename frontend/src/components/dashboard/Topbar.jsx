@@ -23,8 +23,8 @@ const Topbar = () => {
   }, [navigate]);
 
   const handleLogout = () => {
-    cookie.remove("auth");
-    navigate("/login")
+    cookie.remove("auth")
+    window.location =  "/login"
   }
 
   const initials = user?.name
@@ -88,7 +88,7 @@ const Topbar = () => {
                   {user.name}
                 </Text>
                 <Text fontSize="xs" color="gray.400" lineHeight={1.2} textTransform="capitalize">
-                  {user.role}
+                  {user.role === "partner" ? "partenaire" : "administrateur"}
                 </Text>
               </Box>
 

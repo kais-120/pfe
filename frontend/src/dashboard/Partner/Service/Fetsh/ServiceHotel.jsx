@@ -146,7 +146,7 @@ function RoomCard({ room, onEdit, onDelete }) {
 
 /* ── Review card ────────────────────────────────────────────────── */
 function ReviewCard({ review, index }) {
-  const initials = review.name?.split(" ").map(w => w[0]).join("").slice(0,2).toUpperCase()
+  const initials = review?.clientReview?.name?.split(" ").map(w => w[0]).join("").slice(0,2).toUpperCase()
   return (
     <Box
       bg="white" borderRadius="xl" p={4}
@@ -163,18 +163,18 @@ function ReviewCard({ review, index }) {
           {initials}
         </Flex>
         <Box flex={1}>
-          <Text fontWeight={600} fontSize="sm" color="gray.800">{review.name}</Text>
-          <Stars rating={review.rating} size={11} />
+          <Text fontWeight={600} fontSize="sm" color="gray.800">{review?.clientReview?.name}</Text>
+          <Stars rating={review.rate} size={11} />
         </Box>
         <Badge
-          colorScheme={review.rating >= 4 ? "green" : review.rating >= 3 ? "yellow" : "red"}
+          colorScheme={review.rate >= 4 ? "green" : review.rating >= 3 ? "yellow" : "red"}
           borderRadius="full" px={2} fontSize="xs"
         >
-          {review.rating}/5
+          {review.rate}/5
         </Badge>
       </Flex>
       <Text fontSize="sm" color="gray.600" lineHeight="1.7" fontStyle="italic">
-        "{review.comment}"
+        "{review.review}"
       </Text>
     </Box>
   )
@@ -197,7 +197,6 @@ function EmptyState({ icon, title, subtitle }) {
 }
 
 
-/* ── Main component ─────────────────────────────────────────────── */
 const ServiceHotel = () => {
   const [hotel,    setHotel]    = useState(null)
   const [showMore, setShowMore] = useState(false)
@@ -215,7 +214,6 @@ const ServiceHotel = () => {
     fetchData()
   }, [])
 
-  /* ── No hotel yet ── */
   if (!hotel) {
     return (
       <Container maxW="6xl" py={24}>
@@ -227,7 +225,7 @@ const ServiceHotel = () => {
           <Button
             colorScheme="blue" borderRadius="xl" px={8} size="lg"
             leftIcon={<LuPlus />}
-            onClick={() => navigate("add")}
+            onClick={() => navigate("hotel/add")}
           >
             Ajouter un hôtel
           </Button>
@@ -236,18 +234,18 @@ const ServiceHotel = () => {
     )
   }
 
-  const avgRating = hotel.reviews?.length
-    ? (hotel.reviews.reduce((s, r) => s + r.rating, 0) / hotel.reviews.length).toFixed(1)
+  const avgRating = hotel.hotelReview?.length
+    ? (hotel.hotelReview.reduce((s, r) => s + r.rate, 0) / hotel.hotelReview.length).toFixed(1)
     : null
 
   const minPrice = hotel.rooms?.length
     ? Math.min(...hotel.rooms.map(r => r.price_by_day))
     : null
+    console.log(hotel)
 
   return (
     <Container maxW="6xl" py={8}>
 
-      {/* ── Header ── */}
       <Flex justify="space-between" align="flex-start" mb={8} gap={4} flexWrap="wrap">
         <Box>
           <Text fontSize="xs" fontWeight={700} color="blue.500" textTransform="uppercase"
@@ -277,17 +275,15 @@ const ServiceHotel = () => {
         </Button>
       </Flex>
 
-      {/* ── Quick stats ── */}
       {(hotel.rooms?.length > 0 || minPrice) && (
         <Grid templateColumns={{ base: "1fr 1fr", md: "repeat(4, 1fr)" }} gap={3} mb={8}>
           <StatCard icon={LuBed}      label="Chambres"      value={hotel.rooms?.length ?? 0}       color="blue"   />
           <StatCard icon={LuBanknote} label="Prix min/nuit" value={minPrice ? `${minPrice} TND` : "—"} color="green"  />
           <StatCard icon={FaStar}     label="Note moyenne"  value={avgRating ? `${avgRating}/5` : "—"} color="yellow" />
-          <StatCard icon={LuUsers}    label="Avis clients"  value={hotel.reviews?.length ?? 0}     color="purple" />
+          <StatCard icon={LuUsers}    label="Avis clients"  value={hotel.hotelReview?.length ?? 0}     color="purple" />
         </Grid>
       )}
 
-      {/* ── Image carousel ── */}
       {hotel.images?.length > 0 && (
         <Box mb={10} borderRadius="2xl" overflow="hidden" boxShadow="0 4px 24px rgba(0,0,0,0.1)">
           <Carousel.Root slideCount={hotel.images.length}>
@@ -329,7 +325,6 @@ const ServiceHotel = () => {
               </Carousel.Control>
             </Box>
 
-            {/* Thumbnail indicators */}
             <Flex gap={2} p={3} bg="gray.50" overflowX="auto">
               <Carousel.IndicatorGroup style={{ display: "flex", gap: "8px" }}>
                 {hotel.images.map((item, index) => (
@@ -351,7 +346,6 @@ const ServiceHotel = () => {
         </Box>
       )}
 
-      {/* ── Description ── */}
       <Box
         bg="white" borderRadius="2xl" p={6} mb={8}
         border="1px solid" borderColor="gray.100"
@@ -377,7 +371,6 @@ const ServiceHotel = () => {
         )}
       </Box>
 
-      {/* ── Equipments ── */}
       <Box mb={8}>
         <SectionHeading>Équipements & services</SectionHeading>
         <Grid templateColumns={{ base: "repeat(2,1fr)", sm: "repeat(3,1fr)", md: "repeat(4,1fr)" }} gap={3}>
@@ -443,7 +436,7 @@ const ServiceHotel = () => {
       <Box>
         <SectionHeading>Avis clients</SectionHeading>
 
-        {hotel.reviews?.length > 0 ? (
+        {hotel.hotelReview?.length > 0 ? (
           <>
             {/* Rating summary bar */}
             <Box
@@ -455,12 +448,12 @@ const ServiceHotel = () => {
                 <Box textAlign="center">
                   <Text fontSize="4xl" fontWeight={900} color="gray.800" lineHeight={1}>{avgRating}</Text>
                   <Stars rating={parseFloat(avgRating)} size={14} />
-                  <Text fontSize="xs" color="gray.400" mt={1}>{hotel.reviews.length} avis</Text>
+                  <Text fontSize="xs" color="gray.400" mt={1}>{hotel.hotelReview.length} avis</Text>
                 </Box>
                 <Box flex={1} minW="180px">
                   {[5,4,3,2,1].map(star => {
-                    const count = hotel.reviews.filter(r => r.rating === star).length
-                    const pct   = hotel.reviews.length ? (count / hotel.reviews.length) * 100 : 0
+                    const count = hotel.hotelReview.filter(r => r.rate === star).length
+                    const pct   = hotel.hotelReview.length ? (count / hotel.hotelReview.length) * 100 : 0
                     return (
                       <Flex key={star} align="center" gap={3} mb={1.5}>
                         <Flex align="center" gap={1} w="32px" flexShrink={0}>
@@ -479,7 +472,7 @@ const ServiceHotel = () => {
             </Box>
 
             <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={4}>
-              {hotel.reviews.map((review, i) => (
+              {hotel.hotelReview.map((review, i) => (
                 <ReviewCard key={i} review={review} index={i} />
               ))}
             </Grid>

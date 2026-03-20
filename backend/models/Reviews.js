@@ -11,7 +11,7 @@ const Reviews = sequelize.define("Reviews",{
         type:DataTypes.BIGINT,
         allowNull:false,
         references:{
-            model:"clients",
+            model:"users",
             key:"id"
         },
         onDelete:'CASCADE'

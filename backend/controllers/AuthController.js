@@ -72,6 +72,21 @@ exports.Profile = async (req,res) => {
         if(!user){
             return res.status(404).send({message:"user not found"});
         }
+        if(user.role === "partner"){
+             const user = await User.findByPk(id,
+            { attributes:{
+            exclude:"password"
+            },
+            include:[
+                {
+                    model:PartnerFile,
+                    as:"partnerInfo",
+                    attributes:["sector"]
+                }
+            ]
+        });
+        return res.status(200).send({message:"user found",data:user});
+        }
         return res.status(200).send({message:"user found",data:user});
     }catch{
         return res.status(500).send({message:"server error"})

@@ -1,7 +1,7 @@
 const express = require("express");
 const AuthenticateToken = require("../middlewares/AuthenticateToken");
 const AuthenticateAdmin = require("../middlewares/AuthenticateAdmin");
-const { AddAgent, UpdateFiles, VerifyPartner, Users, PartnerFile, GetUser, GetPartnerFile, RefuseFile, AcceptFile } = require("../controllers/UserController");
+const { AddAgent, UpdateFiles, VerifyPartner, Users, PartnerFile, GetUser, GetPartnerFile, RefuseFile, AcceptFile, HistoryPartnerFiles } = require("../controllers/UserController");
 const AuthenticatePartner = require("../middlewares/AuthenticatePartner");
 const upload = require("../middlewares/Uploads");
 const AuthenticateAgent = require("../middlewares/AuthenticateAgent");
@@ -19,5 +19,6 @@ router.get("/admin/partner/documents",[AuthenticateToken,AuthenticateAdmin,Authe
 router.get("/admin/partner/document/:id",[AuthenticateToken,AuthenticateAdmin,AuthenticateAgent],GetPartnerFile)
 router.put("/admin/partner/document/accept/:id",[AuthenticateToken,AuthenticateAdmin,AuthenticateAgent],AcceptFile)
 router.put("/admin/partner/document/refuse/:id",[AuthenticateToken,AuthenticateAdmin,AuthenticateAgent],RefuseFile)
+router.get("/admin/partner/document/history/:id",[AuthenticateToken,AuthenticateAgent],HistoryPartnerFiles)
 
 module.exports = router;

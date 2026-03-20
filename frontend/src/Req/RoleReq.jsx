@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate, Outlet, useNavigate } from "react-router-dom";
 import Cookies from "universal-cookie"
 import { AxiosToken } from "../Api/Api";
+import LoadingScreen from "../components/LoadingScreen";
 
 const RoleReq = ({allow}) => {
     const [user,setUser] = useState(null);
@@ -29,7 +30,7 @@ const RoleReq = ({allow}) => {
     ) :
     (!user) ? 
         (
-            <p>loading ...</p>
+            <LoadingScreen />
         ) :
         (allow.includes(user?.role)) ? 
             (

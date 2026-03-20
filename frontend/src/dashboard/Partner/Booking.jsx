@@ -324,7 +324,7 @@ export default function Booking() {
     s + (b.bookingHotelDetails?.reduce((ss, d) => ss + (d.number_of_guests_adult ?? 0) + (d.number_of_guests_children ?? 0), 0) ?? 0), 0)
 
   return (
-    <Container maxW="900px" py={8}>
+    <Container py={8}>
 
       {/* Page title */}
       <Box mb={7}>
@@ -368,7 +368,6 @@ export default function Booking() {
           bg="white" borderRadius="2xl"
           border="1px dashed" borderColor="gray.200"
         >
-          <Text fontSize="4xl">📋</Text>
           <Text fontWeight={700} color="gray.700" fontSize="lg">Aucune réservation</Text>
           <Text fontSize="sm" color="gray.400">
             Les réservations de vos clients apparaîtront ici.

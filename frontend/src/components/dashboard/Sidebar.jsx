@@ -1,5 +1,5 @@
 import { Box, Text, VStack, Flex } from "@chakra-ui/react"
-import { Building, Building2, CalendarCheck2, Files, Gauge, User, LogOut } from 'lucide-react';
+import { Building, Building2, CalendarCheck2, Files, Gauge, User, LogOut, Car } from 'lucide-react';
 import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { AxiosToken } from "../../Api/Api";
@@ -11,7 +11,7 @@ const Sidebar = () => {
     const fetchData = async () => {
       try {
         const response = await AxiosToken.get(`/auth/profile`);
-        setUser(response.data.data.role)
+        setUser(response.data.data)
       } catch {
         console.error("err")
       }
@@ -28,11 +28,17 @@ const Sidebar = () => {
 
   const partnerList = [
     { icon: Gauge,          label: "Tableau de bord", link: "/partner/dashboard", end: true  },
-    { icon: Building,       label: "Mon hôtel",       link: "service",            end: false },
+    user?.partnerInfo?.[0]?.sector === "hôtel" ?
+    { icon: Building,       label: "Mon hôtel",       link: "service",            end: false }
+    : user?.partnerInfo?.[0]?.sector === "agence de voyage" ?
+    { icon: Car,       label: "Mon agence",       link: "service",            end: false }
+    : { icon: Car,       label: "Mon location",       link: "service",            end: false }
+    ,
     { icon: CalendarCheck2, label: "Réservations",    link: "bookings",           end: false },
   ]
 
-  const sideBarList = user === "admin" ? adminList : partnerList;
+  const sideBarList = user && user.role === "admin" ? adminList : partnerList;
+  console.log(user)
 
   return (
     <Box
@@ -66,7 +72,7 @@ const Sidebar = () => {
         <Box px={6} pt={5} pb={2}>
           <Text fontSize="9px" fontWeight={700} color="gray.400"
             textTransform="uppercase" letterSpacing="widest">
-            {user === "admin" ? "Administration" : "Espace partenaire"}
+            {user.role === "admin" ? "Administration" : "Espace partenaire"}
           </Text>
         </Box>
       )}

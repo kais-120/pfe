@@ -3,7 +3,8 @@ import { AxiosToken, imageURL } from "../../Api/Api"
 import {
   Box, Button, Dialog, Portal, CloseButton,
   Textarea, Text, Flex, Grid, VStack, Badge,
-  Skeleton, SkeletonText,
+  Skeleton, SkeletonText, Drawer,
+  HStack,
 } from "@chakra-ui/react"
 import { toaster } from "../../components/ui/toaster"
 import { useNavigate, useParams } from "react-router-dom"
@@ -12,8 +13,9 @@ import {
   LuFileText, LuCalendar, LuUser, LuCreditCard,
   LuBanknote, LuBuilding2, LuZoomIn, LuCheck, LuX,
   LuShieldAlert,
+  LuHistory,
 } from "react-icons/lu"
-import { LucideCheckCircle, LucideXCircle } from "lucide-react"
+import { BadgeCheck, BadgeX, LucideCheckCircle, LucideCheckCircle2, LucideXCircle } from "lucide-react"
 
 const STATUS_STYLE = {
   "en attente": { colorScheme: "yellow", Icon: LuClock,       label: "En attente" },
@@ -182,6 +184,9 @@ const PartnerDocumentInfo = () => {
   const [reason,       setReason]       = useState("")
   const [loading,      setLoading]      = useState(true)
   const [actioning,    setActioning]    = useState(false)
+  const [history,      setHistory]      = useState(null)
+  const [historyOpen,  setHistoryOpen]  = useState(false)
+  const [historyLoad,  setHistoryLoad]  = useState(false)
 
   const navigate  = useNavigate()
   const { id }    = useParams()
@@ -223,13 +228,27 @@ const PartnerDocumentInfo = () => {
     }
   }
 
+  const fetchHistory = async () => {
+    try {
+      setHistoryLoad(true)
+      setHistoryOpen(true)
+      const res = await AxiosToken.get(`/user/admin/partner/document/history/${id}`)
+      setHistory(res.data.history)
+    } catch {
+      console.error("Failed to load history")
+    } finally {
+      setHistoryLoad(false)
+    }
+  }
+
+
   if (loading) return <PageSkeleton />
 
   const status      = partnerFiles?.status
   const statusStyle = STATUS_STYLE[status] ?? { colorScheme: "gray", Icon: LuFileText, label: status }
   const StatusIcon  = statusStyle.Icon
   const isPending   = status === "en attente"
-  console.log(partnerFiles)
+  console.log(history)
 
   return (
     <Box maxW="860px" mx="auto">
@@ -246,6 +265,172 @@ const PartnerDocumentInfo = () => {
         Retour aux dossiers
       </Flex>
 
+      {/* History Drawer */}
+      <Drawer.Root open={historyOpen} onOpenChange={(e) => setHistoryOpen(e.open)} placement="end">
+        <Portal>
+          <Drawer.Backdrop />
+          <Drawer.Positioner>
+            <Drawer.Content maxW="420px">
+              <Drawer.Header borderBottom="1px solid" borderColor="gray.100" pb={4}>
+                <Flex align="center" gap={2.5}>
+                  <Flex w="30px" h="30px" borderRadius="lg" bg="blue.50"
+                    color="blue.500" align="center" justify="center" flexShrink={0}>
+                    <LuHistory size={14} />
+                  </Flex>
+                  <Drawer.Title fontSize="md" fontWeight={700} color="gray.900">
+                    Historique du dossier
+                  </Drawer.Title>
+                </Flex>
+                <Drawer.CloseTrigger asChild>
+                  <CloseButton size="sm" position="absolute" top={4} right={4} />
+                </Drawer.CloseTrigger>
+              </Drawer.Header>
+
+              <Drawer.Body px={5} py={5}>
+                {historyLoad ? (
+                  <VStack gap={4} align="stretch">
+                    <Skeleton h="80px" borderRadius="xl" />
+                    <Skeleton h="120px" borderRadius="xl" />
+                    <Skeleton h="80px" borderRadius="xl" />
+                  </VStack>
+                ) : history ? (
+                  <VStack gap={4} align="stretch">
+
+                    {/* Partner info */}
+                    <Box
+                      bg="gray.50" borderRadius="xl" p={4}
+                      border="1px solid" borderColor="gray.100"
+                    >
+                      <Text fontSize="xs" fontWeight={700} color="gray.400"
+                        textTransform="uppercase" letterSpacing="wider" mb={3}>
+                        responsable
+                      </Text>
+                      <Text fontSize="sm" fontWeight={700} color="gray.800">{history.responsibleAccepted?.name || history.RefuseReason[0]?.responsibleRejected?.name}</Text>
+                      <Text fontSize="xs" color="gray.500" mt={0.5}>{history.responsibleAccepted?.email || history.RefuseReason[0]?.responsibleRejected?.email}</Text>
+                      <Text fontSize="xs" color="gray.500">{history.responsibleAccepted?.phone || history.RefuseReason[0]?.responsibleRejected?.phone}</Text>
+                    </Box>
+
+                    {/* ── Timeline ── */}
+                    <Box>
+                      <Text fontSize="xs" fontWeight={700} color="gray.400"
+                        textTransform="uppercase" letterSpacing="wider" mb={3}>
+                        Chronologie
+                      </Text>
+
+                      <VStack gap={0} align="stretch" position="relative">
+
+                        {/* Vertical line */}
+                        <Box
+                          position="absolute" left="11px" top="24px"
+                          w="2px" bg="gray.100"
+                          h={`calc(100% - 24px)`}
+                          zIndex={0}
+                        />
+
+                        {/* Submission event */}
+                        <Flex gap={3} pb={4} position="relative" zIndex={1}>
+                          <Flex
+                            w="24px" h="24px" borderRadius="full" flexShrink={0}
+                            bg="blue.100" color="blue.500"
+                            align="center" justify="center"
+                          >
+                            <LuFileText size={11} />
+                          </Flex>
+                          <Box pt={0.5}>
+                            <Text fontSize="sm" fontWeight={600} color="gray.800">
+                              Dossier soumis
+                            </Text>
+                          </Box>
+                        </Flex>
+
+                        {/* Each refusal as a timeline event */}
+                        {history.RefuseReason?.map((r, i) => (
+                          <Flex key={r.id} gap={3} pb={4} position="relative" zIndex={1}>
+                            <Flex
+                              w="24px" h="24px" borderRadius="full" flexShrink={0}
+                              bg="red.100" color="red.500"
+                              align="center" justify="center"
+                            >
+                              <LucideXCircle size={11} />
+                            </Flex>
+                            <Box
+                              pt={0.5} flex={1}
+                              bg="white" borderRadius="xl" p={3} mt={-0.5}
+                              border="1px solid" borderColor="red.100"
+                              boxShadow="0 1px 4px rgba(0,0,0,0.04)"
+                            >
+                              <Flex justify="space-between" align="center" mb={1.5}>
+                                <Text fontSize="xs" fontWeight={700} color="red.500">
+                                  Refus #{i + 1}
+                                </Text>
+                                <Text fontSize="xs" color="gray.400">
+                                  {new Date(r.rejected_at).toLocaleDateString("fr-FR", {
+                                    day: "numeric", month: "short",
+                                    hour: "2-digit", minute: "2-digit"
+                                  })}
+                                </Text>
+                              </Flex>
+                              <Text fontSize="sm" color="gray.700" lineHeight="1.7"
+                                whiteSpace="pre-line">
+                                {r.message}
+                              </Text>
+                            </Box>
+                          </Flex>
+                        ))}
+
+                        {/* Final outcome event */}
+                        <Flex gap={3} position="relative" zIndex={1}>
+                          <Flex
+                            w="24px" h="24px" borderRadius="full" flexShrink={0}
+                            bg={history.status === "accepté" ? "green.100" : "red.100"}
+                            color={history.status === "accepté" ? "green.500" : "red.500"}
+                            align="center" justify="center"
+                          >
+                            {history.status === "accepté"
+                              ? <LucideCheckCircle2 size={11} />
+                              : <LucideXCircle size={11} />
+                            }
+                          </Flex>
+                          <Box
+                            pt={0.5} flex={1}
+                            bg={history.status === "accepté" ? "green.50" : "red.50"}
+                            borderRadius="xl" p={3} mt={-0.5}
+                            border="1px solid"
+                            borderColor={history.status === "accepté" ? "green.200" : "red.200"}
+                          >
+                            <Text fontSize="xs" fontWeight={700}
+                              color={history.status === "accepté" ? "green.700" : "red.700"}
+                              textTransform="capitalize"
+                            >
+                              {history.status === "accepté"
+                                ?<HStack><BadgeCheck /><Text> Dossier approuvé</Text></HStack>
+                                :<HStack><BadgeX /><Text> Dossier refusé définitivement</Text></HStack>
+                              }
+                            </Text>
+                            {history.status === "accepté" && (
+                              <Text fontSize="xs" color="green.600" mt={0.5}>
+                                Le compte partenaire a été activé avec succès.
+                              </Text>
+                            )}
+                            {history.status !== "accepté" && history.RefuseReason?.length > 0 && (
+                              <Text fontSize="xs" color="red.500" mt={0.5}>
+                                Après {history.RefuseReason.length} refus.
+                              </Text>
+                            )}
+                          </Box>
+                        </Flex>
+
+                      </VStack>
+                    </Box>
+
+                  </VStack>
+                ) : null}
+              </Drawer.Body>
+            </Drawer.Content>
+          </Drawer.Positioner>
+        </Portal>
+      </Drawer.Root>
+
       <Flex justify="space-between" align="flex-start" mb={7} gap={4} flexWrap="wrap">
         <Box>
           <Text fontSize="xs" fontWeight={700} color="blue.500"
@@ -259,16 +444,30 @@ const PartnerDocumentInfo = () => {
             Partenaire : <Text as="span" fontWeight={600} color="gray.600">{partnerFiles?.users?.name}</Text>
           </Text>
         </Box>
-        <Badge
-          colorScheme={statusStyle.colorScheme}
-          borderRadius="full" px={3} py={1.5}
-          fontSize="sm" fontWeight={700}
-        >
-          <Flex align="center" gap={1.5}>
-            <StatusIcon size={13} />
-            {statusStyle.label}
-          </Flex>
-        </Badge>
+        <Flex align="center" gap={3}>
+          <Button
+            variant="outline" borderRadius="xl" size="sm"
+            borderColor="gray.200" color="gray.600"
+            fontWeight={600} px={4}
+            _hover={{ bg: "gray.50", borderColor: "blue.300", color: "blue.500" }}
+            onClick={fetchHistory}
+          >
+            <Flex align="center" gap={2}>
+              <LuHistory size={13} />
+              Historique
+            </Flex>
+          </Button>
+          <Badge
+            colorScheme={statusStyle.colorScheme}
+            borderRadius="full" px={3} py={1.5}
+            fontSize="sm" fontWeight={700}
+          >
+            <Flex align="center" gap={1.5}>
+              <StatusIcon size={13} />
+              {statusStyle.label}
+            </Flex>
+          </Badge>
+        </Flex>
       </Flex>
 
       <VStack gap={4} align="stretch">

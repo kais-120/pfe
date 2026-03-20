@@ -196,6 +196,7 @@ exports.PartnerFile = async (req,res) =>{
         return res.send({message:"list of documents",partnerFiles})
 
     }catch(err){
+        console.log(err)
         return res.status(500).send({message:"error server"})
     }
 }
@@ -258,8 +259,36 @@ exports.RefuseFile = [
             return res.send({message:"partner file updated"})
 
         }catch(err){
-            console.log(err)
             return res.status(500).send({message:"error server"})
         }
 }
 ]
+exports.HistoryPartnerFiles = async (req,res) => {
+    try{
+        const {id} = req.params;
+        const partnerFiles = await PartnerFile.findByPk(id,{
+            attributes:["status"],
+            include:[
+                {
+                    model:User,
+                    as:"responsibleAccepted",
+                    attributes:["name","email","phone"]
+                },
+                {
+                    model:RefuseReason,
+                    as:"RefuseReason",
+                    include:[
+                        {
+                            model:User,
+                            as:"responsibleRejected",
+                            attributes:["name","email","phone"]                          
+                        }
+                    ]
+                }
+            ]
+        });
+        return res.send({message:"partner file found",history:partnerFiles})
+    }catch{
+        return res.status(500).send({message:"error server"})
+    }
+}

@@ -7,53 +7,18 @@ const Location = sequelize.define("locations",{
         autoIncrement:true,
         primaryKey:true
     },
-    price:{
-        type:DataTypes.FLOAT,
-        allowNull:false,
-    },
     name:{
         type:DataTypes.STRING(100),
         allowNull:false,
     },
-    detail:{
-        type:DataTypes.STRING(255),
+    address:{
+        type:DataTypes.STRING(100),
         allowNull:false,
     },
     status:{
         type:DataTypes.ENUM("En attente","refuse","accept"),
         allowNull:false,
-    },
-    date_depart:{
-         type:DataTypes.DATE,
-        allowNull:false,
-    },
-    date_arrival:{
-         type:DataTypes.DATE,
-        allowNull:false,
-    },
-    time_depart:{
-         type:DataTypes.TIME,
-        allowNull:false,
-    },
-    time_arrival:{
-         type:DataTypes.TIME,
-        allowNull:false,
-    },
-    place_depart:{
-         type:DataTypes.INTEGER,
-        allowNull:false,
-    },
-    place_arrival:{
-         type:DataTypes.INTEGER,
-        allowNull:false,
-    },
-     type_voiture:{
-         type:DataTypes.STRING(40),
-        allowNull:false,
-    },
-     matricule:{
-        type:DataTypes.STRING(40),
-        allowNull:false,
+        defaultValue:"accept"
     },
     partner_id:{
         type:DataTypes.BIGINT,

@@ -1,68 +1,99 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../configs/db");
 
-const Agence = sequelize.define("agences",{
-    id:{
-        type:DataTypes.BIGINT,
-        autoIncrement:true,
-        primaryKey:true
+const Agence = sequelize.define(
+  "Agence",
+  {
+    id: {
+      type: DataTypes.BIGINT,
+      autoIncrement: true,
+      primaryKey: true,
     },
-    price:{
-        type:DataTypes.DOUBLE,
-        allowNull:false,
+
+    name: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
     },
-    name:{
-        type:DataTypes.STRING(100),
-        allowNull:false,
+
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: false,
     },
-    detail:{
-        type:DataTypes.STRING(255),
-        allowNull:false,
+
+    address: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
     },
-    status:{
-        type:DataTypes.ENUM("pending","refuse","accept"),
-        allowNull:false,
-        defaultValue:"pending"
+
+    phone: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
     },
-    date_depart:{
-         type:DataTypes.DATEONLY,
-        allowNull:false,
+
+    email: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+      validate: {
+        isEmail: true,
+      },
     },
-    date_arrival:{
-         type:DataTypes.DATEONLY,
-        allowNull:false,
+
+    website: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      validate: {
+        isUrl: true,
+      },
     },
-    time_depart:{
-         type:DataTypes.TIME,
-        allowNull:false,
+
+    facebook: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      validate: {
+        isUrl: true,
+      },
     },
-    time_arrival:{
-         type:DataTypes.TIME,
-        allowNull:false,
+
+    instagram: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
     },
-    place_depart:{
-         type:DataTypes.STRING(50),
-        allowNull:false,
+
+    twitter: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
     },
-    place_arrival:{
-         type:DataTypes.STRING(50),
-        allowNull:false,
+
+    logo: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
-    partner_id:{
-        type:DataTypes.BIGINT,
-        allowNull:false,
-        references:{
-            model:"users",
-            key:"id"
-        },
-        onDelete:'CASCADE',
+
+    status: {
+      type: DataTypes.ENUM("pending", "refuse", "accept"),
+      defaultValue: "pending",
     },
-    deleted_at:{
-        type:DataTypes.DATE,
-        allowNull:true
-    }
-    
-},{
-        tableName:"agences"
-});
+
+    partner_id: {
+      type: DataTypes.BIGINT,
+      allowNull: false,
+      references: {
+        model: "users",
+        key: "id",
+      },
+      onDelete: "CASCADE",
+    },
+
+    deleted_at: {
+      type: DataTypes.DATE,
+    },
+  },
+  {
+    tableName: "agences",
+    timestamps: true,
+    paranoid: true,
+    deletedAt: "deleted_at",
+  }
+);
+
 module.exports = Agence;

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { AxiosToken } from "../Api/Api";
 import { Navigate, Outlet, useNavigate } from "react-router-dom";
 import Cookies from "universal-cookie";
+import LoadingScreen from "../components/LoadingScreen";
 
 const PartnerFileReq = () => {
   const [status,setStatus] = useState("");
@@ -21,10 +22,9 @@ const PartnerFileReq = () => {
     verifiedPartner();
 
   },[])
-  console.log("first")
   return (
     !status ? (
-       <p>loading ...</p>
+       <LoadingScreen />
       ) : (
         (status === 200) ? (
           <Outlet />
