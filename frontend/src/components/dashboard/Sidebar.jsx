@@ -1,12 +1,14 @@
 import { Box, Text, VStack, Flex } from "@chakra-ui/react"
-import { Building, Building2, CalendarCheck2, Files, Gauge, User, LogOut, Car } from 'lucide-react';
+import { Building, Building2, CalendarCheck2, Files, Gauge, User, LogOut, Car, Plane, TicketsPlane, Bus, ScanQrCode } from 'lucide-react';
 import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
-import { AxiosToken } from "../../Api/Api";
+import { AxiosToken, socketBaseURL } from "../../Api/Api";
+import logo from "../../assets/image.png"
+import { LuScanLine } from "react-icons/lu";
 
 const Sidebar = () => {
   const [user, setUser] = useState(null);
-
+ 
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -20,25 +22,26 @@ const Sidebar = () => {
   }, [])
 
   const adminList = [
-    { icon: Gauge,     label: "Tableau de bord",       link: "",                 end: true  },
-    { icon: User,      label: "Utilisateurs",           link: "users",            end: false },
-    { icon: Files,     label: "Documents partenaires",  link: "document/partner", end: false },
-    { icon: Building2, label: "Services",               link: "service",          end: false },
+    { icon: Gauge,label: "Tableau de bord",link: "",end: true  },
+    { icon: User,label: "Utilisateurs",link: "users",end: false },
+    { icon: Files,label: "Documents partenaires",link: "document/partner",end: false },
+    { icon: Building2,label: "Services",link: "service",end: false },
   ]
+  const partnerSector = user?.partnerInfo?.[0]?.sector;
+  const partnerLabel = partnerSector === "hôtel" ? "Mon hôtel" : partnerSector === "agence de voyage" ? "Mon agence"
+  : partnerSector === "compagnies aériennes" ? "Mon compagnies" : partnerSector === "voyages circuits" ? "Mon circuits" : "Mon location";
+
+  const partnerIcon = partnerSector === "hôtel" ? Building : partnerSector === "agence de voyage" ? TicketsPlane
+  : partnerSector === "compagnies aériennes" ? Plane : (partnerSector === "voyages circuits" ? Bus :  Car)  ;
 
   const partnerList = [
-    { icon: Gauge,          label: "Tableau de bord", link: "/partner/dashboard", end: true  },
-    user?.partnerInfo?.[0]?.sector === "hôtel" ?
-    { icon: Building,       label: "Mon hôtel",       link: "service",            end: false }
-    : user?.partnerInfo?.[0]?.sector === "agence de voyage" ?
-    { icon: Car,       label: "Mon agence",       link: "service",            end: false }
-    : { icon: Car,       label: "Mon location",       link: "service",            end: false }
-    ,
-    { icon: CalendarCheck2, label: "Réservations",    link: "bookings",           end: false },
+    { icon: Gauge,label: "Tableau de bord", link: "/partner/dashboard", end: true  },
+    { icon: partnerIcon, label: partnerLabel,link: "service",end: false },
+    { icon: LuScanLine, label: "Validation",link: "qr-scanner",end: false },
+    { icon: CalendarCheck2, label: "Réservations",link: "bookings",end: false },
   ]
 
   const sideBarList = user && user.role === "admin" ? adminList : partnerList;
-  console.log(user)
 
   return (
     <Box
@@ -54,17 +57,8 @@ const Sidebar = () => {
       flexShrink={0}
     >
       {/* Logo */}
-      <Flex align="center" gap={2.5} px={6} py={5} borderBottom="1px solid" borderColor="gray.100">
-        <Flex
-          w="32px" h="32px" borderRadius="lg"
-          bg="blue.600" align="center" justify="center"
-          flexShrink={0}
-        >
-          <Building size={16} color="white" strokeWidth={2} />
-        </Flex>
-        <Text fontSize="lg" fontWeight={800} color="gray.900" letterSpacing="-0.3px">
-          H-Care
-        </Text>
+      <Flex justify={"center"} align="center" gap={2.5} px={6} py={5} borderBottom="1px solid" borderColor="gray.100">
+      <img src={logo} />
       </Flex>
 
       {/* Role label */}

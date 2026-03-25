@@ -12,14 +12,13 @@ import {
 } from "react-icons/lu"
 import { FaHotel } from "react-icons/fa"
 import { LucideAlertCircle } from "lucide-react"
-import Logo from "../assets/Logo"
+import logo from "../assets/image.png"
 
 const validationSchema = yup.object().shape({
   email:    yup.string().email("Email invalide").required("L'email est requis"),
   password: yup.string().required("Le mot de passe est requis"),
 })
 
-/* ── Styled input ───────────────────────────────────────────────── */
 function FormField({ formik, name, label, type = "text", placeholder, icon: Icon, isInvalid }) {
   const invalid = isInvalid || (formik.touched[name] && !!formik.errors[name])
   return (
@@ -124,7 +123,7 @@ const Login = () => {
           <Box position="relative" zIndex={1}>
             {/* Logo */}
             <Flex justify={"center"} align="center" gap={2.5} mb={16}>
-              <Logo width="80px" />
+              <img  src={logo} alt="logo" />
             </Flex>
 
             <Text fontSize="3xl" fontWeight={900} color="white"
@@ -219,7 +218,7 @@ const Login = () => {
                   />
 
                   <Flex justify="flex-end">
-                    <Text fontSize="xs" color="blue.500" cursor="pointer" fontWeight={500}
+                    <Text onClick={()=>navigate("/forgot-password")} fontSize="xs" color="blue.500" cursor="pointer" fontWeight={500}
                       _hover={{ textDecoration: "underline" }}>
                       Mot de passe oublié ?
                     </Text>

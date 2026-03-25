@@ -34,7 +34,7 @@ const PartnerDocument = () => {
     }
     getDocs()
   }, [])
-
+console.log(data)
   const filtered = data.filter(doc =>
     doc.cin?.toLowerCase().includes(search.toLowerCase()) ||
     doc.users?.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -63,10 +63,10 @@ const PartnerDocument = () => {
       {!loading && data.length > 0 && (
         <Flex gap={3} mb={5} flexWrap="wrap">
           {[
-            { label: "Total",       value: data.length, color: "blue"   },
-            { label: "En attente",  value: pending,     color: "yellow" },
-            { label: "Acceptés",    value: accepted,    color: "green"  },
-            { label: "Rejetées",     value: refused,     color: "red"    },
+            { label:"Total",value: data.length,color: "blue"   },
+            { label:"En attente",value: pending,color: "yellow" },
+            { label:"Acceptés",value: accepted,color: "green"  },
+            { label:"Rejetées",value: refused,color: "red"    },
           ].map(({ label, value, color }) => (
             <Flex
               key={label}
@@ -132,7 +132,7 @@ const PartnerDocument = () => {
           <Table.Root size="sm">
             <Table.Header>
               <Table.Row bg="gray.50">
-                {["#", "CIN", "Partenaire", "Email", "Statut", "Action"].map((h, i) => (
+                {["#", "CIN", "Partenaire", "Email", "Statut", "Secteur d'activité" ,"Action"].map((h, i) => (
                   <Table.ColumnHeader
                     key={i} px={5} py={3}
                     fontSize="xs" fontWeight={700}
@@ -223,6 +223,10 @@ const PartnerDocument = () => {
                             {s.label}
                           </Flex>
                         </Badge>
+                      </Table.Cell>
+
+                       <Table.Cell px={5} py={3.5}>
+                        <Text textTransform={"capitalize"} fontSize="sm" color="gray.500">{doc.sector}</Text>
                       </Table.Cell>
 
                       <Table.Cell px={5} py={3.5} textAlign="right">

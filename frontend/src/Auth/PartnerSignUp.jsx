@@ -16,7 +16,7 @@ import {
   FaPlane, FaCar, FaHotel, FaGlobe, FaRoute,
 } from "react-icons/fa"
 import { LucideAlertCircle } from "lucide-react"
-import Logo from "../assets/Logo"
+import logo from "../assets/image.png"
 
 const validationSchema = yup.object().shape({
   name:            yup.string().min(3, "Minimum 3 caractères").required("Le nom est requis"),
@@ -144,7 +144,7 @@ const PartnerSignUp = () => {
           <Box position="relative" zIndex={1}>
             {/* Logo */}
             <Flex justify={"center"} align="center" gap={2.5} mb={16}>
-                <Logo width="80px" />
+                <img src={logo} alt="logo" />
             </Flex>
 
             <Text fontSize="3xl" fontWeight={900} color="white"

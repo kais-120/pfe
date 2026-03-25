@@ -1,11 +1,15 @@
 const { body, validationResult } = require("express-validator");
 const bcrypt = require("bcryptjs");
-const { User, PartnerFile } = require("../models");
+const { User, PartnerFile, Otp } = require("../models");
 const fs = require("fs");
 const path = require("path");
-const { partnerMail } = require("../util/sendEmail");
+const { partnerMail, otpSend, forgetPassword, EmailChange } = require("../util/sendEmail");
 const RefuseReason = require("../models/RefuseReason");
 const { Op } = require("sequelize");
+const Notification = require("../models/Notification");
+const { getIO } = require("../initSocket");
+const { ForgotPasswordEmail, EmailChangeOtp } = require("./OtpController");
+
 
 exports.AddAgent = [
     body("firstName").notEmpty().withMessage("first name is required"),
@@ -58,6 +62,7 @@ exports.UpdateFiles = [
             return res.status(422).json({ errors: errors.array().map(err => err.msg) });
         }
         try{
+        const io = getIO()
         const partner_id = req.userId;
         const {rip,cin,matricule_fiscale} = req.body;
         const existPartner = await PartnerFile.findOne({where :{partner_id}});
@@ -117,12 +122,17 @@ exports.UpdateFiles = [
             fs.unlinkSync(path.join("uploads/partner_files",existPartner.register_commerce))
             fs.unlinkSync(path.join("uploads/partner_files",existPartner.autorisation_ONTT))
             }
+            const n = await Notification.create({title:"partnaire document",message:"partnaire a mise a jour un document",type:"document"});
+            io.to("admin").emit("newNotification",n)
             await existPartner.update(data)
         }
         else{
-            await PartnerFile.create(data)
+            await PartnerFile.create(data);
+            await Notification.create({title:"partnaire document",message:"partnaire a somite un document",type:"document"});
+            io.to("admin").emit("newNotification")
+
         }
-        return res.send({message:"file updated"})
+        return res.send({message:"file updated1"})
     }catch(err){
         console.log(err)
         return res.status(500).send({message:"error server"})
@@ -292,3 +302,124 @@ exports.HistoryPartnerFiles = async (req,res) => {
         return res.status(500).send({message:"error server"})
     }
 }
+
+exports.UpdateInformation = [
+    body("name").notEmpty().withMessage("name is required"),
+    body("phone").notEmpty().withMessage("phone is required")
+    .isNumeric().withMessage("phone should be numeric")
+    .isLength({min:8,max:8}).withMessage("phone length should be 8 number")
+    ,async (req,res) => {
+        const errors = validationResult(req);
+            if(!errors.isEmpty()){
+                return res.status(422).json({ errors: errors.array().map(err => err.msg) });
+            }
+            try{
+                const {name,phone} = req.body;
+                const user_id = req.userId;
+                const user = await User.findByPk(user_id);
+                const existPhone = await User.findOne({where: {phone,
+                    id:{
+                        [Op.ne]:user_id
+                    }
+                }});
+                if(existPhone){
+                    return res.status(422).send({message : "phone number exist"});
+                }
+                await user.update({name,phone});
+                return res.send({message:"user info is update"});
+
+            }catch{
+                return res.status(500).send({message:"error server"})
+            }
+    }
+]
+exports.UpdateEmail = [
+    body("email").notEmpty().withMessage("email is required"),
+    body("code").notEmpty().withMessage("code is required")
+    ,async (req,res) => {
+        const errors = validationResult(req);
+            if(!errors.isEmpty()){
+                return res.status(422).json({ errors: errors.array().map(err => err.msg) });
+            }
+            try{
+                const {email,code} = req.body;
+                const user_id = req.userId;
+                const date = new Date();
+                const user = await User.findByPk(user_id);
+                const otpCode = await Otp.findOne({where: {user_id,type:"email"}
+                    ,order:[["create_at","DESC"]]});
+                console.log(otpCode )
+                 if(!otpCode){
+                    return res.status(404).send({message:"user not found"});
+                    }
+                    if(date > otpCode.expire_at){
+                        return res.status(410).send({message:"otp gone"});
+                    }
+                    else if(code !== otpCode.code){
+                        return res.status(403).send({message:"otp is wrong"});
+                    }
+                await user.update({email});
+                return res.send({message:"email is update"});
+
+            }catch(err){
+                console.log(err)
+                return res.status(500).send({message:"error server"})
+            }
+    }
+]
+exports.SendEmailOtp =[ 
+    body("newEmail").notEmpty().withMessage("new email is required")
+    ,async (req,res) => {
+        const errors = validationResult(req);
+            if(!errors.isEmpty()){
+                return res.status(422).json({ errors: errors.array().map(err => err.msg) });
+            }     
+            try{           
+            const {newEmail} = req.body;
+            const user_id = req.userId;
+            const user = await User.findByPk(user_id);
+            const existEmail = await User.findOne({where: {email:newEmail,
+                id:{
+                    [Op.ne]:user_id
+                }
+            }});
+            if(existEmail){
+                return res.status(422).send({message : "email exist"});
+            }
+        const otp = await EmailChangeOtp(user_id);
+        EmailChange(newEmail,user.name,otp.toString());
+        return res.send({message : "email send"});
+    }catch(err){
+        return res.status(500).send({message:"error server"})
+    }
+}
+]
+
+exports.UpdatePassword =[
+    body("currentPassword").notEmpty().withMessage("cureent password is required"),
+    body("newPassword").notEmpty().withMessage("new password is required")
+    ,async (req,res) => {
+         const errors = validationResult(req);
+            if(!errors.isEmpty()){
+                return res.status(422).json({ errors: errors.array().map(err => err.msg) });
+            }
+            try{           
+            const {currentPassword,newPassword} = req.body;
+            const user_id = req.userId;
+            const user = await User.findByPk(user_id);
+            const verifyCurrentPassword = await bcrypt.compare(currentPassword,user.password);
+            if(!verifyCurrentPassword){
+                return res.status(401).send({message : "the old password is wrong"});
+            }
+            const verifyNewPassword = await bcrypt.compare(newPassword,user.password);
+            if(verifyNewPassword){
+                return res.status(422).send({message : "the new password is the same as the old"});
+            }
+            const password = await bcrypt.hash(newPassword,10)
+            await user.update({password})
+        return res.send({message : "password changed"});
+    }catch(err){
+        return res.status(500).send({message:"error server"})
+    }    
+
+}]

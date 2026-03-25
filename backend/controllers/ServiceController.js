@@ -1,29 +1,51 @@
 const { body, validationResult } = require("express-validator");
-const { Hotel, User, Booking, HotelBookingDetails, Reviews, Agence, Offer } = require("../models");
+const { Hotel, User, Booking, HotelBookingDetails, Reviews, Agence, Offer, Compagnie, Voyage, Circuit } = require("../models");
 const Room = require("../models/Room");
 const ImageService = require("../models/ImageServices");
-const { Op, where } = require("sequelize");
 const Location = require("../models/Location");
 const Vehicle = require("../models/Vehicle");
+const Flight = require("../models/Flight");
+const FlightClasses = require("../models/FlightClasses");
 
 exports.GetPublicHotel = async (req,res) => {
         try{
             const { id } = req.params
-           const hotel = await Hotel.findByPk(id,{
+           const hotelData = await Hotel.findByPk(id,{
             include:[
                 {
-                    model:ImageService,
-                    where: { type: "hotel" },
-                    as:"imagesHotel"
-                },{
                         model:Room,
                         as:"rooms"
+                },
+                {
+                  model:Reviews,
+                  as:"hotelReview",
+                  include:[
+                    {
+                      model:User,
+                      as:"clientReview",
+                      attributes:["name"]
+                    }
+                  ]
                 }
             ]
         });
-        if(!hotel){
+        if(!hotelData){
             return res.status(404).json({message:"hotel not found"});
         }
+
+         const images = await ImageService.findAll({
+          where: {
+            type: "hotel",
+          },
+        });
+          const hotelJSON = hotelData.toJSON();
+          const imagesHotel = images.filter(
+        (img) => String(img.service_id) === String(hotelJSON.id)
+      );
+          const hotel = {
+      ...hotelJSON,
+      imagesHotel,
+    };
             return res.json({message:"hotel found",hotel});
         }catch(err){
             console.log(err)
@@ -133,20 +155,34 @@ exports.GetSearchHotels = [
 
 exports.GetAllHotel = async (req,res) => {
         try{
-           const hotel = await Hotel.findAll({
+           const hotelData = await Hotel.findAll({
             limit: 9,
             include:[
                 {
-                    model:ImageService,
-                    where: { type: "hotel" },
-                    as:"imagesHotel",
-                    required:false
-                },{
                     model:Room,
                     as:"rooms"
                 }
             ]
         });
+        const images = await ImageService.findAll({
+              where: {
+                type: "hotel",
+              },
+            });
+
+            const hotel = hotelData.map((hotel) => {
+              const hotelJSON = hotel.toJSON();
+
+              const imagesHotel = images.filter(
+                (img) => String(img.service_id) === String(hotelJSON.id)
+              );
+
+              return {
+                ...hotelJSON,
+                imagesHotel,
+              };
+            });
+        
             return res.json({message:"hotel found",hotel});
         }catch(err){
             console.log(err)
@@ -289,33 +325,93 @@ exports.AddLocation = [
 exports.GetLocation = async (req,res) => {
         try{
             const partner_id = req.userId;
-            const location = await Location.findOne({where: {partner_id},
+            const locationData = await Location.findOne({where: {partner_id},
                 include:[
                     {
                         model:Vehicle,
                         as:"vehicle",
                         required:false,
-                        include:[
-                            {
-                                model:ImageService,
-                                as:"imagesVehicle",
-                                required:false,
-                                where:{type:"vehicle"}
-                            }
-                        ]
                     },
                 ]
             });
-            if(!location){
-                return res.status(404).json({message:"location not found"});
+            if(!locationData){
+                return res.status(404).send({message:"location not found"});
             }
+          const images = await ImageService.findAll({
+          where: {
+            type: "vehicle",
+          },
+        });
+
+    const locationJSON = locationData.toJSON();
+    const vehiclesWithImages = locationJSON.vehicle.map((vehicle) => {
+      const imagesVehicle = images.filter(
+        (img) => String(img.service_id) === String(vehicle.id)
+      );
+
+      return {
+        ...vehicle,
+        imagesVehicle,
+      };
+    });
+    const location = {
+      ...locationJSON,
+      vehicle: vehiclesWithImages,
+    };
             return res.json({message:"location found",location});
         }catch(err){
             console.log(err)
             return res.status(500).send({message:"error server"})
         }
 
-    }
+}
+
+exports.GetPublicLocation = async (req, res) => {
+  try {
+    const locationData = await Location.findAll({
+      limit: 6,
+      include: [
+        {
+          model: Vehicle,
+          as: "vehicles",
+          limit: 1
+        }
+      ]
+    });
+
+    const images = await ImageService.findAll({
+      where: {
+        type: "vehicle",
+      },
+    });
+
+    const result = locationData.map((location) => {
+      const loc = location.toJSON();
+
+      const vehiclesWithImages = (loc.vehicles || []).map((vehicle) => {
+        const imagesVehicle = images.filter(
+          (img) => String(img.service_id) === String(vehicle.id)
+        );
+
+        return {
+          ...vehicle,
+          images: imagesVehicle,
+        };
+      });
+
+      return {
+        ...loc,
+        vehicles: vehiclesWithImages,
+      };
+    });
+
+    return res.send({message: "list of location",data: result,});
+
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send({ message: "server error" });
+  }
+};
 
 exports.AddVehicle = [
   body("brand").notEmpty().withMessage("brand is required"),
@@ -360,40 +456,8 @@ exports.AddVehicle = [
         return res.status(404).json({ message: "location not found" });
       }
 
-      const {
-        brand,
-        model,
-        year,
-        category,
-        fuel,
-        seats,
-        price_per_day,
-        min_age,
-        license_years,
-        deposit,
-        caution_standard,
-        description,
-        features,
-      } = req.body;
-
-      
-
-    const vehicle = await Vehicle.create({
-        location_id: location.id,
-        brand,
-        model,
-        year,
-        category,
-        fuel,
-        seats,
-        price_per_day,
-        min_age,
-        license_years,
-        deposit,
-        caution_standard,
-        description,
-        features,
-      });
+      const {brand,model,year,category,fuel,seats,price_per_day,min_age,license_years,deposit,caution_standard,description, features} = req.body;
+    const vehicle = await Vehicle.create({location_id: location.id,brand,model,year,category,fuel,seats,price_per_day,min_age,license_years,deposit,caution_standard,description,features});
        const files = req.files.service_doc;
             for (const element of files) {
             await ImageService.create({
@@ -477,33 +541,47 @@ body("name").notEmpty().withMessage("name is required"),
 exports.GetAgency = async (req,res) => {
         try{
             const partner_id = req.userId;
-            const agency = await Agence.findOne({where: {partner_id},
-            
+            const agencyData = await Agence.findOne({where: {partner_id},
             include:[
                 {
                     model:Offer,
                     as:"offers",
                     required:false,
-                    include:[{
-                        model:ImageService,
-                        as:"imagesOffer",
-                        where:{type:"agence"},
-                        required:false,
-                    }]
                 },
                 
             ]
         });
-            if(!agency){
+            if(!agencyData){
                 return res.status(404).json({message:"agency not found"});
             }
+             const images = await ImageService.findAll({
+                where: {
+                  type: "agence",
+                },
+              });
+
+          const agencyJSON = agencyData.toJSON();
+          const offerWithImages = agencyJSON.offers.map((offers) => {
+            const imagesOffer = images.filter(
+              (img) => String(img.service_id) === String(offers.id)
+            );
+
+            return {
+              ...offers,
+              imagesOffer,
+            };
+          });
+          const agency = {
+            ...agencyJSON,
+            offer: offerWithImages,
+          };
             return res.json({message:"agency found",agency});
         }catch(err){
           console.log(err)
             return res.status(500).send({message:"error server"})
         }
 
-    }
+};
 exports.AddOffer = [
   body("title").notEmpty().withMessage("title is required"),
   body("type").notEmpty().withMessage("type is required"),
@@ -591,4 +669,326 @@ exports.AddOffer = [
       return res.status(500).send({ message: "server error" });
     }
   },
+];
+
+exports.AddAirline = [
+  body("name")
+    .notEmpty().withMessage("name is required"),
+
+  body("hub")
+    .notEmpty().withMessage("hub is required")
+    .isLength({ min: 3, max: 10 }).withMessage("Hub invalid"),
+
+  body("description")
+    .notEmpty().withMessage("description is required"),
+
+  body("classes")
+    .isArray({ min: 1 }).withMessage("select at less one class"),
+
+  body("amenities")
+    .isArray({ min: 1 }).withMessage("select at less service"),
+  ,async (req,res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      errors: errors.array(),
+    });
+  }
+
+  try {
+    const { name, hub, description, classes, amenities } = req.body;
+    const partner_id = req.userId;
+
+    await Compagnie.create({
+      name,
+      hub,
+      description,
+      classes,
+      services:amenities,
+      partner_id
+    });
+
+    return res.status(201).send({message:"airline created"});
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send({message: "Server error",});
+  }
+}
+];
+
+exports.GetAirline = async (req,res) => {
+        try{
+            const partner_id = req.userId;
+            const airline = await Compagnie.findOne({where: {partner_id},
+            include:[
+              {
+                model:Flight,
+                as:"FlightCompagnie",
+                required:false,
+              }
+            ]
+          });
+            if(!airline){
+                return res.status(404).json({message:"airline not found"});
+            }
+            return res.json({message:"airline found",airline});
+        }catch(err){
+          console.log(err)
+            return res.status(500).send({message:"error server"})
+        }
+
+};
+
+exports.AddFlight = [
+  body("flight_number").notEmpty().withMessage("Flight number is required"),
+  body("from").notEmpty().withMessage("Departure airport is required"),
+  body("to").notEmpty().withMessage("Arrival airport is required")
+    .custom((value, { req }) => {
+      if (value === req.body.from) {
+        throw new Error("Arrival and departure airports must be different");
+      }
+      return true;
+    }),
+  body("departure").notEmpty().withMessage("Departure time is required")
+    .isISO8601().withMessage("Departure must be a valid date"),
+  body("arrival").notEmpty().withMessage("Arrival time is required")
+    .isISO8601().withMessage("Arrival must be a valid date")
+    .custom((value, { req }) => {
+      if (new Date(value) <= new Date(req.body.departure)) {
+        throw new Error("Arrival must be after departure");
+      }
+      return true;
+    }),
+  body("duration").optional().isString(),
+  body("classes").notEmpty().withMessage("Classes are required")
+  .isObject().withMessage("Classes must be an object")
+    .custom((value) => {
+      const hasAtLeastOne = Object.values(value).some(
+        v => v !== "" && v !== null && Number(v) > 0
+      );
+      if (!hasAtLeastOne) {
+        throw new Error("At least one class price is required");
+      }
+      return true;
+    }),
+  body("seatsClasses").notEmpty().withMessage("Seats per class are required")
+    .isObject().withMessage("SeatsClasses must be an object")
+    .custom((value, { req }) => {
+      const totalSeats = Object.values(value)
+        .map(v => parseInt(v) || 0)
+        .reduce((a, b) => a + b, 0);
+
+      if (totalSeats > parseInt(req.body.seats_total)) {
+        throw new Error("Total seats per classes exceed total seats");
+      }
+      const classKeys = Object.keys(req.body.classes || {});
+      const seatKeys = Object.keys(value || {});
+      const mismatch = classKeys.some(k => !seatKeys.includes(k));
+      if (mismatch) {
+        throw new Error("SeatsClasses must match classes keys");
+      }
+      return true;
+    }),
+  body("seats_total").notEmpty().withMessage("Total seats is required")
+    .isInt({ min: 1 }),
+
+  body("seats_available").notEmpty().withMessage("Available seats is required")
+    .isInt({ min: 0 })
+    .custom((value, { req }) => {
+      if (parseInt(value) > parseInt(req.body.seats_total)) {
+        throw new Error("Available seats cannot exceed total seats");
+      }
+      return true;
+    }),
+  body("baggage_kg").optional()
+    .isInt({ min: 0 }),
+  body("status").optional()
+    .isIn(["programmé", "annulé", "retardé"]),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const t = await Flight.sequelize.transaction();
+    const partner_id = req.userId;
+
+    try {
+      let {
+        flight_number,
+        from,
+        to,
+        departure,
+        arrival,
+        duration,
+        classes,
+        seatsClasses,
+        seats_total,
+        seats_available,
+        baggage_kg,
+        status,
+      } = req.body;
+
+      if (typeof classes === "string") classes = JSON.parse(classes);
+      if (typeof seatsClasses === "string") seatsClasses = JSON.parse(seatsClasses);
+      const airline = Compagnie.findOne({partner_id});
+
+
+      const flight = await Flight.create({
+        flight_number,
+        departure_airport: from,
+        arrival_airport: to,
+        departure,
+        arrival,
+        duration,
+        seats_total,
+        seats_available,
+        baggage_kg,
+        status,
+        airline_id:airline.id
+      }, { transaction: t });
+
+
+      const classRows = Object.keys(classes)
+        .filter(cls => classes[cls] && Number(classes[cls]) > 0)
+        .map(cls => ({
+          class_name: cls,
+          price: Number(classes[cls]),
+          seats_available: Number(seatsClasses[cls] || 0),
+          flight_id: flight.id,
+        }));
+
+      await FlightClasses.bulkCreate(classRows, { transaction: t });
+
+      await t.commit();
+
+      return res.status(201).json({
+        flight,
+        classes: classRows,
+      });
+
+    } catch (err) {
+      await t.rollback();
+      console.error(err);
+      return res.status(500).json({
+        message: "Server error",
+      });
+    }
+  }
+];
+
+exports.AddVoyage = [
+body("name").notEmpty().withMessage("Name is required"),
+  body("description").notEmpty().withMessage("Description is required"),
+  body("location").notEmpty().withMessage("Location is required"),
+  body("website").optional({ checkFalsy: true }).isURL().withMessage("Invalid website URL"),
+  body("phone").optional().matches(/^[0-9+\s-]{8}$/).withMessage("Invalid phone number"),
+  body("categories").isArray().withMessage("Categories must be an array"),
+  body("equipments").isArray().withMessage("Equipments must be an array"),
+  async (req,res) => {
+     const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ errors: errors.array() });
+    }
+  try {
+    const {
+      name,description,location,website,phone,categories,equipments} = req.body;
+      const partner_id = req.userId;
+    await Voyage.create({
+      name,
+      description,
+      location,
+      website,
+      phone,
+      categories,
+      equipments,
+      partner_id
+    });
+
+    res.status(201).send({message: "voyage created"});
+  } catch (err) {
+    console.log(err)
+    res.status(500).send({ message: "server error" });
+  }
+
+  }
+];
+exports.GetVoyage = async (req,res) => {
+        try{
+            const partner_id = req.userId;
+            const voyageData = await Voyage.findOne({where: {partner_id},
+            include:[
+              {
+                model:Circuit,
+                as:"circuits",
+              }
+            ]
+            });
+            if(!voyageData){
+                return res.status(404).json({message:"airline not found"});
+            }
+           const images = await ImageService.findAll({
+              where: {
+                type: "circuit",
+              },
+            });
+            const voyageJSON = voyageData.toJSON();
+
+            const circuitsWithImages = voyageJSON.circuits.map((circuits) => {
+              const imagesCircuits = images.filter(
+                (img) => String(img.service_id) === String(circuits.id)
+              );
+
+              return {
+                ...circuits,
+                imagesCircuits,
+              };
+            });
+            // return res.json({message:"airline found",circuitsWithImages});
+
+            const voyage = {
+              ...voyageJSON,
+              circuits: circuitsWithImages,
+            };
+            return res.json({message:"voyage found",voyage});
+        }catch(err){
+          console.log(err)
+            return res.status(500).send({message:"error server"})
+        }
+
+};
+exports.AddCircuit = [
+  body("title").notEmpty().withMessage("Title is required"),
+  body("location").notEmpty().withMessage("Location is required"),
+  body("description").isLength({ min: 10 }).withMessage("Description must be at least 10 chars"),
+  body("category").isIn(["voyage","camping","désert","aventure","plage","montagne","culturel"]).withMessage("Invalid category"),
+  body("difficulty").isIn(["facile", "modéré", "difficile","très difficile"]).withMessage("Invalid difficulty"),
+  body("price_per_person").isFloat({ gt: 0 }).withMessage("Price must be > 0"),
+  body("duration_days").isInt({ gt: 0 }).withMessage("Duration must be > 0"),
+  body("max_people").isInt({ gt: 0 }).withMessage("Max people must be > 0"),
+  body("inclusions").optional({ checkFalsy: true }).isArray(),
+  body("available_dates").optional({ checkFalsy: true }).isArray(),
+  async (req,res) => {
+    try {
+      const {title,location,description,category,difficulty,price_per_person,duration_days,max_people,inclusions,available_dates} = req.body;
+      const partner_id = req.userId;
+      const voyage = Voyage.findOne({where:{partner_id}});
+      if(!voyage){
+      res.status(404).send({message:"voyage not found"});
+      }
+      const circuit = await Circuit.create({title,location,description,category,difficulty,price_per_person,duration_days,max_people,inclusions,available_dates,voyage_id:voyage.id});
+       const files = req.files.service_doc;
+            for (const element of files) {
+            await ImageService.create({
+                image_url: element.filename,
+                type: "circuit",
+                service_id: circuit.id
+            });
+            }
+    res.status(201).send({message:"circuit created"});
+  } catch (err) {
+    console.log(err)
+    res.status(500).send({ message: "server error" });
+  }
+  }
 ];

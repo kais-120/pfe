@@ -30,27 +30,48 @@ import AddLocation from "./dashboard/Partner/Service/Add/AddLocation";
 import AddVehicle from "./dashboard/Partner/Service/Add/AddVehicle";
 import AddAgency from "./dashboard/Partner/Service/Add/AddAgency";
 import AddOffer from "./dashboard/Partner/Service/Add/AddOffer";
+import ServiceAirline from "./dashboard/Partner/Service/Fetsh/ServiceAirline";
+import AddAirline from "./dashboard/Partner/Service/Add/AddAirline";
+import AddFlight from "./dashboard/Partner/Service/Add/AddFlight";
+import AddAirlineOffer from "./dashboard/Partner/Service/Add/AddAirlineOffer";
+import AddVoyageAgency from "./dashboard/Partner/Service/Add/AddVoyageAgency";
+import AddTravelOption from "./dashboard/Partner/Service/Add/AddTravelOption";
+import AddCircuit from "./dashboard/Partner/Service/Add/AddCircuit";
+import ForgotPassword from "./Auth/ForgotPassword";
+import VerifyOtp from "./Auth/VerifyOtp";
+import ResetPassword from "./Auth/ResetPassword";
+import Settings from "./Auth/Settings";
+import HomeLocation from "./HomeLocation";
+import QrScannerPage from "./dashboard/Partner/QrScannerPage";
 
 function App() {
   return (
     <>
   <Toaster />
     <Routes>
+  <Route path="/setting" element={<Settings/>} />
   <Route path="/test" element={<Test/>} />
   <Route path="/search" element={<SearchHotels/>} />
+  <Route path="/forgot-password" element={<ForgotPassword/>} />
+  <Route path="/verify-otp/:hash" element={<VerifyOtp link={"/forgot-password"} type="forgot-password" />} />
+  <Route path="/reset-password/:hash" element={<ResetPassword/>} />
   <Route path="/" element={<Home/>} />
+  <Route path="/location" element={<HomeLocation/>} />
   <Route path="/hotel/:id" element={<HotelInfo/>} />
   <Route path="/partner" element={<DocumentPartner/>} />
   <Route element={<AuthReq />}>
     <Route path="/login" element={<Login/>} />
     <Route path="/signup/partner" element={<PartnerSignUp />} />
     <Route path="/signup" element={<SignUp/>} />
-    <Route path="/verify/:hash" element={<OtpPage />}/>
+    <Route path="/verify/:hash" element={<VerifyOtp link={"/"} type="register" />}/>
   </Route>
   <Route element={<RoleReq allow={["partner"]} />}>
   <Route element={<PartnerFileReq />}>
     <Route path="/partner/dashboard" element={<HomeDashboard/>}>
+
+      <Route path="qr-scanner" element={<QrScannerPage />} />
       <Route path="service" element={<Service />} />
+
       <Route path="service/hotel/add" element={<AddHotel/>} />
       <Route path="service/hotel/room/add" element={<AddRoom/>} />
 
@@ -59,6 +80,16 @@ function App() {
 
       <Route path="service/location/add" element={<AddLocation />} />
       <Route path="service/location/vehicle/add" element={<AddVehicle />} />
+
+      <Route path="service/airline/add" element={<AddAirline />} />
+      <Route path="service/airline/flight/add" element={<AddFlight />} />
+      <Route path="service/airline/offer/add" element={<AddAirlineOffer />} />
+
+      <Route path="service/voyage/add" element={<AddVoyageAgency />} />
+      <Route path="service/voyage/travel/add" element={<AddTravelOption />} />
+      <Route path="service/voyage/circuit/add" element={<AddCircuit />} />
+
+
       <Route path="bookings" element={<Booking/>} />
 
     </Route>

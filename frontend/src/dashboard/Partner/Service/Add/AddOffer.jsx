@@ -108,7 +108,6 @@ const inp = (formik, name, extra = {}) => ({
   ...extra,
 })
 
-/* ── Toggle pill ────────────────────────────────────────────────── */
 function Pill({ label, active, color = "blue", onClick }) {
   return (
     <Flex
@@ -129,7 +128,6 @@ function Pill({ label, active, color = "blue", onClick }) {
   )
 }
 
-/* ── Image preview ──────────────────────────────────────────────── */
 function ImagePreview({ files, onRemove }) {
   if (!files?.length) return null
   return (
@@ -152,11 +150,17 @@ function ImagePreview({ files, onRemove }) {
   )
 }
 
-/* ── Main component ─────────────────────────────────────────────── */
 const AddOffer = () => {
   const navigate  = useNavigate()
   const [previews, setPreviews] = useState([])
 
+  const formatToArray = (text) => {
+  if (!text) return [];
+  return text
+    .split(",")
+    .map(item => item.trim())
+    .filter(Boolean);
+};
   const formik = useFormik({
     initialValues: {
       title: "", type: "", destination: "",
@@ -174,9 +178,9 @@ const AddOffer = () => {
       if (values.duration) fd.append("duration",values.duration)
       if (values.max_persons) fd.append("max_persons",values.max_persons)
       if (values.description) fd.append("description",values.description)
-      if (values.included) fd.append("included",values.included)
-      if (values.not_included) fd.append("not_included",values.not_included)
-      values.images.forEach(img => fd.append("offer_images",img))
+      if (values.included) fd.append("included", JSON.stringify(formatToArray(values.included)));
+      if (values.not_included) fd.append("not_included", JSON.stringify(formatToArray(values.not_included)));
+      values.images.forEach(img => fd.append("service_doc",img))
 
       try {
         await AxiosToken.post("/service/agency/offer/add", fd)
@@ -241,16 +245,16 @@ const AddOffer = () => {
 
               <FormField formik={formik} name="title" label="Titre de l'offre"
                 icon={LuPackage} required>
-                <Input {...inp(formik, "title")} placeholder="Ex: Circuit Sahara 7 jours" />
+                <Input outline={"none"} {...inp(formik, "title")} placeholder="Ex: Circuit Sahara 7 jours" />
               </FormField>
 
               <Grid templateColumns={{ base: "1fr", sm: "1fr 1fr" }} gap={4}>
                 <FormField formik={formik} name="destination" label="Destination"
                   icon={LuMapPin} required>
-                  <Input {...inp(formik, "destination")} placeholder="Ex: Douz, Tozeur" />
+                  <Input outline={"none"} {...inp(formik, "destination")} placeholder="Ex: Douz, Tozeur" />
                 </FormField>
                 <FormField formik={formik} name="duration" label="Durée" icon={LuClock}>
-                  <Input {...inp(formik, "duration")} placeholder="Ex: 7 jours / 6 nuits" />
+                  <Input outline={"none"} {...inp(formik, "duration")} placeholder="Ex: 7 jours / 6 nuits" />
                 </FormField>
               </Grid>
 
@@ -291,6 +295,7 @@ const AddOffer = () => {
                     <LuAlignLeft size={14} />
                   </Box>
                   <Textarea
+                  outline={"none"}
                     name="description"
                     value={formik.values.description}
                     onChange={formik.handleChange}
@@ -312,12 +317,12 @@ const AddOffer = () => {
             <Grid templateColumns={{ base: "1fr", sm: "1fr 1fr" }} gap={4}>
               <FormField formik={formik} name="price" label="Prix par personne"
                 icon={LuTag} required>
-                <Input {...inp(formik, "price", { type: "number" })} placeholder="450" />
+                <Input outline={"none"} {...inp(formik, "price", { type: "number" })} placeholder="450" />
                 <Text fontSize="xs" color="gray.400" flexShrink={0} ml={2}>TND</Text>
               </FormField>
               <FormField formik={formik} name="max_persons" label="Personnes maximum"
                 icon={LuUsers}>
-                <Input {...inp(formik, "max_persons", { type: "number" })} placeholder="20" />
+                <Input outline={"none"} {...inp(formik, "max_persons", { type: "number" })} placeholder="20" />
                 <Text fontSize="xs" color="gray.400" flexShrink={0} ml={2}>pers.</Text>
               </FormField>
             </Grid>
@@ -329,7 +334,7 @@ const AddOffer = () => {
               <Box>
                 <Text fontSize="xs" fontWeight={700} color="gray.600"
                   textTransform="uppercase" letterSpacing="wider" mb={1.5}>
-                  ✅ Inclus
+                Inclus
                 </Text>
                 <Flex w="full" align="flex-start"
                   border="1.5px solid" borderColor="gray.200"
@@ -337,6 +342,7 @@ const AddOffer = () => {
                   _focusWithin={{ borderColor: "blue.400",
                     boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" }}>
                   <Textarea
+                  outline={"none"}
                     name="included"
                     value={formik.values.included}
                     onChange={formik.handleChange}
@@ -352,7 +358,7 @@ const AddOffer = () => {
               <Box>
                 <Text fontSize="xs" fontWeight={700} color="gray.600"
                   textTransform="uppercase" letterSpacing="wider" mb={1.5}>
-                  ❌ Non inclus
+                Non inclus
                 </Text>
                 <Flex w="full" align="flex-start"
                   border="1.5px solid" borderColor="gray.200"
@@ -360,6 +366,7 @@ const AddOffer = () => {
                   _focusWithin={{ borderColor: "blue.400",
                     boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" }}>
                   <Textarea
+                  outline={"none"}
                     name="not_included"
                     value={formik.values.not_included}
                     onChange={formik.handleChange}
@@ -396,6 +403,7 @@ const AddOffer = () => {
               onChange={e => handleFiles(e.target.files)}>
               <FileUpload.HiddenInput />
               <FileUpload.Dropzone
+              w={"full"}
                 border="2px dashed"
                 borderColor={formik.touched.images && formik.errors.images
                   ? "red.300" : "gray.200"}

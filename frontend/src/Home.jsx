@@ -10,30 +10,29 @@ import { useNavigate } from "react-router-dom"
 
 
 const EQUIPMENT_LIST = [
-  { key: "spa",     label: "Spa",     Icon: FaSpa          },
-  { key: "gym",     label: "Gym",     Icon: FaDumbbell     },
-  { key: "piscine", label: "Piscine", Icon: FaSwimmingPool },
-  { key: "wifi",    label: "Wi-Fi",   Icon: FaWifi         },
-  { key: "parking", label: "Parking", Icon: FaParking      },
+  { key: "spa",label: "Spa",Icon: FaSpa},
+  { key: "gym",label: "Gym",Icon: FaDumbbell},
+  { key: "piscine",label: "Piscine",Icon: FaSwimmingPool },
+  { key: "wifi",label: "Wi-Fi",Icon: FaWifi},
+  { key: "parking",label: "Parking", Icon: FaParking},
 ]
 
 const LOCATIONS = [
-  { label: "Nabeul",    value: "nabeul"    },
-  { label: "Korbous",   value: "korbous"   },
-  { label: "Gammarth",  value: "gammarth"  },
-  { label: "Tunis",     value: "tunis"     },
-  { label: "Korba",     value: "korba"     },
-  { label: "Kelibia",   value: "kelibia"   },
-  { label: "Djerba",    value: "djerba"    },
-  { label: "Monastir",  value: "monastir"  },
-  { label: "Mahdia",    value: "mahdia"    },
-  { label: "Sousse",    value: "sousse"    },
-  { label: "Tabarka",   value: "tabarka"   },
-  { label: "Hammamet",  value: "hammamet"  },
+  { label: "Nabeul", value: "nabeul"},
+  { label: "Korbous",value: "korbous"},
+  { label: "Gammarth",value: "gammarth"},
+  { label: "Tunis",value: "tunis"},
+  { label: "Korba",value: "korba"},
+  { label: "Kelibia",value: "kelibia"},
+  { label: "Djerba",value: "djerba"},
+  { label: "Monastir",value: "monastir"},
+  { label: "Mahdia",value: "mahdia"},
+  { label: "Sousse",value: "sousse"},
+  { label: "Tabarka",value: "tabarka"},
+  { label: "Hammamet",value: "hammamet"},
 ]
 
 
-/* ── Location combobox (same style as SearchHotels) ─────────────── */
 function LocationCombobox({ value, onChange }) {
   const { contains } = useFilter({ sensitivity: "base" })
   const { collection, filter } = useListCollection({
@@ -372,7 +371,6 @@ const Home = () => {
 
         {error && (
           <Flex direction="column" align="center" justify="center" py={20} gap={3}>
-            <Text fontSize="xl">😕</Text>
             <Text color="gray.500">{error}</Text>
             <Button size="sm" colorScheme="blue" onClick={() => window.location.reload()}>
               Réessayer

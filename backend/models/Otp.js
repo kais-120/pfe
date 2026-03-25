@@ -12,7 +12,7 @@ const Otp = sequelize.define("otp",{
     allowNull:false
     },
     type: {
-        type: DataTypes.ENUM("register", "forgot_password"),
+        type: DataTypes.ENUM("register", "forgot_password","email"),
         allowNull: false
     },
     create_at:{
@@ -24,7 +24,16 @@ const Otp = sequelize.define("otp",{
     },
     token:{
         type:DataTypes.STRING,
+        allowNull:true,
     },
+    user_id:{
+        type:DataTypes.BIGINT,
+        allowNull:true,
+        references:{
+            model:"users",
+            key:"id"
+        }
+    }
     
 },{
     tableName:"otp",

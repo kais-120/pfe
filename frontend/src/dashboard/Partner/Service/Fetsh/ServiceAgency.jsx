@@ -8,6 +8,7 @@ import {
   LuPlus, LuUsers, LuBanknote, LuCheck, LuMapPin,
   LuPhone, LuMail, LuGlobe, LuPackage, LuClock,
   LuLink, LuFacebook, LuInstagram, LuTag,
+  LuTwitter,
 } from "react-icons/lu"
 import { useNavigate } from "react-router-dom"
 import { AxiosToken, imageURL } from "../../../../Api/Api"
@@ -50,7 +51,6 @@ function StatCard({ icon: Icon, label, value, color = "blue" }) {
   )
 }
 
-/* ── Section heading ────────────────────────────────────────────── */
 function SectionHeading({ children, action }) {
   return (
     <Flex align="center" justify="space-between" mb={5}>
@@ -66,58 +66,9 @@ function SectionHeading({ children, action }) {
   )
 }
 
-/* ── Image carousel ─────────────────────────────────────────────── */
-function ImageCarousel({ images }) {
-  const [idx, setIdx] = useState(0)
-  if (!images?.length) return null
 
-  return (
-    <Box mb={8} borderRadius="2xl" overflow="hidden"
-      boxShadow="0 4px 24px rgba(0,0,0,0.1)">
-      <Box position="relative" h="340px">
-        <Image src={`${IMAGE_BASE}${images[idx]?.image_url ?? images[idx]}`}
-          w="100%" h="100%" objectFit="cover" />
-        {images.length > 1 && (
-          <>
-            <Button position="absolute" left={3} top="50%" transform="translateY(-50%)"
-              borderRadius="full" bg="white" color="gray.700"
-              w="36px" h="36px" minW="36px" p={0} boxShadow="md" _hover={{ bg: "gray.100" }}
-              onClick={() => setIdx(i => (i - 1 + images.length) % images.length)}>
-              <LuChevronLeft size={14} />
-            </Button>
-            <Button position="absolute" right={3} top="50%" transform="translateY(-50%)"
-              borderRadius="full" bg="white" color="gray.700"
-              w="36px" h="36px" minW="36px" p={0} boxShadow="md" _hover={{ bg: "gray.100" }}
-              onClick={() => setIdx(i => (i + 1) % images.length)}>
-              <LuChevronRight size={14} />
-            </Button>
-            <Badge position="absolute" bottom={3} right={3}
-              bg="blackAlpha.700" color="white"
-              borderRadius="full" px={3} py={1} fontSize="xs">
-              {idx + 1} / {images.length}
-            </Badge>
-          </>
-        )}
-      </Box>
-      <Flex gap={2} p={3} bg="gray.50" overflowX="auto">
-        {images.map((img, i) => (
-          <Box key={i} flexShrink={0} w="72px" h="52px" borderRadius="lg"
-            overflow="hidden" cursor="pointer"
-            border="2.5px solid" borderColor={i === idx ? "blue.500" : "transparent"}
-            opacity={i === idx ? 1 : 0.6} transition="all 0.15s" _hover={{ opacity: 1 }}
-            onClick={() => setIdx(i)}>
-            <Image src={`${IMAGE_BASE}${img?.image_url ?? img}`}
-              w="100%" h="100%" objectFit="cover" />
-          </Box>
-        ))}
-      </Flex>
-    </Box>
-  )
-}
-
-/* ── Offer card ─────────────────────────────────────────────────── */
 function OfferCard({ offer, onEdit, onDelete }) {
-  const mainImg  = offer.images?.[0]
+  const mainImg  = offer.imagesOffer?.[0]
   const typeLabel = OFFER_TYPES.find(t => t.value === offer.type)?.label ?? offer.type
 
   return (
@@ -169,7 +120,7 @@ function OfferCard({ offer, onEdit, onDelete }) {
               <Text fontSize="xs" color="gray.300">·</Text>
               <Flex align="center" gap={1}>
                 <LuClock size={11} color="gray" />
-                <Text fontSize="xs" color="gray.500">{offer.duration}</Text>
+                <Text fontSize="xs" color="gray.500">{offer.duration} Jours</Text>
               </Flex>
             </>
           )}
@@ -314,7 +265,12 @@ const ServiceAgency = () => {
     ? Math.min(...offers.map(o => Number(o.price || 0)))
     : null
   const as = AGENCY_STATUS[agency.status] ?? { colorScheme: "gray", label: agency.status }
-
+  console.log(agency)
+const XIcon = () => (
+  <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+    <path d="M18.244 2H21l-6.5 7.43L22 22h-6.828l-5.34-6.98L3.5 22H1l6.96-7.96L2 2h6.828l4.86 6.36L18.244 2z"/>
+  </svg>
+);
   return (
     <Container maxW="6xl" py={8}>
 
@@ -380,6 +336,12 @@ const ServiceAgency = () => {
                   <Text fontSize="xs">Instagram</Text>
                 </Flex>
               )}
+              {agency.twitter && (
+                <Flex align="center" gap={1} color="black.500">
+                  <XIcon />
+                  <Text fontSize="xs">X</Text>
+                </Flex>
+              )}
             </Flex>
 
             {/* Status badge */}
@@ -402,12 +364,6 @@ const ServiceAgency = () => {
           <Flex align="center" gap={2}><LuPencil size={13} />Modifier l'agence</Flex>
         </Button>
       </Flex>
-
-      {/* ── Image carousel ── */}
-      {agency.images?.length > 0 && (
-        <ImageCarousel images={agency.images} />
-      )}
-
       {/* ── Description ── */}
       {agency.description && (
         <Box bg="white" borderRadius="2xl" p={6} mb={8}
@@ -440,10 +396,10 @@ const ServiceAgency = () => {
         <StatCard icon={LuBanknote} label="Prix min / pers."   value={minPrice ? `${Math.round(minPrice)} TND` : "—"} color="green" />
       </Grid>
 
-      {/* ── Offers section ── */}
       <Box>
         <SectionHeading
           action={
+            offers.length > 0 &&
             <Button colorScheme="blue" size="sm" borderRadius="xl"
               fontWeight={600} px={4}
               onClick={() => navigate("agency/offer/add")}>
@@ -452,6 +408,7 @@ const ServiceAgency = () => {
                 Ajouter une offre
               </Flex>
             </Button>
+          
           }
         >
           Offres de voyage ({totalOffers})

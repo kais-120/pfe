@@ -11,18 +11,17 @@ import {
 } from "react-icons/lu"
 import { FaHotel } from "react-icons/fa"
 import { LucideAlertCircle } from "lucide-react"
-import Logo from "../assets/Logo"
+import logo from "../assets/image.png"
 
 const validationSchema = yup.object().shape({
-  firstName:       yup.string().min(3, "Minimum 3 caractères").required("Le nom est requis"),
-  lastName:        yup.string().min(3, "Minimum 3 caractères").required("Le prénom est requis"),
-  email:           yup.string().email("Email invalide").required("L'email est requis"),
-  password:        yup.string().min(6, "Minimum 6 caractères").required("Le mot de passe est requis"),
-  phone:           yup.string().length(8, "Doit contenir 8 chiffres").required("Le téléphone est requis").matches(/^\d+$/, "Chiffres uniquement"),
+  firstName:yup.string().min(3, "Minimum 3 caractères").required("Le nom est requis"),
+  lastName:yup.string().min(3, "Minimum 3 caractères").required("Le prénom est requis"),
+  email:yup.string().email("Email invalide").required("L'email est requis"),
+  password:yup.string().min(6, "Minimum 6 caractères").required("Le mot de passe est requis"),
+  phone:yup.string().length(8, "Doit contenir 8 chiffres").required("Le téléphone est requis").matches(/^\d+$/, "Chiffres uniquement"),
   confirmPassword: yup.string().required("Confirmation requise").oneOf([yup.ref("password"), null], "Les mots de passe ne correspondent pas"),
 })
 
-/* ── Styled input ───────────────────────────────────────────────── */
 function FormField({ formik, name, label, type = "text", placeholder, icon: Icon, isInvalid }) {
   const invalid = isInvalid || (formik.touched[name] && !!formik.errors[name])
   return (
@@ -74,8 +73,10 @@ function FormField({ formik, name, label, type = "text", placeholder, icon: Icon
 }
 
 const SignUp = () => {
-  const [emailError, setEmailError] = useState(false)
-  const [loading,    setLoading]    = useState(false)
+  const [emailError,setEmailError] = useState(false)
+  const [phoneError,setPhoneError] = useState(false)
+  const [emailPhoneError,setEmailPhoneError] = useState(false)
+  const [loading,setLoading]= useState(false)
   const navigate = useNavigate()
 
   const formik = useFormik({
@@ -87,12 +88,26 @@ const SignUp = () => {
     onSubmit: async (values) => {
       try {
         setEmailError(false)
+        setEmailPhoneError(false)
+        setPhoneError(false)
         setLoading(true)
         const name = `${values.firstName} ${values.lastName}`
         const response = await Axios.post("/auth/register", { ...values, name })
         navigate(`/verify/${response.data.token}`)
-      } catch {
-        setEmailError(true)
+      } catch(err) {
+        if(err.status === 422) {
+          if(Object.keys(err.response.data.errors).length === 2){
+            setEmailPhoneError(true)
+          }
+          else{
+            if(Object.keys(err.response.data.errors)[0] === "email"){
+              setEmailError(true)
+            }else{
+              setPhoneError(true)
+            }
+            
+          }
+        }
         setLoading(false)
       }
     }
@@ -104,7 +119,6 @@ const SignUp = () => {
 
       <Flex minH="100vh" bg="#f5f6fa">
 
-        {/* ── Left panel ── */}
         <Box
           display={{ base: "none", lg: "flex" }}
           w="420px" flexShrink={0}
@@ -115,16 +129,14 @@ const SignUp = () => {
           position="relative"
           overflow="hidden"
         >
-          {/* Decorative circles */}
           <Box position="absolute" top="-80px" right="-80px"
             w="300px" h="300px" borderRadius="full" bg="whiteAlpha.100" />
           <Box position="absolute" bottom="-60px" left="-60px"
             w="240px" h="240px" borderRadius="full" bg="whiteAlpha.100" />
 
           <Box position="relative" zIndex={1}>
-            {/* Logo */}
             <Flex justify={"center"} align="center" gap={2.5} mb={16}>
-              <Logo width="80px" />
+              <img src={logo} alt="logo" />
             </Flex>
 
             <Text fontSize="3xl" fontWeight={900} color="white"
@@ -136,9 +148,9 @@ const SignUp = () => {
             </Text>
 
             {[
-              { Icon: LuStar,   text: "Accès aux meilleures offres en exclusivité" },
-              { Icon: LuMapPin, text: "Destinations partout en Tunisie"            },
-              { Icon: LuCheck,  text: "Réservation rapide et sécurisée"            },
+              { Icon: LuStar,text: "Accès aux meilleures offres en exclusivité" },
+              { Icon: LuMapPin,text: "Destinations partout en Tunisie"},
+              { Icon: LuCheck,text: "Réservation rapide et sécurisée"},
             ].map(({ Icon, text }, i) => (
               <Flex key={i} align="center" gap={3} mb={3}>
                 <Flex w="20px" h="20px" borderRadius="full"
@@ -151,11 +163,9 @@ const SignUp = () => {
           </Box>
         </Box>
 
-        {/* ── Right panel — form ── */}
         <Flex flex={1} align="center" justify="center" px={{ base: 4, md: 8 }} py={10}>
           <Box w="full" maxW="460px">
 
-            {/* Mobile logo */}
             <Flex align="center" gap={2} mb={8} display={{ base: "flex", lg: "none" }}>
               <Flex w="32px" h="32px" borderRadius="lg"
                 bg="blue.600" align="center" justify="center">
@@ -187,7 +197,6 @@ const SignUp = () => {
               </Text>
             </Box>
 
-            {/* Error banner */}
             {emailError && (
               <Flex align="center" gap={2.5} bg="red.50"
                 border="1px solid" borderColor="red.200"
@@ -196,6 +205,28 @@ const SignUp = () => {
                 <Box color="red.500" flexShrink={0}><LucideAlertCircle size={15} /></Box>
                 <Text fontSize="sm" color="red.600" fontWeight={500}>
                   Cet email est déjà utilisé. Essayez avec un autre email.
+                </Text>
+              </Flex>
+            )}
+            {emailPhoneError && (
+              <Flex align="center" gap={2.5} bg="red.50"
+                border="1px solid" borderColor="red.200"
+                borderRadius="xl" px={4} py={3} mb={5}
+              >
+                <Box color="red.500" flexShrink={0}><LucideAlertCircle size={15} /></Box>
+                <Text fontSize="sm" color="red.600" fontWeight={500}>
+                  Les email et Numéro de téléphone est déjà utilisé. Essayez avec des autres.
+                </Text>
+              </Flex>
+            )}
+            {phoneError && (
+              <Flex align="center" gap={2.5} bg="red.50"
+                border="1px solid" borderColor="red.200"
+                borderRadius="xl" px={4} py={3} mb={5}
+              >
+                <Box color="red.500" flexShrink={0}><LucideAlertCircle size={15} /></Box>
+                <Text fontSize="sm" color="red.600" fontWeight={500}>
+                  Cet Numéro de telephone est déjà utilisé. Essayez avec un autre Numéro.
                 </Text>
               </Flex>
             )}
@@ -219,9 +250,11 @@ const SignUp = () => {
                   <Grid templateColumns="1fr 1fr" gap={4}>
                     <FormField formik={formik} name="email" label="Adresse email"
                       placeholder="exemple@email.com" icon={LuMail}
-                      isInvalid={emailError} />
+                      isInvalid={emailError || emailPhoneError} />
                     <FormField formik={formik} name="phone" label="Téléphone"
-                      placeholder="12345678" icon={LuPhone} />
+                      placeholder="12345678" icon={LuPhone} 
+                      isInvalid={phoneError || emailPhoneError}
+                      />
                   </Grid>
 
                   <Grid templateColumns="1fr 1fr" gap={4}>

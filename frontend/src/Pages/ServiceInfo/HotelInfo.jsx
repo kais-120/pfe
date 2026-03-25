@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import {
   Box, Flex, Grid, Text, Button, Badge, Image,
@@ -12,24 +12,20 @@ import {
 } from "react-icons/fa"
 import Header from "../../components/home/Header"
 import { Axios, imageURL } from "../../Api/Api"
-import DatePicker from "../../components/ui/DatePicker"
+import { Helmet } from "react-helmet"
 
 
 const EQUIPMENT_LIST = [
-  { key: "spa",     label: "Spa & Bien-être", Icon: FaSpa,          desc: "Hammam, massages, soins"       },
-  { key: "gym",     label: "Salle de sport",  Icon: FaDumbbell,     desc: "Équipements modernes"           },
-  { key: "piscine", label: "Piscine",         Icon: FaSwimmingPool, desc: "Extérieure & intérieure chauffée" },
-  { key: "wifi",    label: "Wi-Fi gratuit",   Icon: FaWifi,         desc: "Dans tout l'établissement"     },
-  { key: "parking", label: "Parking",         Icon: FaParking,      desc: "Parking privé sécurisé"        },
+  { key: "spa",label: "Spa & Bien-être",Icon: FaSpa,desc: "Hammam, massages, soins"},
+  { key: "gym",label: "Salle de sport",Icon: FaDumbbell,desc: "Équipements modernes"},
+  { key: "piscine",label: "Piscine",Icon: FaSwimmingPool,desc: "Extérieure & intérieure chauffée" },
+  { key: "wifi",label: "Wi-Fi gratuit",Icon: FaWifi,desc: "Dans tout l'établissement"},
+  { key: "parking",label: "Parking",Icon: FaParking,desc: "Parking privé sécurisé"},
 ]
 
-const DUMMY_REVIEWS = [
-  { id: 1, author: "Sophie M.",    avatar: "SM", rating: 5, date: "Février 2026", comment: "Séjour absolument parfait ! La plage privée est magnifique et le personnel est aux petits soins. Les bungalows avec piscine privée valent vraiment le détour." },
-  { id: 2, author: "Karim B.",     avatar: "KB", rating: 4, date: "Janvier 2026", comment: "Très bel hôtel avec un cadre exceptionnel. Le spa est excellent. Seul bémol : le restaurant du soir était un peu lent le week-end." },
-  { id: 3, author: "Marie-Claire", avatar: "MC", rating: 5, date: "Décembre 2025", comment: "Notre troisième séjour ici et toujours aussi enchanteur. L'animation pour les enfants est top et les chambres familiales dans les houchs sont authentiques." },
-  { id: 4, author: "Ahmed T.",     avatar: "AT", rating: 4, date: "Novembre 2025", comment: "Excellent rapport qualité-prix. La piscine intérieure chauffée est un vrai plus en dehors saison. Je recommande vivement." },
-]
 
+
+/* ── Star rating display ────────────────────────────────────────── */
 function StarRating({ rating, size = 13 }) {
   return (
     <Flex align="center" gap="2px">
@@ -128,6 +124,7 @@ function ImageGallery({ images }) {
   )
 }
 
+/* ── Rooms section with integrated booking search ───────────────── */
 function GuestCounter({ label, sublabel, value, min, onIncrease, onDecrease }) {
   return (
     <Flex justify="space-between" align="center" py={2.5}>
@@ -177,42 +174,25 @@ function GuestCounter({ label, sublabel, value, min, onIncrease, onDecrease }) {
 }
 
 function RoomGuestSelector({ guestRooms, setGuestRooms }) {
-  const [open, setOpen] = useState(false);
-  const ref = React.useRef(null);
+  const [open, setOpen] = useState(false)
+  const ref = React.useRef(null)
 
-  // Load data from localStorage once
-  useEffect(() => {
-    const savedData = localStorage.getItem("searchData");
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        if (parsed.rooms && Array.isArray(parsed.rooms)) {
-          // Convert stored rooms array to objects with adults & children
-          const rooms = parsed.rooms.map(r => ({ adults: r[0], children: r[1] }));
-          setGuestRooms(rooms);
-        }
-      } catch (err) {
-        console.error("Failed to parse searchData from localStorage", err);
-      }
-    }
-  }, [setGuestRooms]);
-
-  useEffect(() => {
+  // Close on outside click
+  React.useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
     document.addEventListener("mousedown", handler)
     return () => document.removeEventListener("mousedown", handler)
   }, [])
 
-  const totalRooms    = guestRooms.length;
-  const totalAdults   = guestRooms.reduce((s, r) => s + r.adults, 0);
-  const totalChildren = guestRooms.reduce((s, r) => s + r.children, 0);
+  const totalRooms    = guestRooms.length
+  const totalAdults   = guestRooms.reduce((s, r) => s + r.adults, 0)
+  const totalChildren = guestRooms.reduce((s, r) => s + r.children, 0)
 
   const updateRoom = (idx, field, val) =>
-    setGuestRooms(prev => prev.map((r, i) => i === idx ? { ...r, [field]: val } : r));
+    setGuestRooms(prev => prev.map((r, i) => i === idx ? { ...r, [field]: val } : r))
 
-  const addRoom    = () => setGuestRooms(prev => [...prev, { adults: 1, children: 0 }]);
-  const removeRoom = (idx) => setGuestRooms(prev => prev.filter((_, i) => i !== idx));
-
+  const addRoom    = () => setGuestRooms(prev => [...prev, { adults: 1, children: 0 }])
+  const removeRoom = (idx) => setGuestRooms(prev => prev.filter((_, i) => i !== idx))
 
   return (
     <Box position="relative" ref={ref}>
@@ -245,6 +225,7 @@ function RoomGuestSelector({ guestRooms, setGuestRooms }) {
         </Box>
       </Box>
 
+      {/* Dropdown */}
       {open && (
         <Box
           position="absolute"
@@ -326,28 +307,10 @@ function RoomGuestSelector({ guestRooms, setGuestRooms }) {
   )
 }
 
-function RoomsSection({ rooms,search }) {
-   const [checkIn,    setCheckIn]    = useState("")
+function RoomsSection({ rooms }) {
+  const [checkIn,    setCheckIn]    = useState("")
   const [checkOut,   setCheckOut]   = useState("")
   const [guestRooms, setGuestRooms] = useState([{ adults: 1, children: 0 }])
-  useEffect(() => {
-  const savedData = localStorage.getItem("searchData");
-  if (savedData) {
-    try {
-      const parsed = JSON.parse(savedData);
-
-      if (parsed.checkIn) setCheckIn(parsed.checkIn);
-      if (parsed.checkOut) setCheckOut(parsed.checkOut);
-
-      if (parsed.rooms && Array.isArray(parsed.rooms)) {
-        const rooms = parsed.rooms.map(r => ({ adults: r[0], children: r[1] }));
-        setGuestRooms(rooms);
-      }
-    } catch (err) {
-      console.error("Failed to parse searchData from localStorage", err);
-    }
-  }
-}, []);
 
   const nights = (() => {
     if (!checkIn || !checkOut) return null
@@ -358,9 +321,11 @@ function RoomsSection({ rooms,search }) {
   const totalAdults   = guestRooms.reduce((s, r) => s + r.adults, 0)
   const totalChildren = guestRooms.reduce((s, r) => s + r.children, 0)
 
-    return (
+  return (
     <Box>
       <SectionTitle>Chambres disponibles</SectionTitle>
+
+      {/* Search bar */}
       <Box
         bg="white"
         border="1px solid"
@@ -377,13 +342,48 @@ function RoomsSection({ rooms,search }) {
         >
           {/* Check-in */}
           <Box>
-        <Text fontSize="xs" color="gray.500" fontWeight={600} mb={1.5}>Chambres & voyageurs</Text>
-         <DatePicker
-          checkIn={(date) => setCheckIn(date)}
-          checkOut={(date) => setCheckOut(date)}
-        />
+            <Text fontSize="xs" color="gray.500" fontWeight={600} mb={1.5}>Arrivée</Text>
+            <Box
+              as="input"
+              type="date"
+              value={checkIn}
+              onChange={e => setCheckIn(e.target.value)}
+              w="full"
+              border="1px solid"
+              borderColor="gray.200"
+              borderRadius="lg"
+              px={3}
+              py={2.5}
+              fontSize="sm"
+              color="gray.700"
+              bg="gray.50"
+              _focus={{ outline: "none", borderColor: "blue.400", bg: "white" }}
+            />
           </Box>
-            {/* Room + guest selector */}
+
+          {/* Check-out */}
+          <Box>
+            <Text fontSize="xs" color="gray.500" fontWeight={600} mb={1.5}>Départ</Text>
+            <Box
+              as="input"
+              type="date"
+              value={checkOut}
+              onChange={e => setCheckOut(e.target.value)}
+              min={checkIn}
+              w="full"
+              border="1px solid"
+              borderColor="gray.200"
+              borderRadius="lg"
+              px={3}
+              py={2.5}
+              fontSize="sm"
+              color="gray.700"
+              bg="gray.50"
+              _focus={{ outline: "none", borderColor: "blue.400", bg: "white" }}
+            />
+          </Box>
+
+          {/* Room + guest selector */}
           <RoomGuestSelector guestRooms={guestRooms} setGuestRooms={setGuestRooms} />
 
           {/* Search button */}
@@ -399,33 +399,45 @@ function RoomsSection({ rooms,search }) {
             Vérifier
           </Button>
         </Grid>
-        </Box>
 
+        {/* Nights summary */}
+        {nights && (
+          <Flex align="center" gap={2} mt={3} pt={3} borderTop="1px solid" borderColor="gray.100">
+            <FaMoon size={11} color="#718096" />
+            <Text fontSize="xs" color="gray.500">
+              <Text as="span" fontWeight={700} color="gray.700">{nights} nuit{nights > 1 ? "s" : ""}</Text>
+              {" "}· du {new Date(checkIn).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
+              {" "}au {new Date(checkOut).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
+            </Text>
+          </Flex>
+        )}
+      </Box>
 
-
+      {/* Room cards */}
       <VStack spacing={4} align="stretch">
-        {search && rooms.length > 0 ? rooms.map(hotel =>
-          hotel.selectedRooms.map(room => (
-            <RoomCard
-              key={room.roomId}
-              name={room.name}
-              capacity={room.capacity}
-              nights={hotel.nights}
-              totalPrice={hotel.totalPrice}
-              pricePerNight={room.pricePerNight}
-              count={hotel.rooms.find(r => r.id === room.roomId)?.count}
-            />
-          ))
-        )
-        :
-        <Text>Chambre non disponibles</Text>
-        }
+        {rooms.map(room => (
+          <RoomCard
+            key={room.id}
+            room={room}
+            nights={nights}
+            adults={totalAdults}
+            children={totalChildren}
+          />
+        ))}
       </VStack>
     </Box>
   )
 }
 
-function RoomCard({ name, capacity, nights, totalPrice, pricePerNight, count }) {
+/* ── Room card ──────────────────────────────────────────────────── */
+function RoomCard({ room, nights, adults, children }) {
+  // Total price = (base/night × nights) + (adult supplement × adults) + (child supplement × children)
+  const totalPrice = nights
+    ? room.price_by_day * nights
+      + room.price_by_adult * adults
+      + room.price_by_children * children
+    : null
+
   return (
     <Box
       border="1px solid"
@@ -438,42 +450,46 @@ function RoomCard({ name, capacity, nights, totalPrice, pricePerNight, count }) 
       _hover={{ boxShadow: "0 4px 20px rgba(0,0,0,0.1)", borderColor: "blue.100" }}
     >
       <Flex justify="space-between" align="flex-start" gap={4} flexWrap="wrap">
+        {/* Left — room info */}
         <Box flex={1} minW="200px">
-          {/* Room Name */}
           <Text fontWeight={700} fontSize="md" color="gray.800" mb={3}>
-            {name}
+            {room.name}
           </Text>
-
           <VStack align="stretch" spacing={2}>
-            {/* Capacity */}
             <Flex align="center" gap={2}>
               <Box color="blue.400"><FaUserFriends size={13} /></Box>
               <Text fontSize="sm" color="gray.600">
-                Capacité : <Text as="span" fontWeight={600}>{capacity} personnes</Text>
+                Capacité : <Text as="span" fontWeight={600}>{room.capacity} personnes</Text>
               </Text>
             </Flex>
-
-            {/* Nights */}
             <Flex align="center" gap={2}>
-              <Box color="blue.400"><FaMoon size={13} /></Box>
+              <Box color="blue.400"><FaCheck size={11} /></Box>
               <Text fontSize="sm" color="gray.600">
-                Durée : <Text as="span" fontWeight={600}>{nights} nuit{nights > 1 ? "s" : ""}</Text>
+                <Text as="span" fontWeight={600}>{room.count}</Text> chambre{room.count > 1 ? "s" : ""} disponible{room.count > 1 ? "s" : ""}
               </Text>
+            </Flex>
+            <Flex gap={3} mt={1} flexWrap="wrap">
+              <Text fontSize="xs" color="gray.400">+{room.price_by_adult} TND / adulte</Text>
+              <Text fontSize="xs" color="gray.300">·</Text>
+              <Text fontSize="xs" color="gray.400">+{room.price_by_children} TND / enfant</Text>
             </Flex>
           </VStack>
         </Box>
 
-        {/* Price */}
+        {/* Right — pricing + CTA */}
         <Box textAlign="right" flexShrink={0}>
-          <Flex align="baseline" gap={1} justify="flex-end">
+          <Text fontSize="xs" color="gray.400">{nights ? `${nights} nuit${nights > 1 ? "s" : ""}` : "À partir de"}</Text>
+          <Flex align="baseline" gap={1} justify="flex-end" mt={0.5}>
             <Text fontSize="2xl" fontWeight={900} color="blue.600" lineHeight="1.1">
-              {totalPrice}
+              {totalPrice ?? room.price_by_day}
             </Text>
-            <Text fontSize="xs" color="gray.500">TND total</Text>
+            <Text fontSize="xs" color="gray.500">{nights ? "TND total" : "TND / nuit"}</Text>
           </Flex>
-          <Text fontSize="xs" color="gray.400" mt={0.5}>
-            ({pricePerNight} TND / nuit × {nights} nuit{nights > 1 ? "s" : ""})
-          </Text>
+          {totalPrice && (
+            <Text fontSize="xs" color="gray.400" mt={0.5}>
+              ({room.price_by_day} TND × {nights} nuit{nights > 1 ? "s" : ""})
+            </Text>
+          )}
           <Button colorScheme="blue" size="sm" borderRadius="lg" mt={3} px={6} fontWeight={600}>
             Réserver
           </Button>
@@ -483,6 +499,7 @@ function RoomCard({ name, capacity, nights, totalPrice, pricePerNight, count }) 
   )
 }
 
+/* ── Review card ────────────────────────────────────────────────── */
 function ReviewCard({ review }) {
   return (
     <Box
@@ -514,6 +531,7 @@ function ReviewCard({ review }) {
   )
 }
 
+/* ── Skeleton for detail page ───────────────────────────────────── */
 function DetailSkeleton() {
   return (
     <Box maxW="1100px" mx="auto" px={6} py={10}>
@@ -532,6 +550,7 @@ function DetailSkeleton() {
   )
 }
 
+/* ── Section heading ────────────────────────────────────────────── */
 function SectionTitle({ children }) {
   return (
     <Text
@@ -548,27 +567,31 @@ function SectionTitle({ children }) {
   )
 }
 
+/* ── Average rating compute ─────────────────────────────────────── */
 function avgRating(reviews) {
   if (!reviews?.length) return 0
   return reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
 }
 
-const HotelInfo = () => {
+/* ── Main HotelDetail page ──────────────────────────────────────── */
+export default function HotelDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
 
   const [hotel,   setHotel]   = useState(null)
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(null)
-  const [search,   setsSearch]   = useState(null);
-  const [roomSearch,   setsRoomSearch]   = useState(null);
-  useEffect(()=>{
-    const searchData = window.localStorage.getItem("searchData")
-    setsSearch(searchData)
-  },[id])
 
-  const reviews = DUMMY_REVIEWS
-  const avg     = avgRating(reviews)
+  // Real reviews from API — mapped from hotel.hotelReview
+  const reviews = (hotel?.hotelReview ?? []).map(r => ({
+    id:      r.id,
+    author:  r.clientReview?.name ?? "Anonyme",
+    avatar:  r.clientReview?.name?.split(" ").map(w => w[0]).join("").slice(0,2).toUpperCase() ?? "?",
+    rating:  r.rate,
+    date:    new Date(r.createdAt).toLocaleDateString("fr-FR", { month: "long", year: "numeric" }),
+    comment: r.review,
+  }))
+  const avg = avgRating(reviews)
 
   useEffect(() => {
     const fetchHotel = async () => {
@@ -586,30 +609,6 @@ const HotelInfo = () => {
     fetchHotel()
   }, [id])
 
-  useEffect(() => {
-  const fetchRoom = async () => {
-    const searchData = localStorage.getItem("searchData")
-
-    if (!searchData) return
-
-    try {
-      const response = await Axios.post(
-        "/service/get/hotels/search",
-        JSON.parse(searchData)
-      )
-
-      setsRoomSearch(response.data.hotels)
-      console.log(response.data.hotels)
-
-    } catch (err) {
-      console.log(err)
-    }
-  }
-
-  fetchRoom()
-
-}, [id])
-
   if (loading) return (
     <>
       <Header />
@@ -617,11 +616,11 @@ const HotelInfo = () => {
     </>
   )
 
-
   if (error || !hotel) return (
     <>
       <Header />
       <Flex direction="column" align="center" justify="center" py={32} gap={3}>
+        <Text fontSize="3xl">😕</Text>
         <Text color="gray.500">{error ?? "Hôtel introuvable."}</Text>
         <Button size="sm" colorScheme="blue" onClick={() => navigate(-1)}>
           Retour
@@ -631,11 +630,11 @@ const HotelInfo = () => {
   )
 
   const hotelEquipments = EQUIPMENT_LIST.filter(e => hotel.equipments?.includes(e.key))
-  
- 
 
   return (
     <>
+    <Helmet title={hotel.name}>
+    </Helmet>
       <Header />
 
       <Box maxW="1100px" mx="auto" px={{ base: 4, md: 6 }} py={8}>
@@ -677,15 +676,12 @@ const HotelInfo = () => {
           </Box>
         </Flex>
 
-        {/* Image gallery */}
         <Box mb={10}>
           <ImageGallery images={hotel.imagesHotel} />
         </Box>
 
-        {/* Single column content */}
         <VStack align="stretch" spacing={10}>
 
-          {/* Description */}
           <Box>
             <SectionTitle>À propos</SectionTitle>
             <Text
@@ -735,7 +731,9 @@ const HotelInfo = () => {
           )}
 
           {/* Rooms with integrated booking search */}
-            <RoomsSection rooms={roomSearch} search={search} />
+          {hotel.rooms?.length > 0 && (
+            <RoomsSection rooms={hotel.rooms} />
+          )}
 
           {/* Reviews */}
           <Box>
@@ -750,7 +748,6 @@ const HotelInfo = () => {
               </Flex>
             </Flex>
 
-            {/* Rating bar breakdown */}
             <Box mb={6}>
               {[5, 4, 3, 2, 1].map(star => {
                 const count = reviews.filter(r => r.rating === star).length
@@ -786,4 +783,3 @@ const HotelInfo = () => {
     </>
   )
 }
-export default HotelInfo;

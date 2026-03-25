@@ -5,27 +5,27 @@ import { AxiosToken } from "../../Api/Api"
 import Cookies from "universal-cookie"
 import { FaHotel, FaPlane, FaCar, FaGlobe, FaTags, FaCog, FaTachometerAlt, FaSignOutAlt, FaCalendarCheck } from "react-icons/fa"
 import { HiChevronDown } from "react-icons/hi"
-import Logo from "../../assets/Logo"
+import logo from "../../assets/image.png"
 
 const NAV_LINKS = [
-  { name: "Hôtels",            path: "/hotels",    icon: FaHotel  },
-  { name: "Vols",              path: "/flights",   icon: FaPlane  },
-  { name: "Location de voiture", path: "/cars",    icon: FaCar    },
-  { name: "Agences",           path: "/agencies",  icon: FaGlobe  },
-  { name: "Offres",            path: "/offers",    icon: FaTags   },
+  { name: "Hôtels",path: "/",icon: FaHotel},
+  { name: "Vols",path: "/flights",icon: FaPlane},
+  { name: "Location de voiture", path: "/location",icon: FaCar},
+  { name: "Agences",path: "/agencies",  icon: FaGlobe},
+  { name: "Offres",path: "/offers",icon: FaTags},
 ]
 
 const getDashboardLink = (role) => {
-  if (role === "client")  return { path: "/booking",            label: "Mes réservations", icon: FaCalendarCheck }
-  if (role === "partner") return { path: "/partner/dashboard",  label: "Tableau de bord",  icon: FaTachometerAlt }
-  return                         { path: "/dashboard",          label: "Tableau de bord",  icon: FaTachometerAlt }
+  if (role === "client")  return { path: "/booking",label: "Mes réservations", icon: FaCalendarCheck }
+  if (role === "partner") return { path: "/partner/dashboard",label: "Tableau de bord",  icon: FaTachometerAlt }
+  return { path: "/dashboard",label: "Tableau de bord",  icon: FaTachometerAlt }
 }
 
 export default function Header() {
-  const [user, setUser]           = useState(null)
-  const [scrolled, setScrolled]   = useState(false)
-  const cookie                    = new Cookies()
-  const navigate                  = useNavigate()
+  const [user, setUser] = useState(null)
+  const [scrolled, setScrolled] = useState(false)
+  const cookie = new Cookies()
+  const navigate = useNavigate()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
@@ -64,7 +64,7 @@ export default function Header() {
 
         {/* Logo */}
         <Link to="/" style={{ flexShrink: 0 }}>
-          <Logo width="52px" height="52px" />
+          <img width={"120px"} src={logo} alt="logo" />
         </Link>
 
         {/* Nav links */}
@@ -128,7 +128,6 @@ export default function Header() {
 }
 
 
-/* ── Logged-in user menu ─────────────────────────────────────────── */
 function UserMenu({ user, dashboard, onLogout }) {
   return (
     <Menu.Root>

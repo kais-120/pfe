@@ -1,6 +1,8 @@
 const { body, validationResult } = require("express-validator");
 const { Room, Booking, Hotel, User } = require("../models");
 const HotelBookingDetails = require("../models/HotelBookingDetails");
+const Notification = require("../models/Notification");
+const { getIO } = require("../initSocket");
 
 exports.BookingHotel = [
     body("check_in_date").notEmpty().withMessage("check in date is required")
@@ -19,10 +21,13 @@ exports.BookingHotel = [
                 return res.status(422).json({ errors: errors.array().map(err => err.msg) });
         }
         try{
+            const io = getIO()
             const { check_in_date,check_out_date,number_of_guests_adult,number_of_guests_children,rooms } = req.body;
+            const {id} = req.params;
             if(check_in_date >= check_out_date){
                 return res.status(400).send({message:"date invalid"});
             }
+            const {partner_id} = await Hotel.findByPk(id);
             let total_price = 0;
             const client_id = req.userId;
             const booking = await Booking.create({total_price,type:"hotel",client_id})
@@ -42,10 +47,13 @@ exports.BookingHotel = [
                     HotelBookingDetails.create({check_in_date,check_out_date,number_of_guests_adult:number_of_guests_adult[index],number_of_guests_children:number_of_guests_children[index],booking_id:booking.id,room_id:r})
                     index++;
             };
-            await booking.update({total_price})
+            await booking.update({total_price});
+            await Notification.create({title:"Nouvelle réservation",message:"un client faire un réservation",type:"booking",user_id:partner_id})
+            io.to(`partner-${partner_id}`).emit("newNotification");
             return res.send({message:"booking create"})
 
         }catch(err){
+            // console.log(err)
             return res.status(500).send({message:"error server"})
         }
     }
@@ -53,7 +61,7 @@ exports.BookingHotel = [
 exports.GetPartnerBookingHotel = async (req,res) => {
     try{
         const partner_id = req.userId;
-        const bookings = await Booking.findAll({
+        const bookings = await Booking.findAll({order:[["createdAt","DESC"]],
             include:[
                 {
                     model:HotelBookingDetails,

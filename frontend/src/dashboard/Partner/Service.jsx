@@ -4,6 +4,8 @@ import ServiceLocation from "./Service/Fetsh/ServiceLocation";
 import ServiceAgency from "./Service/Fetsh/ServiceAgency";
 import { AxiosToken } from "../../Api/Api";
 import LoadingScreen from "../../components/LoadingScreen";
+import ServiceAirline from "./Service/Fetsh/ServiceAirline";
+import ServiceVoyage from "./Service/Fetsh/ServiceVoyage";
 
 const Service = () => {
    const [user, setUser] = useState(null);
@@ -20,10 +22,20 @@ const Service = () => {
       fetchData()
     }, [])
   return (
-    user ? user?.partnerInfo?.[0]?.sector === "hôtel" ? <ServiceHotel /> 
-    : user?.partnerInfo?.[0]?.sector === "agence de voyage" ? <ServiceAgency />
-    : <ServiceLocation />
-    : <LoadingScreen />
+    user ? (
+      user?.partnerInfo?.[0]?.sector === "hôtel" ? (
+        <ServiceHotel /> 
+      ) : ( 
+      user?.partnerInfo?.[0]?.sector === "agence de voyage" ) ? (
+        <ServiceAgency />
+      ) : (
+        user?.partnerInfo?.[0]?.sector === "compagnies aériennes"  ) ? (
+        <ServiceAirline />
+      ) : (
+        user?.partnerInfo?.[0]?.sector === "voyages circuits"  ) ? (
+        <ServiceVoyage />
+      ) : <ServiceLocation />
+    ) : <LoadingScreen />
   )
 }
 

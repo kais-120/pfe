@@ -7,53 +7,25 @@ const Compagnie = sequelize.define("compagnies",{
         autoIncrement:true,
         primaryKey:true
     },
-    price:{
-        type:DataTypes.DOUBLE,
-        allowNull:false,
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
     },
-    name:{
-        type:DataTypes.STRING(100),
-        allowNull:false,
+    hub: {
+      type: DataTypes.STRING(25),
+      allowNull: false,
     },
-    detail:{
-        type:DataTypes.STRING(255),
-        allowNull:false,
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: false,
     },
-    status:{
-        type:DataTypes.ENUM("En attente","refuse"),
-        allowNull:false,
+    classes: {
+      type: DataTypes.JSONB,
+      allowNull: false,
     },
-    date_depart:{
-         type:DataTypes.DATE,
-        allowNull:false,
-    },
-    date_arrival:{
-         type:DataTypes.DATE,
-        allowNull:false,
-    },
-    time_depart:{
-         type:DataTypes.TIME,
-        allowNull:false,
-    },
-    time_arrival:{
-         type:DataTypes.DATE,
-        allowNull:false,
-    },
-    place_depart:{
-         type:DataTypes.STRING(50),
-        allowNull:false,
-    },
-    place_arrival:{
-         type:DataTypes.STRING(50),
-        allowNull:false,
-    },
-     number_person:{
-         type:DataTypes.INTEGER(3),
-        allowNull:false,
-    },
-     class:{
-        type:DataTypes.ENUM("En attente","refuse","accept"),
-        allowNull:false,
+    services: {
+      type: DataTypes.JSONB,
+      allowNull: false,
     },
     partner_id:{
         type:DataTypes.BIGINT,
@@ -66,9 +38,11 @@ const Compagnie = sequelize.define("compagnies",{
     },
     deleted_at:{
         type:DataTypes.DATE,
-        allowNull:true
     }
 },{
-        tableName:"compagnies"
+    tableName:"compagnies",
+    paranoid: true,
+    deletedAt: "deleted_at"
+
 });
 module.exports = Compagnie;

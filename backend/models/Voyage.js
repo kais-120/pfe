@@ -7,53 +7,42 @@ const Voyage = sequelize.define("voyages",{
         autoIncrement:true,
         primaryKey:true
     },
-    price:{
-        type:DataTypes.DOUBLE,
-        allowNull:false,
+     name: {
+      type: DataTypes.STRING,
+      allowNull: false,
     },
-    name:{
-        type:DataTypes.STRING(100),
-        allowNull:false,
+
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: false,
     },
-    detail:{
-        type:DataTypes.STRING(255),
-        allowNull:false,
+
+    location: {
+      type: DataTypes.STRING,
+      allowNull: false,
     },
-    status:{
-        type:DataTypes.ENUM("En attente","refuse","accept"),
-        allowNull:false,
+
+    website: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
-    date_depart:{
-         type:DataTypes.DATE,
-        allowNull:false,
+
+    phone: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
-    date_arrival:{
-         type:DataTypes.DATE,
-        allowNull:false,
+    categories: {
+      type: DataTypes.JSON,
+      allowNull: false,
+      defaultValue: [],
     },
-    time_depart:{
-         type:DataTypes.TIME,
-        allowNull:false,
+    equipments: {
+      type: DataTypes.JSON,
+      allowNull: false,
+      defaultValue: [],
     },
-    time_arrival:{
-         type:DataTypes.DATE,
-        allowNull:false,
-    },
-    place_depart:{
-         type:DataTypes.STRING(50),
-        allowNull:false,
-    },
-    place_arrival:{
-         type:DataTypes.STRING(50),
-        allowNull:false,
-    },
-      number_person:{
-         type:DataTypes.INTEGER(3),
-        allowNull:false,
-    },
-     type_voyage:{
-        type:DataTypes.STRING(100),
-        allowNull:false,
+    deleted_at:{
+        type: DataTypes.DATE,
     },
     partner_id:{
         type:DataTypes.BIGINT,
@@ -65,6 +54,8 @@ const Voyage = sequelize.define("voyages",{
         onDelete:'CASCADE',
     }
 },{
-        tableName:"voyages"
+        tableName:"voyages",
+        paranoid:true,
+        deletedAt:"deleted_at"
 });
 module.exports = Voyage;

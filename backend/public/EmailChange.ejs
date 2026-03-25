@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Réinitialisation du mot de passe</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #f4f6fb;
+      font-family: 'Sora', sans-serif;
+      padding: 48px 20px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .wrapper { max-width: 480px; margin: 0 auto; }
+
+    .logo-row { text-align: center; margin-bottom: 28px; }
+    .logo { display: inline-flex; align-items: center; gap: 8px; }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: #1d6bf3; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-name { font-size: 16px; font-weight: 600; color: #0f172a; letter-spacing: -0.02em; }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 48px 44px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 8px 32px rgba(0,0,0,0.06);
+    }
+
+    .eyebrow {
+      font-size: 11px; font-weight: 500;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: #1d6bf3; margin-bottom: 12px;
+    }
+    .heading {
+      font-size: 22px; font-weight: 600;
+      color: #0f172a; letter-spacing: -0.03em; margin-bottom: 8px;
+    }
+    .subtext {
+      font-size: 13.5px; color: #94a3b8;
+      font-weight: 300; line-height: 1.6; margin-bottom: 36px;
+    }
+
+    .otp-block {
+      background: #f8faff; border: 1px solid #dce8fd;
+      border-radius: 12px; padding: 32px 24px;
+      text-align: center; margin-bottom: 32px;
+    }
+    .otp-label {
+      font-size: 11px; font-weight: 500; color: #94a3b8;
+      letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 20px;
+    }
+    .otp-digits {
+      display: inline-flex; gap: 8px;
+      justify-content: center; align-items: center;
+    }
+    .digit {
+      width: 46px; height: 56px;
+      background: #fff; border: 1.5px solid #c7d9fc;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; font-weight: 600; color: #1d6bf3;
+      box-shadow: 0 1px 4px rgba(29,107,243,0.08);
+    }
+    .digit-gap { width: 6px; height: 2px; background: #c7d9fc; border-radius: 2px; margin: 0 2px; }
+    .otp-expiry { margin-top: 18px; font-size: 12px; color: #94a3b8; font-weight: 300; }
+    .otp-expiry strong { color: #64748b; font-weight: 500; }
+
+    .info {
+      font-size: 13.5px; color: #64748b;
+      line-height: 1.75; font-weight: 300; margin-bottom: 28px;
+    }
+
+    .notice {
+      display: flex; gap: 12px;
+      background: #f8faff; border-radius: 10px;
+      padding: 14px 16px; margin-bottom: 36px; align-items: flex-start;
+    }
+    .notice-dot {
+      flex-shrink: 0; width: 6px; height: 6px;
+      background: #1d6bf3; border-radius: 50%; margin-top: 5px;
+    }
+    .notice-text { font-size: 12.5px; color: #64748b; line-height: 1.6; font-weight: 300; }
+
+    .divider { height: 1px; background: #f1f5f9; margin-bottom: 28px; }
+
+    .signoff { font-size: 13px; color: #94a3b8; font-weight: 300; line-height: 1.8; }
+    .signoff strong { color: #0f172a; font-weight: 500; }
+
+    .footer { text-align: center; margin-top: 28px; }
+    .footer-text { font-size: 11.5px; color: #cbd5e1; font-weight: 300; line-height: 1.8; }
+    .footer-text a { color: #94a3b8; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+
+    <div class="logo-row">
+      <div class="logo">
+        <img src="https://drive.google.com/uc?export=view&id=1TpX8PaBQJnTfJrvgTFBnce5NPgrz1aEy" alt="logo" />
+      </div>
+    </div>
+
+    <div class="card">
+
+      <div class="eyebrow">Modification d'email</div>
+      <div class="heading">Bonjour, <%= name %></div>
+      <div class="subtext">Vous avez demandé à modifier votre adresse e-mail. Utilisez le code ci-dessous pour confirmer ce changement.</div>
+
+      <div class="otp-block">
+        <div class="otp-label">Code de vérification</div>
+        <div class="otp-digits">
+          <% code.split("").forEach(d => { %>
+            <div class="digit"><%= d %></div>
+          <% }) %>
+        </div>
+        <div class="otp-expiry">Expire dans <strong>5 minutes</strong></div>
+      </div>
+
+      <p class="info">
+        Entrez ce code pour confirmer votre nouvelle adresse e-mail. 
+  Ce code est valide une seule fois.
+      </p>
+
+      <div class="notice">
+        <div class="notice-dot"></div>
+        <div class="notice-text">
+          Vous n'avez pas demandé ce changement ? Ignorez cet e-mail et sécurisez votre compte immédiatement.
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="signoff">
+        À bientôt,<br>
+        <strong>L'équipe Travel Now</strong>
+      </div>
+
+    </div>
+
+    <div class="footer">
+      <div class="footer-text">
+        © 2026 Travel Now · <a href="#">Confidentialité</a> · <a href="#">Se désabonner</a>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

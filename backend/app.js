@@ -6,6 +6,7 @@ const ServiceRoute = require("./routes/ServiceRoute");
 const BookingRoute = require("./routes/BookingRoute");
 const PaymentRoute = require("./routes/PaymentRoute");
 const ReviewRoute = require("./routes/ReviewsRoute");
+const NotificationRoute = require("./routes/NotificationRoute");
 
 router.use("/auth",AuthRoute);
 router.use("/user",UserRoute);
@@ -13,5 +14,6 @@ router.use("/service",ServiceRoute);
 router.use("/booking",BookingRoute);
 router.use("/payment",PaymentRoute);
 router.use("/review",ReviewRoute);
+router.use("/notification",NotificationRoute);
 
 module.exports = router;
