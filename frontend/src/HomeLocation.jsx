@@ -285,7 +285,7 @@ function VehicleCard({ vehicle, agencyName, agencyAddress, pickupDate, returnDat
         vehicle_id: vehicle.id, start_date: localPickup, end_date: localReturn,
       })
       if (res.data.available) {
-        navigate(`/car/${vehicle.id}`, { state: { pickupDate: localPickup, returnDate: localReturn } })
+        navigate(`/location/car/${vehicle.id}`, { state: { pickupDate: localPickup, returnDate: localReturn } })
       } else {
         setErrorMsg("Non disponible pour ces dates")
       }

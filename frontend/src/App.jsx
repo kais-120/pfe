@@ -67,10 +67,10 @@ function App() {
   <Route path="/agency" element={<HomeAgency/>} />
   <Route path="/airline" element={<HomeAirline/>} />
   <Route path="/voyage" element={<HomeVoyage/>} />
-  <Route path="/flight/:id" element={<FlightDetail/>} />
+  <Route path="/airline/flight/:id" element={<FlightDetail/>} />
   <Route path="/hotel/:id" element={<HotelInfo/>} />
-  <Route path="/car/:id" element={<CarDetail/>} />
-  <Route path="/offer/:id" element={<OfferDetail/>} />
+  <Route path="/location/car/:id" element={<CarDetail/>} />
+  <Route path="/agency/offer/:id" element={<OfferDetail/>} />
   <Route path="/voyage/circuit/:id" element={<CircuitDetail/>} />
   <Route path="/partner" element={<DocumentPartner/>} />
   <Route element={<AuthReq />}>

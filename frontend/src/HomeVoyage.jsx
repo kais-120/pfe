@@ -255,7 +255,6 @@ function CardSkeleton() {
   )
 }
 
-/* ── Main page ──────────────────────────────────────────────────── */
 export default function HomeVoyage() {
   const [voyages,setVoyages] = useState([])
   const [loading,setLoading] = useState(true)

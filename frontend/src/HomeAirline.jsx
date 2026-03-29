@@ -234,7 +234,7 @@ function FlightCard({ flight, airline }) {
             colorScheme="blue" borderRadius="xl"
             fontWeight={700} size="sm" h="40px"
             isDisabled={flight.status === "annulé" || flight.seats_available === 0}
-            onClick={() => navigate(`/flight/${flight.id}`)}>
+            onClick={() => navigate(`/airline/flight/${flight.id}`)}>
             <Flex align="center" gap={2}>
               Voir les détails
               <FaChevronRight size={10} />
@@ -334,7 +334,6 @@ export default function HomeAirline() {
   const [error, setError] = useState(null)
   const [statusFilter, setStatusFilter] = useState("all")
 
-  /* Search bar state */
   const today = new Date().toISOString().split("T")[0]
   const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0]
   const [tripType, setTripType] = useState("aller-retour")
@@ -345,6 +344,8 @@ export default function HomeAirline() {
   const [travelers, setTravelers] = useState("1 Adulte, Économique")
   const [directOnly, setDirectOnly] = useState(false)
   const [search, setSearch] = useState("")
+  const [destination, setDestination] = useState("")
+
 
   useEffect(() => {
     ; (async () => {
@@ -434,7 +435,7 @@ export default function HomeAirline() {
               templateColumns={{
                 base: "1fr",
                 md: tripType === "aller-retour"
-                  ? "1.4fr auto 1.4fr 1fr 1fr 1fr auto"
+                  ? "1.2fr auto 1.2fr 1fr 1fr 1.4fr auto"
                   : "1.4fr auto 1.4fr 1fr 1fr auto"
               }}
               align="stretch">
@@ -528,15 +529,16 @@ export default function HomeAirline() {
 
               {/* Search button */}
               <Flex
-                as="button"
+               as="button"
                 align="center" justify="center"
-                px={6}
+                px={6} gap={2} minH="70px"
                 bg="blue.600" color="white"
                 fontWeight={700} fontSize="sm"
-                cursor="pointer"
+                borderRightRadius="2xl"
+                cursor={!destination ? "not-allowed" : "pointer"}
+                opacity={!destination ? 0.6 : 1}
                 transition="background 0.15s"
-                _hover={{ bg: "blue.700" }}
-                onClick={() => { }}>
+                _hover={destination ? { bg: "blue.700" } : {}}>
                 Rechercher
               </Flex>
 

@@ -57,6 +57,7 @@ exports.GetPublicHotel = async (req, res) => {
 }
 
 
+
 exports.GetSearchHotels = [
   body("destination").notEmpty().withMessage("destination is required"),
   body("checkIn").notEmpty().isDate().withMessage("checkIn should be date"),
@@ -79,8 +80,8 @@ exports.GetSearchHotels = [
         (new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)
 
       const hotels = await Hotel.findAll({
-        where: { government: destination },
-        attributes: ["id", "government"],
+        where: { destination },
+        attributes: ["id", "destination"],
         include: [
           {
             model: Room,
@@ -150,7 +151,100 @@ exports.GetSearchHotels = [
       })
 
     } catch (err) {
+      console.log(err)
       return res.status(500).json({ message: "server error" })
+    }
+  }
+]
+
+exports.GetSearchRooms = [
+  body("checkIn").notEmpty().isDate().withMessage("checkIn should be date"),
+  body("checkOut").notEmpty().isDate().withMessage("checkOut should be date"),
+  body("rooms").notEmpty().isArray().withMessage("rooms should be array"),
+
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({
+        errors: errors.array().map(err => err.msg)
+      });
+    }
+
+    try {
+      const { id } = req.params; // hotel id
+      const { checkIn, checkOut, rooms } = req.body;
+
+      // حساب عدد الليالي
+      const nights = (new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24);
+
+      // جلب كل الغرف للفندق المحدد
+      const hotel = await Hotel.findOne({
+        where: { id },
+        attributes: ["id", "name", "destination"],
+        include: [
+          {
+            model: Room,
+            as: "rooms"
+          }
+        ]
+      });
+
+      if (!hotel) {
+        return res.status(404).json({ message: "Hotel not found" });
+      }
+
+      let totalPrice = 0;
+      const availableRooms = [];
+
+      const isValid = rooms.every(roomRequest => {
+        const [adults, children] = roomRequest;
+        const guests = adults + children;
+
+        const room = hotel.rooms.find(r => r.capacity >= guests && !availableRooms.includes(r.id));
+
+        if (!room) return false; 
+
+        const pricePerNight =
+          room.price_by_day +
+          adults * room.price_by_adult +
+          children * room.price_by_children;
+
+        totalPrice += pricePerNight * nights;
+
+        availableRooms.push({
+          roomId: room.id,
+          name: room.name,
+          capacity: room.capacity,
+          priceByDay: room.price_by_day,
+          priceByAdult: room.price_by_adult,
+          priceByChildren: room.price_by_children,
+          requestedAdults: adults,
+          requestedChildren: children,
+          pricePerNight
+        });
+
+        return true;
+      });
+
+      if (!isValid) {
+        return res.status(404).json({ message: "No available rooms for the selected configuration" });
+      }
+
+      return res.json({
+        message: "Rooms found",
+        hotel: {
+          id: hotel.id,
+          name: hotel.name,
+          destination: hotel.destination,
+          nights,
+          totalPrice,
+          rooms: availableRooms
+        }
+      });
+
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Server error" });
     }
   }
 ]

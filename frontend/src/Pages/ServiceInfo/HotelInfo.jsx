@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams, useNavigate, useLocation } from "react-router-dom"
 import {
   Box, Flex, Grid, Text, Button, Badge, Image,
   Skeleton, SkeletonText, HStack, VStack, Avatar,
@@ -13,14 +13,15 @@ import {
 import Header from "../../components/home/Header"
 import { Axios, imageURL } from "../../Api/Api"
 import { Helmet } from "react-helmet"
+import DatePicker from "../../components/ui/DatePicker"
 
 
 const EQUIPMENT_LIST = [
-  { key: "spa",label: "Spa & Bien-être",Icon: FaSpa,desc: "Hammam, massages, soins"},
-  { key: "gym",label: "Salle de sport",Icon: FaDumbbell,desc: "Équipements modernes"},
-  { key: "piscine",label: "Piscine",Icon: FaSwimmingPool,desc: "Extérieure & intérieure chauffée" },
-  { key: "wifi",label: "Wi-Fi gratuit",Icon: FaWifi,desc: "Dans tout l'établissement"},
-  { key: "parking",label: "Parking",Icon: FaParking,desc: "Parking privé sécurisé"},
+  { key: "spa", label: "Spa & Bien-être", Icon: FaSpa, desc: "Hammam, massages, soins" },
+  { key: "gym", label: "Salle de sport", Icon: FaDumbbell, desc: "Équipements modernes" },
+  { key: "piscine", label: "Piscine", Icon: FaSwimmingPool, desc: "Extérieure & intérieure chauffée" },
+  { key: "wifi", label: "Wi-Fi gratuit", Icon: FaWifi, desc: "Dans tout l'établissement" },
+  { key: "parking", label: "Parking", Icon: FaParking, desc: "Parking privé sécurisé" },
 ]
 
 
@@ -33,8 +34,8 @@ function StarRating({ rating, size = 13 }) {
         const Icon = i <= Math.floor(rating)
           ? FaStar
           : i - 0.5 <= rating
-          ? FaStarHalfAlt
-          : FaRegStar
+            ? FaStarHalfAlt
+            : FaRegStar
         return <Icon key={i} size={size} color="#F59E0B" />
       })}
     </Flex>
@@ -184,14 +185,14 @@ function RoomGuestSelector({ guestRooms, setGuestRooms }) {
     return () => document.removeEventListener("mousedown", handler)
   }, [])
 
-  const totalRooms    = guestRooms.length
-  const totalAdults   = guestRooms.reduce((s, r) => s + r.adults, 0)
+  const totalRooms = guestRooms.length
+  const totalAdults = guestRooms.reduce((s, r) => s + r.adults, 0)
   const totalChildren = guestRooms.reduce((s, r) => s + r.children, 0)
 
   const updateRoom = (idx, field, val) =>
     setGuestRooms(prev => prev.map((r, i) => i === idx ? { ...r, [field]: val } : r))
 
-  const addRoom    = () => setGuestRooms(prev => [...prev, { adults: 1, children: 0 }])
+  const addRoom = () => setGuestRooms(prev => [...prev, { adults: 1, children: 0 }])
   const removeRoom = (idx) => setGuestRooms(prev => prev.filter((_, i) => i !== idx))
 
   return (
@@ -255,7 +256,7 @@ function RoomGuestSelector({ guestRooms, setGuestRooms }) {
                     transition="color 0.15s"
                   >
                     <Box as="svg" w="14px" h="14px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path d="M18 6L6 18M6 6l12 12" strokeWidth="2" strokeLinecap="round"/>
+                      <path d="M18 6L6 18M6 6l12 12" strokeWidth="2" strokeLinecap="round" />
                     </Box>
                   </Box>
                 )}
@@ -307,10 +308,22 @@ function RoomGuestSelector({ guestRooms, setGuestRooms }) {
   )
 }
 
-function RoomsSection({ rooms }) {
-  const [checkIn,    setCheckIn]    = useState("")
-  const [checkOut,   setCheckOut]   = useState("")
-  const [guestRooms, setGuestRooms] = useState([{ adults: 1, children: 0 }])
+function RoomsSection({ id,location }) {
+  const [checkIn, setCheckIn] = useState(location.checkIn)
+  const [checkOut, setCheckOut] = useState(location.checkOut)
+  const [guestRooms, setGuestRooms] = useState(location?.rooms || [{ adults: 2, children: 0 }])
+  const [availableHotel, setAvailableHotel] = useState(null)
+  const [rooms,setRooms] = useState([])
+console.log(location)
+  const roomsArray = location.rooms.map(r => [r.adults, r.children]);
+  useEffect(()=>{
+    const room = async () => {
+      const response = await Axios.post("/service/get/hotel/room/search/" + id,{checkIn,checkOut,rooms:roomsArray})
+    console.log(response.data.hotel)
+    setAvailableHotel(response.data.hotel)
+    }
+    room();
+  },[])
 
   const nights = (() => {
     if (!checkIn || !checkOut) return null
@@ -318,7 +331,7 @@ function RoomsSection({ rooms }) {
     return diff > 0 ? diff : null
   })()
 
-  const totalAdults   = guestRooms.reduce((s, r) => s + r.adults, 0)
+  const totalAdults = guestRooms.reduce((s, r) => s + r.adults, 0)
   const totalChildren = guestRooms.reduce((s, r) => s + r.children, 0)
 
   return (
@@ -343,44 +356,7 @@ function RoomsSection({ rooms }) {
           {/* Check-in */}
           <Box>
             <Text fontSize="xs" color="gray.500" fontWeight={600} mb={1.5}>Arrivée</Text>
-            <Box
-              as="input"
-              type="date"
-              value={checkIn}
-              onChange={e => setCheckIn(e.target.value)}
-              w="full"
-              border="1px solid"
-              borderColor="gray.200"
-              borderRadius="lg"
-              px={3}
-              py={2.5}
-              fontSize="sm"
-              color="gray.700"
-              bg="gray.50"
-              _focus={{ outline: "none", borderColor: "blue.400", bg: "white" }}
-            />
-          </Box>
-
-          {/* Check-out */}
-          <Box>
-            <Text fontSize="xs" color="gray.500" fontWeight={600} mb={1.5}>Départ</Text>
-            <Box
-              as="input"
-              type="date"
-              value={checkOut}
-              onChange={e => setCheckOut(e.target.value)}
-              min={checkIn}
-              w="full"
-              border="1px solid"
-              borderColor="gray.200"
-              borderRadius="lg"
-              px={3}
-              py={2.5}
-              fontSize="sm"
-              color="gray.700"
-              bg="gray.50"
-              _focus={{ outline: "none", borderColor: "blue.400", bg: "white" }}
-            />
+            <DatePicker checkIn={checkIn} checkOut={checkOut} setCheckIn={setCheckIn} setCheckOut={setCheckOut} isBorder={true} />
           </Box>
 
           {/* Room + guest selector */}
@@ -415,7 +391,7 @@ function RoomsSection({ rooms }) {
 
       {/* Room cards */}
       <VStack spacing={4} align="stretch">
-        {rooms.map(room => (
+        {availableHotel?.rooms.map(room => (
           <RoomCard
             key={room.id}
             room={room}
@@ -428,14 +404,12 @@ function RoomsSection({ rooms }) {
     </Box>
   )
 }
-
-/* ── Room card ──────────────────────────────────────────────────── */
 function RoomCard({ room, nights, adults, children }) {
   // Total price = (base/night × nights) + (adult supplement × adults) + (child supplement × children)
   const totalPrice = nights
     ? room.price_by_day * nights
-      + room.price_by_adult * adults
-      + room.price_by_children * children
+    + room.price_by_adult * adults
+    + room.price_by_children * children
     : null
 
   return (
@@ -537,7 +511,7 @@ function DetailSkeleton() {
     <Box maxW="1100px" mx="auto" px={6} py={10}>
       <Skeleton height="480px" borderRadius="2xl" mb={3} />
       <Flex gap={2} mb={8}>
-        {[1,2,3,4].map(i => <Skeleton key={i} w="80px" h="60px" borderRadius="lg" />)}
+        {[1, 2, 3, 4].map(i => <Skeleton key={i} w="80px" h="60px" borderRadius="lg" />)}
       </Flex>
       <Grid templateColumns={{ base: "1fr", lg: "1fr 380px" }} gap={10}>
         <Box>
@@ -577,18 +551,20 @@ function avgRating(reviews) {
 export default function HotelDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  console.log(location.state)
 
-  const [hotel,   setHotel]   = useState(null)
+  const [hotel, setHotel] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState(null)
+  const [error, setError] = useState(null)
+  
 
-  // Real reviews from API — mapped from hotel.hotelReview
   const reviews = (hotel?.hotelReview ?? []).map(r => ({
-    id:      r.id,
-    author:  r.clientReview?.name ?? "Anonyme",
-    avatar:  r.clientReview?.name?.split(" ").map(w => w[0]).join("").slice(0,2).toUpperCase() ?? "?",
-    rating:  r.rate,
-    date:    new Date(r.createdAt).toLocaleDateString("fr-FR", { month: "long", year: "numeric" }),
+    id: r.id,
+    author: r.clientReview?.name ?? "Anonyme",
+    avatar: r.clientReview?.name?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() ?? "?",
+    rating: r.rate,
+    date: new Date(r.createdAt).toLocaleDateString("fr-FR", { month: "long", year: "numeric" }),
     comment: r.review,
   }))
   const avg = avgRating(reviews)
@@ -620,7 +596,6 @@ export default function HotelDetail() {
     <>
       <Header />
       <Flex direction="column" align="center" justify="center" py={32} gap={3}>
-        <Text fontSize="3xl">😕</Text>
         <Text color="gray.500">{error ?? "Hôtel introuvable."}</Text>
         <Button size="sm" colorScheme="blue" onClick={() => navigate(-1)}>
           Retour
@@ -633,8 +608,8 @@ export default function HotelDetail() {
 
   return (
     <>
-    <Helmet title={hotel.name}>
-    </Helmet>
+      <Helmet title={hotel.name}>
+      </Helmet>
       <Header />
 
       <Box maxW="1100px" mx="auto" px={{ base: 4, md: 6 }} py={8}>
@@ -732,7 +707,7 @@ export default function HotelDetail() {
 
           {/* Rooms with integrated booking search */}
           {hotel.rooms?.length > 0 && (
-            <RoomsSection rooms={hotel.rooms} />
+            <RoomsSection id={hotel.id} location={location.state} />
           )}
 
           {/* Reviews */}
@@ -751,7 +726,7 @@ export default function HotelDetail() {
             <Box mb={6}>
               {[5, 4, 3, 2, 1].map(star => {
                 const count = reviews.filter(r => r.rating === star).length
-                const pct   = reviews.length ? (count / reviews.length) * 100 : 0
+                const pct = reviews.length ? (count / reviews.length) * 100 : 0
                 return (
                   <Flex key={star} align="center" gap={3} mb={1.5}>
                     <Flex align="center" gap={1} w="40px" flexShrink={0}>

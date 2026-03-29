@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Box, Flex, Text, Button, Grid } from "@chakra-ui/react";
 
 const DAYS = ["Lu", "Ma", "Me", "Ju", "Ve", "Sa", "Di"];
@@ -39,7 +39,7 @@ function isBeforeToday(date) {
 
 function formatDate(date) {
   if (!date) return "";
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 }
 
 // --- MonthGrid component ---
@@ -83,7 +83,7 @@ function MonthGrid({ year, month, startDate, endDate, hoverDate, onDayClick, onD
                 bottom: "4px",
                 left: isStart ? "50%" : "0",
                 right: isEnd ? "50%" : "0",
-                bg: "purple.100",
+                bg: "blue.100",
                 zIndex: 0
               } : {}}
             >
@@ -104,8 +104,8 @@ function MonthGrid({ year, month, startDate, endDate, hoverDate, onDayClick, onD
                 onClick={() => !disabled && onDayClick(date)}
                 onMouseEnter={() => !disabled && onDayHover(date)}
                 cursor={disabled ? "not-allowed" : "pointer"}
-                color={isStart || isEnd ? "white" : inRange ? "purple.800" : disabled ? "gray.300" : "gray.700"}
-                bg={isStart || isEnd ? "purple.600" : "transparent"}
+                color={isStart || isEnd ? "white" : inRange ? "blue.800" : disabled ? "gray.300" : "gray.700"}
+                bg={isStart || isEnd ? "blue.600" : "transparent"}
               >
                 <Text fontSize="sm">{date.getDate()}</Text>
               </Box>
@@ -117,17 +117,28 @@ function MonthGrid({ year, month, startDate, endDate, hoverDate, onDayClick, onD
   )
 }
 
-export default function DatePicker({ checkIn, checkOut }) {
+export default function DatePicker({ checkIn, checkOut,setCheckIn,setCheckOut,isBorder }) {
   const today = new Date();
+  const threeNight = new Date(today)
+  threeNight.setDate(threeNight.getDate() + 3)
+  console.log(threeNight)
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
+  const [startDate, setStartDate] = useState(checkIn ? new Date(checkIn) : today);
+  const [endDate, setEndDate] = useState(checkOut ? new Date(checkOut) : threeNight);
   const [hoverDate, setHoverDate] = useState(null);
   const [open, setOpen] = useState(false);
+  const ref = useRef(null)
 
   const month2 = viewMonth === 11 ? 0 : viewMonth + 1;
   const year2 = viewMonth === 11 ? viewYear + 1 : viewYear;
+  useEffect(() => {
+  if (checkIn) {
+    const d = new Date(checkIn)
+    setViewMonth(d.getMonth())
+    setViewYear(d.getFullYear())
+  }
+}, [checkIn])
 
   const prevMonth = () => {
     if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y-1); } 
@@ -144,15 +155,15 @@ export default function DatePicker({ checkIn, checkOut }) {
       setStartDate(date);
       setEndDate(null);
       setHoverDate(null);
-      checkIn(date); // notify parent
+      setCheckIn(date); // notify parent
     } else {
       let start = startDate;
       let end = date;
       if (date < startDate) { start = date; end = startDate; }
       setStartDate(start);
       setEndDate(end);
-      checkIn(start);
-      checkOut(end);
+      setCheckIn(start);
+      setCheckOut(end);
       setHoverDate(null);
     }
   }
@@ -165,9 +176,22 @@ export default function DatePicker({ checkIn, checkOut }) {
 
   const hasRange = startDate && endDate;
   const nightCount = hasRange ? Math.round((endDate - startDate)/86400000) : null;
+  useEffect(() => {
+  function handleClickOutside(e) {
+    if (ref.current && !ref.current.contains(e.target)) {
+      setOpen(false)
+    }
+  }
+
+  document.addEventListener("mousedown", handleClickOutside)
+
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside)
+  }
+}, [])
 
   return (
-    <Box position="relative" display="inline-block" minW="300px" w="full" maxW="400px">
+    <Box ref={ref} position="relative" display="inline-block" minW="300px" w="full" maxW="400px">
       <Box
         as="button"
         onClick={() => setOpen(o => !o)}
@@ -176,14 +200,24 @@ export default function DatePicker({ checkIn, checkOut }) {
         alignItems="center"
         justifyContent="space-between"
         px={4} py={2}
-        borderRadius="sm"
-        border="none"
-        borderColor={open ? "purple.500" : "gray.200"}
-        bg="white"
+        cursor={"pointer"}
+        borderRadius="lg"
+        h={isBorder ? "42px" : "none"}
+        transition="all 0.15s"
+        fontWeight={isBorder ? "500" : "600"}
+        border={isBorder ? "1px solid" : "none"}
+        borderColor={open ? "blue.500" : "gray.200"}
+        bg={isBorder ? "gray.50" : "transparent"}
+        _hover={{ borderColor: "blue.300" }}
         fontSize="sm"
       >
-        <Text>{hasRange ? `${formatDate(startDate)} → ${formatDate(endDate)}` : startDate ? `${formatDate(startDate)} → Pick end` : "Select date range"}</Text>
-      </Box>
+<Text>
+  {hasRange
+    ? `${formatDate(startDate)} → ${formatDate(endDate)}`
+    : startDate
+      ? `${formatDate(startDate)} → Choisir la date de départ`
+      : "Choisir une période"}
+</Text>      </Box>
 
       {open && (
         <Box

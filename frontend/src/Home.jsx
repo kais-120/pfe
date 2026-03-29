@@ -156,11 +156,12 @@ function EquipmentTag({ equipKey }) {
 }
 
 
-function HotelCard({ hotel }) {
+function HotelCard({ hotel,checkIn,checkOut,rooms }) {
   const shortDesc = (hotel.description ?? "").slice(0, 130).trim() + "…"
   const minPrice = hotel.rooms?.length
     ? Math.min(...hotel.rooms.map(r => r.price_by_day))
     : null
+    const navigate = useNavigate()
 
   return (
     <Box
@@ -200,7 +201,7 @@ function HotelCard({ hotel }) {
               </Flex>
             </Box>
           ) : <Box />}
-          <Button colorScheme="blue" borderRadius="xl" size="sm" fontWeight={600} px={5}>
+          <Button onClick={()=>navigate(`/hotel/${hotel.id}`,{state:{checkIn,checkOut,rooms}})} colorScheme="blue" borderRadius="xl" size="sm" fontWeight={600} px={5}>
             Réserver
           </Button>
         </Flex>
@@ -243,6 +244,7 @@ const Home = () => {
   const [error, setError] = useState(null)
   const [checkIn, setCheckIn] = useState(today)
   const [checkOut, setCheckOut] = useState(tomorrow)
+
   
   // Compute nights between selected dates
   const nights = (() => {
@@ -495,7 +497,7 @@ const Home = () => {
         <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }} gap={6}>
           {loading
             ? Array.from({ length: 6 }).map((_, i) => <HotelCardSkeleton key={i} />)
-            : hotels.map(hotel => <HotelCard key={hotel.id} hotel={hotel} />)
+            : hotels.map(hotel => <HotelCard key={hotel.id} hotel={hotel} checkIn={checkIn} checkOut={checkOut} rooms={room} />)
           }
         </Grid>
 

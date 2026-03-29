@@ -14,7 +14,7 @@ function Counter({ label, sublabel, value, onIncrease, onDecrease, min = 0 }) {
           w="32px" h="32px"
           borderRadius="full"
           border="1px solid"
-          borderColor={value <= min ? "gray.200" : "gray.400"}
+          borderColor={value <= min ? "blue.500" : "gray.400"}
           display="flex" alignItems="center" justifyContent="center"
           cursor={value <= min ? "not-allowed" : "pointer"}
           color={value <= min ? "gray.300" : "gray.700"}
@@ -59,6 +59,9 @@ export default function RoomSelector({room}) {
   const [open, setOpen] = useState(false)
   const [rooms, setRooms] = useState([{ adults: 2, children: 0 }])
   const ref = useRef(null)
+  useEffect(() => {
+  room(rooms)
+}, [rooms])
 
   useEffect(() => {
     function handleClick(e) {
@@ -150,6 +153,7 @@ function addRoom() {
           w="320px"
           p={4}
         >
+          
           {rooms.map((room, idx) => (
             <Box key={idx} mb={4}>
               {/* Room header */}
@@ -201,7 +205,7 @@ function addRoom() {
             bg="none"
             border="none"
             cursor="pointer"
-            color="#cc0057"
+            color="blue.500"
             fontSize="sm"
             fontWeight="semibold"
             px={0}
@@ -218,15 +222,15 @@ function addRoom() {
               px={6}
               py={2}
               border="2px solid"
-              borderColor="#cc0057"
+              borderColor="blue.500"
               borderRadius="4px"
-              color="#cc0057"
+              color="blue.500"
               fontWeight="bold"
               fontSize="sm"
               bg="white"
               cursor="pointer"
               transition="all 0.15s"
-              _hover={{ bg: "#cc0057", color: "white" }}
+              _hover={{ bg: "blue.50" }}
             >
               Valider
             </Box>

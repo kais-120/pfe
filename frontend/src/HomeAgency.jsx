@@ -16,10 +16,10 @@ import Header from "./components/home/Header"
 import { Axios, imageURL } from "./Api/Api"
 
 const TYPE_META = {
-  circuit:   { color: "blue",   label: "Circuit"   },
-  excursion: { color: "green",  label: "Excursion" },
-  sejour:    { color: "purple", label: "Séjour"    },
-  camping:   { color: "orange", label: "Camping"   },
+  circuit: { color: "blue", label: "Circuit" },
+  excursion: { color: "green", label: "Excursion" },
+  sejour: { color: "purple", label: "Séjour" },
+  camping: { color: "orange", label: "Camping" },
 }
 
 /* ── Image slider ───────────────────────────────────────────────── */
@@ -173,7 +173,7 @@ function OfferCard({ offer, agency }) {
               </Text>
               <LuBadgeCheck size={13} color="var(--chakra-colors-green-500)" />
             </Flex>
-           
+
           </Box>
           {/* Quick contact icons */}
           <Flex gap={1.5} flexShrink={0}>
@@ -202,7 +202,7 @@ function OfferCard({ offer, agency }) {
             )}
             {agency.instagram && (
               <Flex as="a"
-                href={`https://instagram.com/${agency.instagram.replace("@","")}`}
+                href={`https://instagram.com/${agency.instagram.replace("@", "")}`}
                 target="_blank"
                 w="28px" h="28px" borderRadius="md"
                 bg="gray.50" color="gray.400"
@@ -228,7 +228,7 @@ function OfferCard({ offer, agency }) {
           </Box>
           <Button colorScheme="blue" borderRadius="xl"
             size="sm" fontWeight={700} px={5}
-            onClick={() => navigate(`/travel/offer/${offer.id}`)}>
+            onClick={() => navigate(`/agency/offer/${offer.id}`)}>
             Voir l'offre
           </Button>
         </Flex>
@@ -262,16 +262,15 @@ function CardSkeleton() {
   )
 }
 
-/* ── Main page ──────────────────────────────────────────────────── */
 export default function HomeAgency() {
-  const [agencies,   setAgencies]   = useState([])
-  const [loading,    setLoading]    = useState(true)
-  const [error,      setError]      = useState(null)
-  const [search,     setSearch]     = useState("")
+  const [agencies, setAgencies] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [search, setSearch] = useState("")
   const [typeFilter, setTypeFilter] = useState("all")
 
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       try {
         setLoading(true)
         const res = await Axios.get("/service/agency/public/get")
@@ -291,8 +290,8 @@ export default function HomeAgency() {
 
   /* Filter */
   const filtered = allOffers.filter(({ offer, agency }) => {
-    const matchType   = typeFilter === "all" || offer.type === typeFilter
-    const q           = search.toLowerCase()
+    const matchType = typeFilter === "all" || offer.type === typeFilter
+    const q = search.toLowerCase()
     const matchSearch = !q ||
       offer.title?.toLowerCase().includes(q) ||
       offer.destination?.toLowerCase().includes(q) ||
@@ -359,7 +358,7 @@ export default function HomeAgency() {
         boxShadow="0 1px 8px rgba(0,0,0,0.04)">
         <Flex justify="center" gap={2} flexWrap="wrap">
           {[{ key: "all", label: "Tous", color: "blue" },
-            ...Object.entries(TYPE_META).map(([k, v]) => ({ key: k, ...v }))
+          ...Object.entries(TYPE_META).map(([k, v]) => ({ key: k, ...v }))
           ].map(({ key, label, color }) => (
             <Box key={key} as="button"
               px={4} py={1.5} borderRadius="full"
@@ -403,8 +402,8 @@ export default function HomeAgency() {
             {loading
               ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
               : filtered.map(({ offer, agency }) => (
-                  <OfferCard key={offer.id} offer={offer} agency={agency} />
-                ))
+                <OfferCard key={offer.id} offer={offer} agency={agency} />
+              ))
             }
           </Grid>
 
