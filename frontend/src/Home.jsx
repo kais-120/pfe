@@ -1,38 +1,40 @@
-import { Badge, Box, Button, Combobox, Flex, Grid, HStack, Image, Portal, Skeleton, SkeletonText, Text, useFilter, useListCollection, VStack } from "@chakra-ui/react"
+import { Badge, Box, Button, Combobox, DatePicker, Flex, Grid, HStack, Image, parseDate, Portal, Skeleton, SkeletonText, Text, useFilter, useListCollection, VStack } from "@chakra-ui/react"
 import Header from "./components/home/Header"
 import { useColorMode } from "./components/ui/color-mode"
 import { useEffect, useState } from "react"
-import DatePicker from "./components/ui/DatePicker"
+// import DatePicker from "./components/ui/DatePicker"
 import RoomSelector from "./components/ui/RoomSelector"
 import { Axios, imageURL } from "./Api/Api"
 import { FaChevronLeft, FaChevronRight, FaDumbbell, FaMapMarkerAlt, FaParking, FaSearch, FaSpa, FaStar, FaSwimmingPool, FaWifi } from "react-icons/fa"
 import { useNavigate } from "react-router-dom"
+import { LuCalendar } from "react-icons/lu"
 
 
 const EQUIPMENT_LIST = [
-  { key: "spa",label: "Spa",Icon: FaSpa},
-  { key: "gym",label: "Gym",Icon: FaDumbbell},
-  { key: "piscine",label: "Piscine",Icon: FaSwimmingPool },
-  { key: "wifi",label: "Wi-Fi",Icon: FaWifi},
-  { key: "parking",label: "Parking", Icon: FaParking},
+  { key: "spa", label: "Spa", Icon: FaSpa },
+  { key: "gym", label: "Gym", Icon: FaDumbbell },
+  { key: "piscine", label: "Piscine", Icon: FaSwimmingPool },
+  { key: "wifi", label: "Wi-Fi", Icon: FaWifi },
+  { key: "parking", label: "Parking", Icon: FaParking },
 ]
 
 const LOCATIONS = [
-  { label: "Nabeul", value: "nabeul"},
-  { label: "Korbous",value: "korbous"},
-  { label: "Gammarth",value: "gammarth"},
-  { label: "Tunis",value: "tunis"},
-  { label: "Korba",value: "korba"},
-  { label: "Kelibia",value: "kelibia"},
-  { label: "Djerba",value: "djerba"},
-  { label: "Monastir",value: "monastir"},
-  { label: "Mahdia",value: "mahdia"},
-  { label: "Sousse",value: "sousse"},
-  { label: "Tabarka",value: "tabarka"},
-  { label: "Hammamet",value: "hammamet"},
+  { label: "Nabeul", value: "nabeul" },
+  { label: "Korbous", value: "korbous" },
+  { label: "Gammarth", value: "gammarth" },
+  { label: "Tunis", value: "tunis" },
+  { label: "Korba", value: "korba" },
+  { label: "Kelibia", value: "kelibia" },
+  { label: "Djerba", value: "djerba" },
+  { label: "Monastir", value: "monastir" },
+  { label: "Mahdia", value: "mahdia" },
+  { label: "Sousse", value: "sousse" },
+  { label: "Tabarka", value: "tabarka" },
+  { label: "Hammamet", value: "hammamet" },
 ]
 
 
+/* ── Location combobox (same style as SearchHotels) ─────────────── */
 function LocationCombobox({ value, onChange }) {
   const { contains } = useFilter({ sensitivity: "base" })
   const { collection, filter } = useListCollection({
@@ -41,7 +43,6 @@ function LocationCombobox({ value, onChange }) {
   })
   return (
     <Box flex={1} minW="180px">
-      <Text fontSize="xs" color="gray.500" fontWeight={600} mb={1.5}>Destination</Text>
       <Combobox.Root
         width="full"
         collection={collection}
@@ -53,18 +54,13 @@ function LocationCombobox({ value, onChange }) {
           <Combobox.Input
             placeholder="Où allez-vous ?"
             style={{
-              height: "42px",
-              border: "1px solid #E2E8F0",
-              borderRadius: "8px",
-              padding: "0 12px",
-              fontSize: "14px",
-              background: "#F7FAFC",
-              width: "100%",
-              outline: "none",
+              width: "100%", border: "none", outline: "none",
+              fontSize: "15px", fontWeight: "600",
+              color: "var(--chakra-colors-gray-800)",
+              background: "transparent", height: "32px",
             }}
           />
           <Combobox.IndicatorGroup style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)" }}>
-            <Combobox.ClearTrigger />
             <Combobox.Trigger />
           </Combobox.IndicatorGroup>
         </Combobox.Control>
@@ -162,10 +158,10 @@ function EquipmentTag({ equipKey }) {
 
 function HotelCard({ hotel }) {
   const shortDesc = (hotel.description ?? "").slice(0, 130).trim() + "…"
-  const minPrice  = hotel.rooms?.length
+  const minPrice = hotel.rooms?.length
     ? Math.min(...hotel.rooms.map(r => r.price_by_day))
     : null
-  const navigate = useNavigate()
+
   return (
     <Box
       bg="white" borderRadius="2xl" overflow="hidden"
@@ -204,8 +200,8 @@ function HotelCard({ hotel }) {
               </Flex>
             </Box>
           ) : <Box />}
-          <Button onClick={()=>navigate(`/hotel/${hotel.id}`)} colorScheme="blue" borderRadius="xl" size="sm" fontWeight={600} px={5}>
-            Details
+          <Button colorScheme="blue" borderRadius="xl" size="sm" fontWeight={600} px={5}>
+            Réserver
           </Button>
         </Flex>
       </VStack>
@@ -237,15 +233,17 @@ function HotelCardSkeleton() {
 const Home = () => {
   const { setColorMode } = useColorMode()
   useEffect(() => { setColorMode("light") }, [setColorMode])
+  const today = new Date().toISOString().split("T")[0]
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0]
 
-  const [hotels,      setHotels]      = useState([])
-  const [room, setRoom] = useState([{ adults: 2, children: 0 }])
-  const [loading,     setLoading]     = useState(true)
+  const [hotels, setHotels] = useState([])
+  const [room, setRoom] = useState([])
+  const [loading, setLoading] = useState(true)
   const [destination, setDestination] = useState("")
-  const [error,       setError]       = useState(null)
-  const [checkIn,     setCheckIn]     = useState(null)
-  const [checkOut,    setCheckOut]    = useState(null)
-
+  const [error, setError] = useState(null)
+  const [checkIn, setCheckIn] = useState(today)
+  const [checkOut, setCheckOut] = useState(tomorrow)
+  
   // Compute nights between selected dates
   const nights = (() => {
     if (!checkIn || !checkOut) return null
@@ -271,106 +269,222 @@ const Home = () => {
   const navigate = useNavigate()
 
   const handleSearch = () => {
-  if (!destination) return
-  const dIn = new Date(checkIn)
-  const dOut = new Date(checkOut)
-
-  const dateIn = dIn.toISOString().split("T")[0]
-  const dateOut = dOut.toISOString().split("T")[0]
-
-   const roomsString = room
-    .map(r => `${r.adults}-${r.children}`)
-    .join(",");
-    const roomsArray = room.map(r => [r.adults, r.children])
-
-  const searchData = {
-    destination: destination,
-    checkIn: dateIn ?? "",
-    checkOut: dateOut ?? "",
-    rooms: roomsArray
+    if (!destination) return
+    // Extract room/guest counts from RoomSelector state
+    const numberRoom = room?.rooms ?? 1
+    const numberAdult = room?.adults ?? 2
+    const numberChildren = room?.children ?? 0
+    navigate(
+      `/search?destination=${destination}` +
+      `&checkIn=${checkIn ?? ""}` +
+      `&checkOut=${checkOut ?? ""}` +
+      `&numberAdult=${numberAdult}` +
+      `&numberChildren=${numberChildren}` +
+      `&numberRoom=${numberRoom}`
+    )
   }
 
-  localStorage.setItem("searchData", JSON.stringify(searchData))
+  function DateField({ label, value, onChange, min }) {
+    return (
+      <Box>
+        {label && (
+          <Text fontSize="xs" fontWeight={700} color="gray.500" mb={0.5}>
+            {label}
+          </Text>
+        )}
+        <DatePicker.Root
+          locale="fr-FR"
+          min={parseDate(min)}
+          value={value ? [parseDate(value)] : []}
+          onValueChange={(details) => {
+            const date = details.value?.[0]
+            if (date) {
+              const jsDate = new Date(date.year, date.month - 1, date.day + 1)
+              onChange(jsDate.toISOString().split("T")[0])
+            }
+          }}
+        >
+          <DatePicker.Control h="32px" border="none" bg="white">
+            <DatePicker.Input
+              p={0}
+              outline="none" border="none" bg="transparent"
+              fontSize="14px" fontWeight="600" color="gray.800"
+            />
+            <DatePicker.IndicatorGroup>
+              <DatePicker.Trigger>
+                <LuCalendar size={14} />
+              </DatePicker.Trigger>
+            </DatePicker.IndicatorGroup>
+          </DatePicker.Control>
+          <Portal>
+            <DatePicker.Positioner>
+              <DatePicker.Content>
+                <DatePicker.View view="day">
+                  <DatePicker.Header /><DatePicker.DayTable />
+                </DatePicker.View>
+                <DatePicker.View view="month">
+                  <DatePicker.Header /><DatePicker.MonthTable />
+                </DatePicker.View>
+                <DatePicker.View view="year">
+                  <DatePicker.Header /><DatePicker.YearTable />
+                </DatePicker.View>
+              </DatePicker.Content>
+            </DatePicker.Positioner>
+          </Portal>
+        </DatePicker.Root>
+      </Box>
+    )
+  }
 
-
- 
-  // navigate(
-  //   `/search?destination=${destination}` +
-  //   `&checkIn=${dateIn ?? ""}` +
-  //   `&checkOut=${dateOut ?? ""}` +
-  //   `&rooms=${roomsString}`
-  // )
-}
   return (
     <>
       <Header />
 
-      {/* ── Search bar ── */}
-      <Flex justify="center" alignItems="center" mt={10} px={4}>
-        <Box width="full" maxW="1100px" bg="white" p={5} borderRadius="2xl" boxShadow="0 4px 24px rgba(0,0,0,0.08)">
+      {/* ── Hero with BA-style search ── */}
+      <Box
+        bg="linear-gradient(160deg, #0D1B3E 0%, #1A3260 50%, #0D1B3E 100%)"
+        pt={14} pb={8} px={4}>
 
-          <Grid
-            templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "1.2fr 1fr 1fr auto" }}
-            gap={4}
-            align="flex-end"
-          >
-            {/* Destination — new styled combobox */}
-            <LocationCombobox value={destination} onChange={setDestination} />
+        <Box maxW="1100px" mx="auto">
 
-            {/* DatePicker — your existing component, wrapped with label */}
-            <Box>
-              <Text fontSize="xs" color="gray.500" fontWeight={600} mb={1.5}>Dates de séjour</Text>
-              <DatePicker checkIn={setCheckIn} checkOut={setCheckOut} />
-            </Box>
-
-            {/* RoomSelector — your existing component, wrapped with label */}
-            <Box>
-              <Text fontSize="xs" color="gray.500" fontWeight={600} mb={1.5}>Chambres & voyageurs</Text>
-              <RoomSelector room={setRoom} />
-            </Box>
-
-            {/* Search button */}
-            <Button
-              colorScheme="blue"
-              h="42px" px={7}
-              borderRadius="xl"
-              fontWeight={700}
-              fontSize="sm"
-              alignSelf="flex-end"
-              leftIcon={<FaSearch size={12} />}
-              isDisabled={!destination}
-              onClick={handleSearch}
-            >
-              Rechercher
-            </Button>
-          </Grid>
-
-          {/* Nights summary pill — appears once both dates are picked */}
-          {nights && checkIn && checkOut && (
-            <Flex align="center" gap={2} mt={3} pt={3} borderTop="1px solid" borderColor="gray.100">
-              <Badge colorScheme="blue" borderRadius="full" px={2.5} py={0.5} fontSize="xs">
-                {nights} nuit{nights > 1 ? "s" : ""}
-              </Badge>
-              <Text fontSize="xs" color="gray.400">
-                du {new Date(checkIn).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
-                {" "}au {new Date(checkOut).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
+          {/* Title */}
+          <Box textAlign="center" mb={8}>
+            <Flex align="center" justify="center" gap={2} mb={3}>
+              <Box color="blue.200"><FaStar size={12} /></Box>
+              <Text fontSize="xs" fontWeight={700} color="blue.200"
+                textTransform="uppercase" letterSpacing="widest">
+                Hôtels & Hébergements
               </Text>
             </Flex>
-          )}
+            <Text fontSize={{ base: "2xl", md: "4xl" }} fontWeight={900}
+              color="white" lineHeight="1.15" letterSpacing="-0.5px">
+              Trouvez votre hôtel idéal
+            </Text>
+            <Text color="blue.100" fontSize="sm" mt={2}>
+              {hotels.length > 0
+                ? `${hotels.length} hôtel${hotels.length > 1 ? "s" : ""} disponibles en Tunisie`
+                : "Les meilleures adresses sélectionnées pour vous"}
+            </Text>
+          </Box>
+
+          {/* Search bar */}
+          <Box
+            bg="white" borderRadius="2xl"
+            boxShadow="0 8px 40px rgba(0,0,0,0.25)"
+            border="1px solid" borderColor="gray.100">
+
+            <Grid
+              templateColumns={{ base: "1fr", md: "1fr 1fr 1fr 1.3fr auto" }}
+              align="stretch">
+              <Box px={4} py={3} borderRight="1px solid" borderColor="gray.150"
+                borderLeftRadius="2xl">
+                <Text fontSize="xs" fontWeight={700} color="gray.500">
+                  Destination
+                </Text>
+                <LocationCombobox />
+              </Box>
+              {/* <Box px={4} py={3} borderRight="1px solid" borderColor="gray.150"
+                borderLeftRadius="2xl">
+                <Text fontSize="xs" fontWeight={700} color="gray.500" mb={1.5}>
+                  Destination
+                </Text>
+                <Box as="input"
+                  value={destination}
+                  onChange={e => setDestination(e.target.value)}
+                  placeholder="Djerba, Sousse, Tunis…"
+                  style={{
+                    width: "100%", border: "none", outline: "none",
+                    fontSize: "15px", fontWeight: "600",
+                    color: "var(--chakra-colors-gray-800)",
+                    background: "transparent",
+                  }} />
+              </Box> */}
+
+              {/* Dates */}
+              {/* Pickup date */}
+              <Box px={4} py={3} borderRight="1px solid" borderColor="gray.150">
+                <DateField
+                  label="Prise en charge"
+                  min={today}
+                  value={checkIn}
+                  onChange={v => { setCheckIn(v); if (v >= checkOut) setCheckOut(v) }}
+                />
+              </Box>
+
+              {/* Return date */}
+              <Box px={4} py={3} borderRight="1px solid" borderColor="gray.150">
+                <DateField
+                  label="Retour"
+                  min={checkIn || today}
+                  value={checkOut}
+                  onChange={setCheckOut}
+                />
+              </Box>
+
+              {/* Rooms */}
+              <Box px={4} py={3} borderRight="1px solid" borderColor="gray.150">
+                <Text fontSize="xs" fontWeight={700} color="gray.500" mb={1.5}>
+                  Chambres & voyageurs
+                </Text>
+                <RoomSelector room={setRoom} />
+              </Box>
+
+              {/* Search button */}
+              <Flex
+                as="button"
+                align="center" justify="center"
+                px={6} gap={2} minH="70px"
+                bg="blue.600" color="white"
+                fontWeight={700} fontSize="sm"
+                borderRightRadius="2xl"
+                cursor={!destination ? "not-allowed" : "pointer"}
+                opacity={!destination ? 0.6 : 1}
+                transition="background 0.15s"
+                _hover={destination ? { bg: "blue.700" } : {}}
+                onClick={handleSearch}>
+                <FaSearch size={13} />
+                Rechercher
+              </Flex>
+
+            </Grid>
+
+            {/* Nights summary */}
+            {nights && checkIn && checkOut && (
+              <Flex align="center" gap={2} px={5} py={3}
+                borderTop="1px solid" borderColor="gray.100"
+                bg="grey.50" borderBottomRadius="2xl">
+                <Badge colorScheme="blue" borderRadius="full" px={2.5} py={0.5} fontSize="xs">
+                  {nights} nuit{nights > 1 ? "s" : ""}
+                </Badge>
+                <Text fontSize="xs" color="gray.400" >
+                  du {new Date(checkIn).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
+                  {" "}au {new Date(checkOut).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
+                </Text>
+              </Flex>
+            )}
+          </Box>
 
         </Box>
-      </Flex>
+      </Box>
 
       {/* ── Hotel listing ── */}
       <Box maxW="1200px" mx="auto" px={6} py={10}>
         <Flex justify="space-between" align="center" mb={6}>
-          <Text fontSize="2xl" fontWeight={800} color="gray.800">
-            Nos Plus Belles Thématiques
-          </Text>
+          <Box>
+            <Text fontSize="2xl" fontWeight={800} color="gray.800">
+              Nos Plus Belles Thématiques
+            </Text>
+            {!loading && hotels.length > 0 && (
+              <Text fontSize="sm" color="gray.500" mt={0.5}>
+                {hotels.length} hôtel{hotels.length > 1 ? "s" : ""} disponible{hotels.length > 1 ? "s" : ""}
+              </Text>
+            )}
+          </Box>
         </Flex>
 
         {error && (
           <Flex direction="column" align="center" justify="center" py={20} gap={3}>
+            <Text fontSize="xl">😕</Text>
             <Text color="gray.500">{error}</Text>
             <Button size="sm" colorScheme="blue" onClick={() => window.location.reload()}>
               Réessayer
@@ -387,7 +501,6 @@ const Home = () => {
 
         {!loading && !error && hotels.length === 0 && (
           <Flex direction="column" align="center" justify="center" py={20} gap={2}>
-            <Text fontSize="3xl"></Text>
             <Text fontWeight={600} color="gray.700">Aucun hôtel trouvé</Text>
             <Text fontSize="sm" color="gray.500">Essayez de modifier vos critères de recherche.</Text>
           </Flex>

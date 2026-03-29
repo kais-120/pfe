@@ -98,7 +98,7 @@ function MonthGrid({ year, month, startDate, endDate, hoverDate, onDayClick, onD
                 justifyContent="center"
                 fontSize="sm"
                 fontWeight={isStart || isEnd ? "bold" : "medium"}
-                borderRadius="md"
+                border={"none"}
                 userSelect="none"
                 disabled={disabled}
                 onClick={() => !disabled && onDayClick(date)}
@@ -117,7 +117,6 @@ function MonthGrid({ year, month, startDate, endDate, hoverDate, onDayClick, onD
   )
 }
 
-// --- DatePicker component ---
 export default function DatePicker({ checkIn, checkOut }) {
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -178,7 +177,7 @@ export default function DatePicker({ checkIn, checkOut }) {
         justifyContent="space-between"
         px={4} py={2}
         borderRadius="sm"
-        border="1px solid"
+        border="none"
         borderColor={open ? "purple.500" : "gray.200"}
         bg="white"
         fontSize="sm"
@@ -201,9 +200,9 @@ export default function DatePicker({ checkIn, checkOut }) {
           w="620px"
         >
           <Flex align="center" justify="space-between" mb={5}>
-            <Button onClick={prevMonth}>Prev</Button>
+            <Button onClick={prevMonth}>Précédent</Button>
             <Text>{MONTHS[viewMonth]} {viewYear} - {MONTHS[month2]} {year2}</Text>
-            <Button onClick={nextMonth}>Next</Button>
+            <Button onClick={nextMonth}>Suivante</Button>
           </Flex>
 
           <Flex gap={6}>
@@ -212,10 +211,10 @@ export default function DatePicker({ checkIn, checkOut }) {
           </Flex>
 
           <Flex justify="space-between" mt={5}>
-            <Text>{hasRange ? `${nightCount} night(s)` : startDate ? "Select check-out" : "Select check-in"}</Text>
+            <Text>{hasRange ? `${nightCount} nuit(s)` : startDate ? "Select check-out" : "Select check-in"}</Text>
             <Flex gap={2}>
-              <Button size="sm" variant="ghost" onClick={handleClear}>Clear</Button>
-              <Button size="sm" colorScheme="purple" onClick={() => setOpen(false)} disabled={!hasRange}>Apply</Button>
+              <Button size="sm" variant="ghost" onClick={handleClear}>Claire</Button>
+              <Button size="sm" colorScheme="purple" onClick={() => setOpen(false)} disabled={!hasRange}>Appliquer</Button>
             </Flex>
           </Flex>
         </Box>

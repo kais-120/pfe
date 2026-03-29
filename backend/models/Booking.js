@@ -20,10 +20,6 @@ const Booking = sequelize.define("booking",{
         type:DataTypes.ENUM("agence de voyage","location de voitures","hotel","compagnies aériennes","voyages circuits"),
         allowNull:false,
     },
-    method_payment:{
-        type:DataTypes.ENUM("en ligne","en espèce"),
-        allowNull:true,
-    },
     client_id:{
         type:DataTypes.BIGINT,
         allowNull:false,

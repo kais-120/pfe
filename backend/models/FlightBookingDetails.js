@@ -8,15 +8,11 @@ const FlightBookingDetails = sequelize.define("flight_booking_details",{
         primaryKey:true
     },
     seat_class:{
-        type:DataTypes.ENUM("economy", "business", "first"),
+        type:DataTypes.ENUM("économique", "business", "premiére"),
         allowNull:false,
     },
     passenger_count:{
         type:DataTypes.INTEGER,
-        allowNull:false,
-    },
-    price:{
-        type:DataTypes.DECIMAL,
         allowNull:false,
     },
     booking_id:{
@@ -32,7 +28,7 @@ const FlightBookingDetails = sequelize.define("flight_booking_details",{
         type:DataTypes.BIGINT,
         allowNull:false,
         references:{
-            model:"compagnies",
+            model:"flights",
             key:"id"
         },
         onDelete:'CASCADE',

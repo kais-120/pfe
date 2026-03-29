@@ -114,13 +114,12 @@ function addRoom() {
         alignItems="center"
         gap={2}
         px={3}
-        border="1px solid"
+        border="none"
         borderColor={open ? "#cc0057" : "gray.300"}
         borderRadius="4px"
         bg="white"
         cursor="pointer"
         textAlign="left"
-        boxShadow={open ? "0 0 0 2px rgba(204,0,87,0.15)" : "none"}
         transition="all 0.15s"
         onClick={() => setOpen(o => !o)}
         _hover={{ borderColor: "#cc0057" }}
@@ -154,7 +153,7 @@ function addRoom() {
           {rooms.map((room, idx) => (
             <Box key={idx} mb={4}>
               {/* Room header */}
-              <Flex justify="space-between" align="center" mb={1}>
+              <Flex justify="space-between" direction={"row"} align="center" mb={1}>
                 <Text fontSize="sm" fontWeight="bold" color="gray.800">
                   Chambre {idx + 1}
                 </Text>
@@ -207,7 +206,6 @@ function addRoom() {
             fontWeight="semibold"
             px={0}
             py={2}
-            _hover={{ textDecoration: "underline" }}
           >
             + Ajouter une autre chambre
           </Box>

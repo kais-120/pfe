@@ -3,35 +3,42 @@ import {
   VStack, Field, Box, FileUpload, Icon,
   createListCollection, Select, Portal,
   Grid, Flex, Text, Image, SimpleGrid,
+  useFilter,
+  useListCollection,
+  Combobox,
 } from "@chakra-ui/react";
 import { useFormik } from "formik";
-import { LuUpload, LuHotel, LuMapPin, LuAlignLeft, LuImage, LuWifi,
-  LuChevronLeft, LuCheck, LuX } from "react-icons/lu";
+import {
+  LuUpload, LuHotel, LuMapPin, LuAlignLeft, LuImage, LuWifi,
+  LuChevronLeft, LuCheck, LuX
+} from "react-icons/lu";
 import { FaWifi, FaSwimmingPool, FaDumbbell, FaSpa, FaSnowflake, FaUtensils, FaParking } from "react-icons/fa";
 import * as Yup from "yup";
-import { AxiosToken } from "../../../../Api/Api";
+import { Axios, AxiosToken } from "../../../../Api/Api";
 import { toaster } from "../../../../components/ui/toaster";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { Map } from "lucide-react";
 
 const validationSchema = Yup.object({
-  name:Yup.string().required("Le nom de l'hôtel est requis"),
-  description:Yup.string().required("La description est requise"),
-  address:Yup.string().required("L'adresse est requise"),
-  equipments:Yup.array().min(1, "Veuillez sélectionner au moins un équipement"),
-  images:Yup.array()
+  name: Yup.string().required("Le nom de l'hôtel est requis"),
+  description: Yup.string().required("La description est requise"),
+  address: Yup.string().required("L'adresse est requise"),
+  equipments: Yup.array().min(1, "Veuillez sélectionner au moins un équipement"),
+  images: Yup.array()
     .min(1, "Veuillez ajouter au moins une image")
     .max(15, "Maximum 15 images autorisées"),
 });
 
 const EQUIPMENTS = [
-  { value:"wifi",label:"Wi-Fi",Icon:FaWifi},
-  { value:"piscine",label:"Piscine",Icon:FaSwimmingPool},
-  { value:"gym",label:"Gym",Icon:FaDumbbell},
-  { value:"spa",label:"Spa",Icon:FaSpa},
-  { value:"climatisation", label:"Climatisation",Icon:FaSnowflake},
-  { value:"restaurant",label:"Restaurant",Icon:FaUtensils},
-  { value:"parking",label:"Parking", Icon:FaParking},
+  { value: "wifi", label: "Wi-Fi", Icon: FaWifi },
+  { value: "piscine", label: "Piscine", Icon: FaSwimmingPool },
+  { value: "gym", label: "Gym", Icon: FaDumbbell },
+  { value: "spa", label: "Spa", Icon: FaSpa },
+  { value: "climatisation", label: "Climatisation", Icon: FaSnowflake },
+  { value: "restaurant", label: "Restaurant", Icon: FaUtensils },
+  { value: "parking", label: "Parking", Icon: FaParking },
 ]
 
 const equipmentsList = createListCollection({
@@ -113,19 +120,103 @@ const AddHotel = () => {
   const navigate = useNavigate()
   const [previews, setPreviews] = useState([])
 
+const states = [
+
+    {
+        "label": "ariana",
+    },
+    {
+        "label": "beja",
+    },
+    {
+        "label": "ben arous",
+    },
+    {
+        "label": "bizerte",
+    },
+    {
+        "label": "gabes",
+    },
+    {
+        "label": "gafsa",
+    },
+    {
+        "label": "jendouba",
+    },
+    {
+        "label": "kairouan",
+    },
+    {
+        "label": "kasserine",
+    },
+    {
+        "label": "kebili",
+    },
+    {
+        "label": "kef",
+    },
+    {
+        "label": "mahdia",
+    },
+    {
+        "label": "mannouba",
+    },
+    {
+        "label": "medenine",
+    },
+    {
+        "label": "monastir",
+    },
+    {
+        "label": "nabeul",
+    },
+    {
+        "label": "sfax",
+    },
+    {
+        "label": "sidi bouzid",
+    },
+    {
+        "label": "siliana",
+    },
+    {
+        "label": "sousse",
+    },
+    {
+        "label": "tataouine",
+    },
+    {
+        "label": "tozeur",
+    },
+    {
+        "label": "tunis",
+    },
+    {
+        "label": "zaghouan",
+    }
+]
+
+const { contains } = useFilter({ sensitivity: "base" })
+
+const { collection, filter } = useListCollection({
+  initialItems: states,
+  filter: contains,
+})
+  
   const formik = useFormik({
     initialValues: {
-      name: "", description: "", address: "",
+      name: "", description: "", address: "", state: "",
       equipments: [], images: [],
     },
     validationSchema,
     onSubmit: async (values) => {
       const formData = new FormData()
-      formData.append("name",        values.name)
+      formData.append("name", values.name)
       formData.append("description", values.description)
-      formData.append("address",     values.address)
-      values.equipments.forEach(eq  => formData.append("equipments[]", eq))
-      values.images.forEach(img     => formData.append("service_doc",  img))
+      formData.append("state", values.state)
+      formData.append("address", values.address)
+      values.equipments.forEach(eq => formData.append("equipments[]", eq))
+      values.images.forEach(img => formData.append("service_doc", img))
 
       try {
         await AxiosToken.post("/service/hotel/add", formData)
@@ -222,6 +313,37 @@ const AddHotel = () => {
                   _focus={{ boxShadow: "none" }}
                   _placeholder={{ color: "gray.300" }}
                 />
+              </FormField>
+
+              <FormField formik={formik} name="state" label="État" icon={Map}>
+
+                <Combobox.Root
+                  collection={collection}
+                  onInputValueChange={(e) => filter(e.inputValue)}
+                >
+                  <Combobox.Control>
+                    <Combobox.Input outline={"none"} border={"none"} placeholder="Ex: tunis" />
+                    <Combobox.IndicatorGroup>
+                      <Combobox.ClearTrigger />
+                      <Combobox.Trigger />
+                    </Combobox.IndicatorGroup>
+                  </Combobox.Control>
+                  <Portal>
+                    <Combobox.Positioner>
+                      <Combobox.Content >
+                        <Combobox.Empty>No items found</Combobox.Empty>
+                        {collection && collection.items.map((item) => (
+                          <Combobox.Item item={item} key={item.label}>
+                            {item.label}
+                            <Combobox.ItemIndicator />
+                          </Combobox.Item>
+                        ))}
+                      </Combobox.Content>
+                    </Combobox.Positioner>
+                  </Portal>
+                </Combobox.Root>
+
+
               </FormField>
 
               <FormField formik={formik} name="address" label="Adresse" icon={LuMapPin}>
@@ -342,7 +464,7 @@ const AddHotel = () => {
             >
               <FileUpload.HiddenInput />
               <FileUpload.Dropzone
-               w={"full"}
+                w={"full"}
                 border="2px dashed"
                 borderColor={formik.touched.images && formik.errors.images ? "red.300" : "gray.200"}
                 borderRadius="xl"

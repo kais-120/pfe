@@ -1,120 +1,305 @@
 const { body, validationResult } = require("express-validator");
-const { Room, Booking, Hotel, User } = require("../models");
+const { Room, Booking, Hotel, User, Flight, Compagnie, FlightBookingDetails, FlightClasses, Vehicle, Location, CarRentalBookingDetails, Circuit, Voyage, CircuitBookingDetails, Offer, Agence, OfferBookingDetails } = require("../models");
 const HotelBookingDetails = require("../models/HotelBookingDetails");
 const Notification = require("../models/Notification");
 const { getIO } = require("../initSocket");
 
 exports.BookingHotel = [
     body("check_in_date").notEmpty().withMessage("check in date is required")
-    .isDate().withMessage("check in date should be date"),
+        .isDate().withMessage("check in date should be date"),
     body("check_out_date").notEmpty().withMessage("check out date is required")
-    .isDate().withMessage("check out date should be date"),
+        .isDate().withMessage("check out date should be date"),
     body("number_of_guests_children").notEmpty().withMessage("number of guests children is required")
-    .isArray().withMessage("number of guests children should be array"),
+        .isArray().withMessage("number of guests children should be array"),
     body("number_of_guests_adult").notEmpty().withMessage("number of guests adult is required")
-    .isArray().withMessage("number of guests adult should be array"),
+        .isArray().withMessage("number of guests adult should be array"),
     body("rooms").notEmpty().withMessage("room id is required")
-    .isArray().withMessage("room id should be array"),
-    ,async (req,res) => {
+        .isArray().withMessage("room id should be array")
+    , async (req, res) => {
         const errors = validationResult(req);
-            if(!errors.isEmpty()){
-                return res.status(422).json({ errors: errors.array().map(err => err.msg) });
+        if (!errors.isEmpty()) {
+            return res.status(422).json({ errors: errors.array().map(err => err.msg) });
         }
-        try{
+        try {
             const io = getIO()
-            const { check_in_date,check_out_date,number_of_guests_adult,number_of_guests_children,rooms } = req.body;
-            const {id} = req.params;
-            if(check_in_date >= check_out_date){
-                return res.status(400).send({message:"date invalid"});
+            const { check_in_date, check_out_date, number_of_guests_adult, number_of_guests_children, rooms } = req.body;
+            const { id } = req.params;
+            if (check_in_date >= check_out_date) {
+                return res.status(400).send({ message: "date invalid" });
             }
-            const {partner_id} = await Hotel.findByPk(id);
+            const { partner_id } = await Hotel.findByPk(id);
             let total_price = 0;
             const client_id = req.userId;
-            const booking = await Booking.create({total_price,type:"hotel",client_id})
+            const booking = await Booking.create({ total_price, type: "hotel", client_id })
             let index = 0;
-            for(const r of rooms){
+            for (const r of rooms) {
                 const room = await Room.findByPk(r);
-                    if(!room){
-                        booking.destroy();
-                        return res.status(404).send({message:"room not found"});
-                    }
-                    const checkIn = new Date(check_in_date);
-                    const checkOut = new Date(check_out_date);
-                    const days = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
-                    const adultPrice = room.price_by_adult * number_of_guests_adult[index] * days;
-                    const childrenPrice = room.price_by_children * number_of_guests_children[index] * days;
-                    total_price = total_price + adultPrice + childrenPrice
-                    HotelBookingDetails.create({check_in_date,check_out_date,number_of_guests_adult:number_of_guests_adult[index],number_of_guests_children:number_of_guests_children[index],booking_id:booking.id,room_id:r})
-                    index++;
+                if (!room) {
+                    booking.destroy();
+                    return res.status(404).send({ message: "room not found" });
+                }
+                const checkIn = new Date(check_in_date);
+                const checkOut = new Date(check_out_date);
+                const days = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+                const adultPrice = room.price_by_adult * number_of_guests_adult[index] * days;
+                const childrenPrice = room.price_by_children * number_of_guests_children[index] * days;
+                total_price = total_price + adultPrice + childrenPrice
+                HotelBookingDetails.create({ check_in_date, check_out_date, number_of_guests_adult: number_of_guests_adult[index], number_of_guests_children: number_of_guests_children[index], booking_id: booking.id, room_id: r })
+                index++;
             };
-            await booking.update({total_price});
-            await Notification.create({title:"Nouvelle réservation",message:"un client faire un réservation",type:"booking",user_id:partner_id})
+            await booking.update({ total_price });
+            await Notification.create({ title: "Nouvelle réservation", message: "un client faire un réservation", type: "booking", user_id: partner_id })
             io.to(`partner-${partner_id}`).emit("newNotification");
-            return res.send({message:"booking create"})
+            return res.send({ message: "booking create" })
 
-        }catch(err){
+        } catch (err) {
             // console.log(err)
-            return res.status(500).send({message:"error server"})
+            return res.status(500).send({ message: "error server" })
         }
     }
 ]
-exports.GetPartnerBookingHotel = async (req,res) => {
-    try{
+exports.BookingFlight = [
+    body("seat_class").notEmpty().withMessage("seat class is required"),
+    body("price").notEmpty().withMessage("price is required"),
+    body("passenger_count").notEmpty().withMessage("passenger count is required"),
+    , async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(422).json({ errors: errors.array().map(err => err.msg) });
+        }
+        try {
+            const io = getIO()
+            const { seat_class, price, passenger_count } = req.body;
+            const { id } = req.params;
+            const client_id = req.userId
+            const flight = await Flight.findByPk(id, {
+                include: [
+                    {
+                        model: Compagnie,
+                        as: "compagnieFlight",
+                        attributes: ["partner_id"]
+                    }
+                ]
+            });
+            if (!flight) {
+                return res.status(442).send({ message: "flight not found" })
+            }
+            if (flight.seats_available < passenger_count) {
+                return res.status(400).json({ message: "not enough seats" });
+            }
+        
+            const flightClassesSeat = await FlightClasses.findOne({where: {flight_id:id,class_name:seat_class}})
+            if (flightClassesSeat.seats_available < passenger_count) {
+                return res.status(400).json({message:"not enough seats"})
+            }
+            
+            const booking = await Booking.create({ total_price: price, type: "compagnies aériennes", client_id });
+            await FlightBookingDetails.create({ seat_class, passenger_count, booking_id: booking.id, flight_id: id })
+            await flight.update({ seats_available: flight.seats_available - passenger_count })
+            await flightClassesSeat.update({seats_available:flightClassesSeat.seats_available - passenger_count})
+            await Notification.create({title:"Nouvelle réservation",message:"un client faire un réservation",type:"booking",user_id:flight.compagnieFlight.partner_id})
+            io.to(`partner-${flight.compagnieFlight.partner_id}`).emit("newNotification");
+            return res.send({ message: "booking create" })
+
+        } catch (err) {
+            console.log(err)
+            return res.status(500).send({ message: "error server" })
+        }
+    }
+]
+exports.BookingLocation = [
+    body("pickup_date").notEmpty().withMessage("pickup date is required")
+        .isDate().withMessage("pickup date should be date"),
+    body("return_date").notEmpty().withMessage("return date is required")
+        .isDate().withMessage("return date should be date"),
+    body("price").notEmpty().withMessage("price is required")
+        .isNumeric().withMessage("price should be numeric")
+    , async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(422).json({ errors: errors.array().map(err => err.msg) });
+        }
+        try {
+            const io = getIO()
+            const { pickup_date, return_date,price } = req.body;
+            const { id } = req.params;
+            if (pickup_date >= return_date) {
+                return res.status(400).send({ message: "date invalid" });
+            }
+            const vehicle = await Vehicle.findByPk(id,{
+                include:[{
+                    model:Location,
+                    as:"locationVehicle",
+                    attributes:["partner_id"]
+                }]
+            });
+            if(!vehicle){
+                return res.status(404).send({ message: "vehicle not found" })
+            }
+            console.log(vehicle.locationVehicle.partner_id)
+            const client_id = req.userId;
+            const booking = await Booking.create({ total_price:price, type: "location de voitures", client_id });
+            await CarRentalBookingDetails.create({booking_id:booking.id,pickup_date,return_date,car_id:id})
+            
+            await Notification.create({ title: "Nouvelle réservation", message: "un client faire un réservation", type: "booking", user_id: vehicle.locationVehicle.partner_id })
+            io.to(`partner-${vehicle.locationVehicle.partner_id}`).emit("newNotification");
+            return res.send({ message: "booking create" })
+
+        } catch (err) {
+            console.log(err)
+            return res.status(500).send({ message: "error server" })
+        }
+    }
+]
+exports.BookingCircuit = [
+    body("start_date").notEmpty().withMessage("start date is required")
+        .isDate().withMessage("pickup date should be date"),
+    body("number_of_participants").notEmpty().withMessage("number of participants is required")
+        .isNumeric().withMessage("number of participants should be numeric"),
+    body("price").notEmpty().withMessage("price is required")
+        .isNumeric().withMessage("price should be numeric")
+    , async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(422).json({ errors: errors.array().map(err => err.msg) });
+        }
+        try {
+            const io = getIO()
+            const { start_date, number_of_participants,price } = req.body;
+            const { id } = req.params;
+            const circuit = await Circuit.findByPk(id,{
+                include:[{
+                    model:Voyage,
+                    as:"voyagesCircuit",
+                    attributes:["partner_id"]
+                    
+                }]
+            });
+            if(!circuit){
+                return res.status(404).send({ message: "vehicle not found" })
+            }
+            const end_date = new Date(start_date)
+            end_date.setDate(end_date.getDate() + circuit.duration_days)
+
+            const client_id = req.userId;
+            const booking = await Booking.create({ total_price:price, type: "voyages circuits", client_id });
+            await CircuitBookingDetails.create({booking_id:booking.id,start_date,end_date,number_of_participants,circuit_id:id})
+            
+            await Notification.create({ title: "Nouvelle réservation", message: "un client faire un réservation", type: "booking", user_id: circuit.voyagesCircuit.partner_id })
+            io.to(`partner-${circuit.voyagesCircuit.partner_id}`).emit("newNotification");
+            return res.send({ message: "booking create" })
+
+        } catch (err) {
+            console.log(err)
+            return res.status(500).send({ message: "error server" })
+        }
+    }
+]
+
+exports.BookingOffer = [
+    body("start_date").notEmpty().withMessage("start date is required")
+        .isDate().withMessage("pickup date should be date"),
+    body("number_of_participants").notEmpty().withMessage("number of participants is required")
+        .isNumeric().withMessage("number of participants should be numeric"),
+    body("price").notEmpty().withMessage("price is required")
+        .isNumeric().withMessage("price should be numeric")
+    , async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(422).json({ errors: errors.array().map(err => err.msg) });
+        }
+        try {
+            const io = getIO()
+            const { start_date, number_of_participants,price } = req.body;
+            const { id } = req.params;
+            const offer = await Offer.findByPk(id,{
+                include:[{
+                    model:Agence,
+                    as:"agencyOffer",
+                    attributes:["partner_id"]
+                    
+                }]
+            });
+            if(!offer){
+                return res.status(404).send({ message: "offer not found" })
+            }
+            const end_date = new Date(start_date)
+            end_date.setDate(end_date.getDate() + offer.duration)
+
+            const client_id = req.userId;
+            const booking = await Booking.create({ total_price:price, type: "agence de voyage", client_id });
+            await OfferBookingDetails.create({booking_id:booking.id,start_date,end_date,number_of_participants,offer_id:id})
+            
+            await Notification.create({ title: "Nouvelle réservation", message: "un client faire un réservation", type: "booking", user_id: offer.agencyOffer.partner_id })
+            io.to(`partner-${offer.agencyOffer.partner_id}`).emit("newNotification");
+            return res.send({ message: "booking create" })
+
+        } catch (err) {
+            console.log(err)
+            return res.status(500).send({ message: "error server" })
+        }
+    }
+]
+
+exports.GetPartnerBookingHotel = async (req, res) => {
+    try {
         const partner_id = req.userId;
-        const bookings = await Booking.findAll({order:[["createdAt","DESC"]],
-            include:[
+        const bookings = await Booking.findAll({
+            order: [["createdAt", "DESC"]],
+            include: [
                 {
-                    model:HotelBookingDetails,
-                    as:"bookingHotelDetails",
+                    model: HotelBookingDetails,
+                    as: "bookingHotelDetails",
                     required: true,
-                    include:[
+                    include: [
                         {
-                            model:Room,
-                            as:"RoomHotelBooking",
+                            model: Room,
+                            as: "RoomHotelBooking",
                             required: true,
-                            include:[
+                            include: [
                                 {
-                                    model:Hotel,
-                                    as:"hotelRoom",
-                                    where:{partner_id},
+                                    model: Hotel,
+                                    as: "hotelRoom",
+                                    where: { partner_id },
                                     required: true,
-                                    attributes: [] 
+                                    attributes: []
                                 }
                             ]
                         }
                     ]
                 },
                 {
-                    model:User,
-                    as:"userBooking"
+                    model: User,
+                    as: "userBooking"
                 }
             ]
         });
-            return res.send({booking:bookings})
+        return res.send({ booking: bookings })
 
-    }catch(err){
+    } catch (err) {
         console.log(err)
-        return res.status(500).send({message:"error server"})
+        return res.status(500).send({ message: "error server" })
     }
 }
-exports.GetClientBooking = async (req,res) => {
-    try{
+exports.GetClientBooking = async (req, res) => {
+    try {
         const client_id = req.userId;
-        const bookings = await Booking.findAll({where:{client_id},
-            include:[
+        const bookings = await Booking.findAll({
+            where: { client_id },
+            include: [
                 {
-                    model:HotelBookingDetails,
-                    as:"bookingHotelDetails",
-                    include:[
+                    model: HotelBookingDetails,
+                    as: "bookingHotelDetails",
+                    include: [
                         {
-                            model:Room,
-                            as:"RoomHotelBooking",
-                            include:[
+                            model: Room,
+                            as: "RoomHotelBooking",
+                            include: [
                                 {
-                                    model:Hotel,
-                                    as:"hotelRoom",
+                                    model: Hotel,
+                                    as: "hotelRoom",
                                     required: true,
-                                    attributes: ["name","address"] 
+                                    attributes: ["name", "address"]
                                 }
                             ]
                         }
@@ -122,10 +307,10 @@ exports.GetClientBooking = async (req,res) => {
                 }
             ]
         });
-            return res.send({booking:bookings})
+        return res.send({ booking: bookings })
 
-    }catch(err){
+    } catch (err) {
         console.log(err)
-        return res.status(500).send({message:"error server"})
+        return res.status(500).send({ message: "error server" })
     }
 }

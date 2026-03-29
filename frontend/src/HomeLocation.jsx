@@ -1,76 +1,82 @@
 import {
-  Badge, Box, Button, Combobox, DatePicker, Flex, Grid,
+  Badge, Box, Button, CloseButton, Combobox, DatePicker, Dialog, Flex, Grid,
   HStack, Image, parseDate, Portal, Skeleton, SkeletonText,
   Text, useFilter, useListCollection, VStack,
 } from "@chakra-ui/react"
 import Header from "./components/home/Header"
-import { useColorMode } from "./components/ui/color-mode"
 import { useEffect, useState } from "react"
 import { Axios, imageURL } from "./Api/Api"
 import {
   FaChevronLeft, FaChevronRight, FaMapMarkerAlt,
   FaCar, FaSearch, FaGasPump, FaUsers, FaStar,
-  FaSnowflake, FaWifi, FaBluetooth, FaRoute,
+  FaSnowflake, FaWifi, FaBluetooth, FaRoute, FaChevronRight as FaArrow,
 } from "react-icons/fa"
-import { LuCalendar, LuShieldCheck } from "react-icons/lu"
+import { LuCalendar, LuShieldCheck, LuArrowLeftRight, LuMapPin } from "react-icons/lu"
 import { useNavigate } from "react-router-dom"
 
 const LOCATIONS = [
-  { label: "Tunis",value: "tunis"},
-  { label: "Sfax", value: "sfax"},
-  { label: "Sousse",value: "sousse"},
-  { label: "Nabeul",value: "nabeul"},
-  { label: "Hammamet",value: "hammamet"},
-  { label: "Monastir",value: "monastir"},
-  { label: "Djerba",value: "djerba"},
-  { label: "Tabarka",value: "tabarka" },
-  { label: "Bizerte",value: "bizerte"},
-  { label: "Tozeur",value: "tozeur"},
+  { label: "Tunis", value: "tunis" },
+  { label: "Sfax", value: "sfax" },
+  { label: "Sousse", value: "sousse" },
+  { label: "Nabeul", value: "nabeul" },
+  { label: "Hammamet", value: "hammamet" },
+  { label: "Monastir", value: "monastir" },
+  { label: "Djerba", value: "djerba" },
+  { label: "Tabarka", value: "tabarka" },
+  { label: "Bizerte", value: "bizerte" },
+  { label: "Tozeur", value: "tozeur" },
 ]
 
 const CATEGORY_LABELS = {
-  economy:  "Économique",
-  sedan:    "Berline",
-  suv:      "SUV",
-  luxury:   "Luxe",
+  economy: "Économique",
+  sedan: "Berline",
+  suv: "SUV",
+  luxury: "Luxe",
   electric: "Électrique",
-  utility:  "Utilitaire",
+  utility: "Utilitaire",
 }
 
 const FUEL_LABELS = {
-  petrol:   "Essence",
-  diesel:   "Diesel",
+  petrol: "Essence",
+  diesel: "Diesel",
   electric: "Électrique",
-  hybrid:   "Hybride",
+  hybrid: "Hybride",
 }
 
 const FEATURE_META = {
-  AC:{ Icon: FaSnowflake, label: "Clim"},
-  GPS:{ Icon: FaRoute,label: "GPS"},
+  AC: { Icon: FaSnowflake, label: "Clim" },
+  GPS: { Icon: FaRoute, label: "GPS" },
   Bluetooth: { Icon: FaBluetooth, label: "Bluetooth" },
-  WiFi:{ Icon: FaWifi,label: "Wi-Fi"},
+  WiFi: { Icon: FaWifi, label: "Wi-Fi" },
 }
 
+/* ── Location combobox ──────────────────────────────────────────── */
 function LocationCombobox({ value, onChange }) {
   const { contains } = useFilter({ sensitivity: "base" })
   const { collection, filter } = useListCollection({ initialItems: LOCATIONS, filter: contains })
 
   return (
-    <Box flex={1} minW="180px">
-      <Text fontSize="xs" color="gray.500" fontWeight={600} mb={1.5}>Lieu de prise en charge</Text>
-      <Combobox.Root width="full" collection={collection} inputValue={value}
+    <Box>
+      <Text fontSize="xs" fontWeight={700} color="gray.500" mb={0.5}>
+        Lieu de prise en charge
+      </Text>
+      <Combobox.Root
+        width="full" collection={collection} inputValue={value}
         onInputValueChange={e => { filter(e.inputValue); onChange(e.inputValue) }}
         onValueChange={e => onChange(e.value[0] ?? "")}>
         <Combobox.Control>
-          <Combobox.Input placeholder="Où souhaitez-vous louer ?"
+          <Combobox.Input
+            placeholder="Ville ou lieu..."
             style={{
-              height: "42px", border: "1px solid #E2E8F0",
-              borderRadius: "8px", padding: "0 12px",
-              fontSize: "14px", background: "#F7FAFC",
-              width: "100%", outline: "none",
-            }} />
-          <Combobox.IndicatorGroup style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)" }}>
-            <Combobox.ClearTrigger /><Combobox.Trigger />
+              width: "100%", border: "none", outline: "none",
+              fontSize: "15px", fontWeight: "600",
+              color: "var(--chakra-colors-gray-800)",
+              background: "transparent", height: "32px",
+            }}
+          />
+          <Combobox.IndicatorGroup style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)" }}>
+            <Combobox.ClearTrigger />
+            <Combobox.Trigger />
           </Combobox.IndicatorGroup>
         </Combobox.Control>
         <Portal>
@@ -93,11 +99,65 @@ function LocationCombobox({ value, onChange }) {
 function DateField({ label, value, onChange, min }) {
   return (
     <Box>
+      {label && (
+        <Text fontSize="xs" fontWeight={700} color="gray.500" mb={0.5}>
+          {label}
+        </Text>
+      )}
+      <DatePicker.Root
+        locale="fr-FR"
+        min={parseDate(min)}
+        value={value ? [parseDate(value)] : []}
+        onValueChange={(details) => {
+          const date = details.value?.[0]
+          if (date) {
+            const jsDate = new Date(date.year, date.month - 1, date.day + 1)
+            onChange(jsDate.toISOString().split("T")[0])
+          }
+        }}
+      >
+        <DatePicker.Control h="32px" border="none" bg="white">
+          <DatePicker.Input
+            p={0}
+            outline="none" border="none" bg="transparent"
+            fontSize="14px" fontWeight="600" color="gray.800"
+          />
+          <DatePicker.IndicatorGroup>
+            <DatePicker.Trigger>
+              <LuCalendar size={14} />
+            </DatePicker.Trigger>
+          </DatePicker.IndicatorGroup>
+        </DatePicker.Control>
+        <Portal>
+          <DatePicker.Positioner>
+            <DatePicker.Content>
+              <DatePicker.View view="day">
+                <DatePicker.Header /><DatePicker.DayTable />
+              </DatePicker.View>
+              <DatePicker.View view="month">
+                <DatePicker.Header /><DatePicker.MonthTable />
+              </DatePicker.View>
+              <DatePicker.View view="year">
+                <DatePicker.Header /><DatePicker.YearTable />
+              </DatePicker.View>
+            </DatePicker.Content>
+          </DatePicker.Positioner>
+        </Portal>
+      </DatePicker.Root>
+    </Box>
+  )
+}
+
+/* ── DateField (dialog — bordered) ─────────────────────────────── */
+function DateFieldBordered({ label, value, onChange, min }) {
+  return (
+    <Box>
       <Text fontSize="xs" color="gray.500" fontWeight={600} mb={1.5}>{label}</Text>
-      <DatePicker.Root locale="fr-FR"
-      min={parseDate(min)}
-      value={value ? [parseDate(value)] : []}
-       onValueChange={(details) => {
+      <DatePicker.Root
+        locale="fr-FR"
+        min={parseDate(min)}
+        value={value ? [parseDate(value)] : []}
+        onValueChange={(details) => {
           const date = details.value?.[0]
           if (date) {
             const jsDate = new Date(date.year, date.month - 1, date.day + 1)
@@ -106,49 +166,22 @@ function DateField({ label, value, onChange, min }) {
         }}
       >
         <DatePicker.Control
-          px={3}
-          h="42px"
-          border="1px solid"
-          borderColor="gray.200"
-          borderRadius="lg"
-          bg="gray.50"
-          _focusWithin={{
-            borderColor: "blue.400",
-            boxShadow: "0 0 0 2px rgba(49,130,206,0.12)",
-          }}
+          px={3} h="42px"
+          border="1px solid" borderColor="gray.200"
+          borderRadius="lg" bg="gray.50"
+          _focusWithin={{ borderColor: "blue.400", boxShadow: "0 0 0 2px rgba(49,130,206,0.12)" }}
         >
-          <DatePicker.Input
-            outline={"none"}
-            border="none"
-            bg="transparent"
-            fontSize="sm"
-            color="gray.700"
-          />
-
+          <DatePicker.Input outline="none" border="none" bg="transparent" fontSize="sm" color="gray.700" />
           <DatePicker.IndicatorGroup>
-            <DatePicker.Trigger>
-              <LuCalendar size={14} />
-            </DatePicker.Trigger>
+            <DatePicker.Trigger><LuCalendar size={14} /></DatePicker.Trigger>
           </DatePicker.IndicatorGroup>
         </DatePicker.Control>
-
         <Portal>
           <DatePicker.Positioner>
             <DatePicker.Content>
-              <DatePicker.View view="day">
-                <DatePicker.Header />
-                <DatePicker.DayTable />
-              </DatePicker.View>
-
-              <DatePicker.View view="month">
-                <DatePicker.Header />
-                <DatePicker.MonthTable />
-              </DatePicker.View>
-
-              <DatePicker.View view="year">
-                <DatePicker.Header />
-                <DatePicker.YearTable />
-              </DatePicker.View>
+              <DatePicker.View view="day"><DatePicker.Header /><DatePicker.DayTable /></DatePicker.View>
+              <DatePicker.View view="month"><DatePicker.Header /><DatePicker.MonthTable /></DatePicker.View>
+              <DatePicker.View view="year"><DatePicker.Header /><DatePicker.YearTable /></DatePicker.View>
             </DatePicker.Content>
           </DatePicker.Positioner>
         </Portal>
@@ -195,7 +228,8 @@ function ImageSlider({ images, vehicleId }) {
             _hover={{ bg: "blackAlpha.800" }} onClick={next}>
             <FaChevronRight size={9} />
           </Button>
-          <HStack position="absolute" bottom={2} left="50%" transform="translateX(-50%)" spacing={1}>
+          <HStack position="absolute" bottom={2} left="50%"
+            transform="translateX(-50%)" spacing={1}>
             {images.map((_, i) => (
               <Box key={i} w={i === idx ? "14px" : "5px"} h="5px" borderRadius="full"
                 bg={i === idx ? "white" : "whiteAlpha.600"} transition="all 0.2s"
@@ -204,7 +238,6 @@ function ImageSlider({ images, vehicleId }) {
           </HStack>
         </>
       )}
-      {/* Category badge */}
       <Badge position="absolute" top={2} left={2}
         bg="white" color="blue.600" borderRadius="md"
         px={2} py={0.5} fontSize="xs" fontWeight={700} boxShadow="sm">
@@ -217,17 +250,13 @@ function ImageSlider({ images, vehicleId }) {
 /* ── Feature tag ────────────────────────────────────────────────── */
 function FeatureTag({ feat }) {
   const meta = FEATURE_META[feat]
-  if (!meta) return (
-    <Flex align="center" gap={1} px={2} py={0.5}
-      bg="blue.50" color="blue.600" borderRadius="full" fontSize="xs" fontWeight={500}>
-      {feat}
-    </Flex>
-  )
-  const { Icon, label } = meta
+  const Icon = meta?.Icon
   return (
     <Flex align="center" gap={1.5} px={2.5} py={1}
-      bg="blue.50" color="blue.600" borderRadius="full" fontSize="xs" fontWeight={500}>
-      <Icon size={9} />{label}
+      bg="blue.50" color="blue.600" borderRadius="full"
+      fontSize="xs" fontWeight={500}>
+      {Icon && <Icon size={9} />}
+      {meta?.label ?? feat}
     </Flex>
   )
 }
@@ -239,23 +268,47 @@ function VehicleCard({ vehicle, agencyName, agencyAddress, pickupDate, returnDat
     const d = (new Date(returnDate) - new Date(pickupDate)) / 86400000
     return d > 0 ? d : null
   })()
-
   const totalPrice = nights ? (Number(vehicle.price_per_day) * nights).toFixed(0) : null
 
+  const [localPickup, setLocalPickup] = useState(pickupDate)
+  const [localReturn, setLocalReturn] = useState(returnDate)
+  const [checking, setChecking] = useState(false)
+  const [errorMsg, setErrorMsg] = useState("")
+
+  const today = new Date().toISOString().split("T")[0]
+
+  const checkAvailability = async () => {
+    if (!localPickup || !localReturn) { setErrorMsg("Choisissez les dates"); return }
+    try {
+      setChecking(true); setErrorMsg("")
+      const res = await Axios.post("/service/check-availability", {
+        vehicle_id: vehicle.id, start_date: localPickup, end_date: localReturn,
+      })
+      if (res.data.available) {
+        navigate(`/car/${vehicle.id}`, { state: { pickupDate: localPickup, returnDate: localReturn } })
+      } else {
+        setErrorMsg("Non disponible pour ces dates")
+      }
+    } catch { setErrorMsg("Erreur serveur") }
+    finally { setChecking(false) }
+  }
+
   return (
-    <Box bg="white" borderRadius="2xl" overflow="hidden"
+    <Box bg="white" borderRadius="2xl"
       border="1px solid" borderColor="gray.100"
       boxShadow="0 2px 12px rgba(0,0,0,0.06)"
       transition="transform 0.2s, box-shadow 0.2s"
-      _hover={{ transform: "translateY(-4px)", boxShadow: "0 8px 28px rgba(0,0,0,0.12)" }}
-      cursor="pointer">
+      _hover={{ transform: "translateY(-3px)", boxShadow: "0 8px 28px rgba(0,0,0,0.1)" }}
+      overflow="hidden">
 
+      {/* Image */}
       <Box p={4} pb={3}>
         <ImageSlider images={vehicle.images} vehicleId={vehicle.id} />
       </Box>
 
       <VStack align="stretch" px={4} pb={4} spacing={3}>
-        {/* Name */}
+
+        {/* Name + agency */}
         <Box>
           <Text fontWeight={700} fontSize="md" color="gray.800" noOfLines={1}>
             {vehicle.brand} {vehicle.model}{" "}
@@ -271,29 +324,27 @@ function VehicleCard({ vehicle, agencyName, agencyAddress, pickupDate, returnDat
           </Flex>
         </Box>
 
-        {/* Specs row */}
+        {/* Specs */}
         <Flex gap={3} flexWrap="wrap">
           <Flex align="center" gap={1.5} fontSize="xs" color="gray.500">
             <FaUsers size={11} />{vehicle.seats} places
           </Flex>
           <Flex align="center" gap={1.5} fontSize="xs" color="gray.500">
-            <FaGasPump size={11} />
-            {FUEL_LABELS[vehicle.fuel] ?? vehicle.fuel}
+            <FaGasPump size={11} />{FUEL_LABELS[vehicle.fuel] ?? vehicle.fuel}
           </Flex>
           <Flex align="center" gap={1.5} fontSize="xs" color="gray.500">
-            <LuShieldCheck size={11} />
-            {vehicle.min_age}+ ans
+            <LuShieldCheck size={11} />{vehicle.min_age}+ ans
           </Flex>
         </Flex>
 
+        {/* Features */}
         {vehicle.features?.length > 0 && (
           <Flex gap={1.5} flexWrap="wrap">
-            {vehicle.features.slice(0, 4).map(f => (
-              <FeatureTag key={f} feat={f} />
-            ))}
+            {vehicle.features.slice(0, 4).map(f => <FeatureTag key={f} feat={f} />)}
           </Flex>
         )}
 
+        {/* Description */}
         {vehicle.description && (
           <Text fontSize="sm" color="gray.600" lineHeight="1.6" noOfLines={2}>
             {vehicle.description}
@@ -301,16 +352,16 @@ function VehicleCard({ vehicle, agencyName, agencyAddress, pickupDate, returnDat
         )}
 
         {/* Price + CTA */}
-        <Flex align="center" justify="space-between" mt={1}>
+        <Flex align="center" justify="space-between" gap={3}>
           <Box>
-            <Text fontSize="xs" color="gray.400" lineHeight={1}>
+            <Text fontSize="9px" color="gray.400" textTransform="uppercase" letterSpacing="wide">
               {totalPrice ? `${nights} jour${nights > 1 ? "s" : ""} · total` : "À partir de"}
             </Text>
             <Flex align="baseline" gap={1}>
-              <Text fontSize="xl" fontWeight={900} color="blue.600" lineHeight="1.2">
+              <Text fontSize="xl" fontWeight={900} color="blue.600" lineHeight={1}>
                 {totalPrice ?? Number(vehicle.price_per_day).toFixed(0)}
               </Text>
-              <Text fontSize="xs" color="gray.500">
+              <Text fontSize="xs" fontWeight={600} color="blue.400">
                 TND{!totalPrice ? " / jour" : ""}
               </Text>
             </Flex>
@@ -320,54 +371,100 @@ function VehicleCard({ vehicle, agencyName, agencyAddress, pickupDate, returnDat
               </Text>
             )}
           </Box>
-          <Button colorScheme="blue" borderRadius="xl" size="sm" fontWeight={600} px={5}
-            onClick={() => navigate(`/cars/${vehicle.id}`)}>
-            Détails
-          </Button>
+
+          <Dialog.Root>
+            <Dialog.Trigger asChild>
+              <Button
+                flex={1}
+                colorScheme="blue" borderRadius="xl"
+                fontWeight={700} size="sm" h="40px">
+                <Flex align="center" gap={2}>
+                  Réserver
+                  <FaChevronRight size={10} />
+                </Flex>
+              </Button>
+            </Dialog.Trigger>
+            <Portal>
+              <Dialog.Backdrop />
+              <Dialog.Positioner>
+                <Dialog.Content borderRadius="2xl">
+                  <Dialog.Header>
+                    <Dialog.Title>
+                      Réserver — {vehicle.brand} {vehicle.model}
+                    </Dialog.Title>
+                  </Dialog.Header>
+                  <Dialog.Body>
+                    <VStack spacing={4} align="stretch">
+                      <DateFieldBordered
+                        label="Date de début"
+                        value={localPickup}
+                        onChange={setLocalPickup}
+                        min={today}
+                      />
+                      <DateFieldBordered
+                        label="Date de fin"
+                        value={localReturn}
+                        onChange={setLocalReturn}
+                        min={localPickup || today}
+                      />
+                      {errorMsg && (
+                        <Text fontSize="sm" color="red.500">{errorMsg}</Text>
+                      )}
+                      <Button colorScheme="blue" h="46px" borderRadius="xl"
+                        fontWeight={700} onClick={checkAvailability}
+                        isLoading={checking}>
+                        Vérifier la disponibilité
+                      </Button>
+                    </VStack>
+                  </Dialog.Body>
+                  <Dialog.CloseTrigger asChild>
+                    <CloseButton size="sm" />
+                  </Dialog.CloseTrigger>
+                </Dialog.Content>
+              </Dialog.Positioner>
+            </Portal>
+          </Dialog.Root>
         </Flex>
       </VStack>
     </Box>
   )
 }
 
+/* ── Card skeleton ──────────────────────────────────────────────── */
 function CarCardSkeleton() {
   return (
     <Box bg="white" borderRadius="2xl" overflow="hidden"
-      border="1px solid" borderColor="gray.100" boxShadow="sm">
+      border="1px solid" borderColor="gray.100">
       <Box p={4} pb={3}><Skeleton height="200px" borderRadius="xl" /></Box>
       <VStack align="stretch" px={4} pb={4} spacing={3}>
-        <SkeletonText noOfLines={2} spacing={2} skeletonHeight={3} />
+        <SkeletonText noOfLines={2} spacing={2} />
         <Flex gap={2}>
-          <Skeleton height="20px" width="60px" borderRadius="full" />
-          <Skeleton height="20px" width="60px" borderRadius="full" />
-          <Skeleton height="20px" width="60px" borderRadius="full" />
+          {[1, 2, 3].map(i => <Skeleton key={i} h="20px" w="60px" borderRadius="full" />)}
         </Flex>
-        <SkeletonText noOfLines={2} spacing={2} skeletonHeight={2} />
-        <Skeleton height="36px" borderRadius="xl" />
+        <Skeleton h="36px" borderRadius="xl" />
       </VStack>
     </Box>
   )
 }
 
 const HomeLocation = () => {
-  useEffect(()=>{
-    localStorage.removeItem("searchData")
-  },[])
+  useEffect(() => { localStorage.removeItem("searchData") }, [])
+
   const today = new Date().toISOString().split("T")[0]
   const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0]
 
-  const [agencies,setAgencies] = useState([])
-  const [loading,setLoading] = useState(true)
-  const [error,setError] = useState(null)
-  const [destination,setDestination] = useState("")
-  const [pickupDate,setPickupDate] = useState(today)
-  const [returnDate,setReturnDate] = useState(tomorrow)
-  const [category,setCategory] = useState("all")
+  const [agencies, setAgencies] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [destination, setDestination] = useState("")
+  const [pickupDate, setPickupDate] = useState(today)
+  const [returnDate, setReturnDate] = useState(tomorrow)
+  const [category, setCategory] = useState("all")
 
   const navigate = useNavigate()
 
   useEffect(() => {
-    const fetchData = async () => {
+    ; (async () => {
       try {
         setLoading(true)
         const res = await Axios.get("/service/location/public/get")
@@ -377,22 +474,25 @@ const HomeLocation = () => {
       } finally {
         setLoading(false)
       }
-    }
-    fetchData()
+    })()
   }, [])
 
   const allVehicles = agencies.flatMap(agency =>
     (agency.vehicles ?? []).map(v => ({
       ...v,
-      agencyName:    agency.name,
+      agencyName: agency.name,
       agencyAddress: agency.address,
-      agencyId:      agency.id,
+      agencyId: agency.id,
     }))
   )
 
-  const filtered = allVehicles.filter(v =>
-    category === "all" || v.category === category
-  )
+  const filtered = allVehicles.filter(v => {
+    const matchCat = category === "all" || v.category === category
+    const matchDest = !destination ||
+      v.agencyName?.toLowerCase().includes(destination.toLowerCase()) ||
+      v.agencyAddress?.toLowerCase().includes(destination.toLowerCase())
+    return matchCat && matchDest
+  })
 
   const days = (() => {
     if (!pickupDate || !returnDate) return null
@@ -406,99 +506,144 @@ const HomeLocation = () => {
     <>
       <Header />
 
-      <Flex justify="center" alignItems="center" mt={10} px={4}>
-        <Box width="full" maxW="1100px" bg="white" p={5}
-          borderRadius="2xl" boxShadow="0 4px 24px rgba(0,0,0,0.08)">
+      {/* ── Hero with search bar ── */}
+      <Box
+        bg="linear-gradient(160deg, #0D1B3E 0%, #1A3260 50%, #0D1B3E 100%)"
+        pt={12} pb={8} px={4}>
 
-          <Grid
-            templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "1.2fr 1fr 1fr auto" }}
-            gap={4} align="flex-end">
+        <Box maxW="1100px" mx="auto">
 
-            <LocationCombobox value={destination} onChange={setDestination} />
-
-            <DateField label="Date de prise en charge" value={pickupDate}
-              min={today} onChange={v => {
-                setPickupDate(v)
-                if (v >= returnDate) setReturnDate(v)
-              }} />
-
-            <DateField label="Date de retour" value={returnDate}
-              min={pickupDate || today} onChange={setReturnDate} />
-
-            <Button colorScheme="blue" h="42px" px={7} borderRadius="xl"
-              fontWeight={700} fontSize="sm" alignSelf="flex-end"
-              leftIcon={<FaSearch size={12} />}>
-              Rechercher
-            </Button>
-          </Grid>
-
-          {/* Duration pill */}
-          {days && (
-            <Flex align="center" gap={2} mt={3} pt={3}
-              borderTop="1px solid" borderColor="gray.100">
-              <Badge colorScheme="blue" borderRadius="full" px={2.5} py={0.5} fontSize="xs">
-                {days} jour{days > 1 ? "s" : ""}
-              </Badge>
-              <Text fontSize="xs" color="gray.400">
-                du {new Date(pickupDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
-                {" "}au {new Date(returnDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
+          {/* Title */}
+          <Box textAlign="center" mb={7}>
+            <Flex align="center" justify="center" gap={2} mb={3}>
+              <Box color="blue.200"><FaCar size={14} /></Box>
+              <Text fontSize="xs" fontWeight={700} color="blue.200"
+                textTransform="uppercase" letterSpacing="widest">
+                Location de voitures
               </Text>
             </Flex>
-          )}
-        </Box>
-      </Flex>
-
-      {/* ── Category filter ── */}
-      {!loading && allVehicles.length > 0 && (
-        <Flex justify="center" px={4} mt={6}>
-          <Flex gap={2} flexWrap="wrap" justify="center">
-            {categories.map(cat => (
-              <Box key={cat} as="button"
-                px={4} py={2} borderRadius="xl" fontSize="sm" fontWeight={600}
-                border="1.5px solid"
-                borderColor={category === cat ? "blue.400" : "gray.200"}
-                bg={category === cat ? "blue.50" : "white"}
-                color={category === cat ? "blue.600" : "gray.500"}
-                cursor="pointer" transition="all 0.15s"
-                _hover={{ borderColor: "blue.300", bg: "blue.50" }}
-                onClick={() => setCategory(cat)}>
-                {cat === "all" ? "Tous" : (CATEGORY_LABELS[cat] ?? cat)}
-              </Box>
-            ))}
-          </Flex>
-        </Flex>
-      )}
-
-      {/* ── Vehicle listing ── */}
-      <Box maxW="1200px" mx="auto" px={6} py={8}>
-
-        <Flex justify="space-between" align="center" mb={6}>
-          <Box>
-            <Text fontSize="2xl" fontWeight={800} color="gray.800">
-              Location de voitures
+            <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight={900}
+              color="white" letterSpacing="-0.5px">
+              Trouvez votre véhicule idéal
             </Text>
-            {!loading && (
-              <Text fontSize="sm" color="gray.500" mt={0.5}>
-                {filtered.length} véhicule{filtered.length !== 1 ? "s" : ""} disponible{filtered.length !== 1 ? "s" : ""}
-              </Text>
+            <Text fontSize="sm" color="blue.200" mt={1}>
+              {allVehicles.length} véhicule{allVehicles.length !== 1 ? "s" : ""} ·{" "}
+              {agencies.length} agence{agencies.length !== 1 ? "s" : ""}
+            </Text>
+          </Box>
+
+          {/* Search bar — same structure as HomeAirline */}
+          <Box bg="white" borderRadius="2xl"
+            boxShadow="0 8px 40px rgba(0,0,0,0.25)"
+            overflow="hidden">
+
+            <Grid
+              templateColumns={{ base: "1fr", md: "1.4fr 1fr 1fr auto" }}
+              align="stretch">
+
+              {/* Destination */}
+              <Box px={4} py={3} position="relative"
+                borderRight="1px solid" borderColor="gray.150">
+                <LocationCombobox value={destination} onChange={setDestination} />
+              </Box>
+
+              {/* Pickup date */}
+              <Box px={4} py={3} borderRight="1px solid" borderColor="gray.150">
+                <DateField
+                  label="Prise en charge"
+                  min={today}
+                  value={pickupDate}
+                  onChange={v => { setPickupDate(v); if (v >= returnDate) setReturnDate(v) }}
+                />
+              </Box>
+
+              {/* Return date */}
+              <Box px={4} py={3} borderRight="1px solid" borderColor="gray.150">
+                <DateField
+                  label="Retour"
+                  min={pickupDate || today}
+                  value={returnDate}
+                  onChange={setReturnDate}
+                />
+              </Box>
+
+              {/* Search CTA */}
+              <Flex
+                as="button"
+                align="center" justify="center"
+                px={6}
+                bg="blue.600" color="white"
+                fontWeight={700} fontSize="sm"
+                cursor="pointer" transition="background 0.15s"
+                _hover={{ bg: "blue.700" }}>
+                Rechercher
+              </Flex>
+            </Grid>
+
+            {/* Duration pill row */}
+            {days && (
+              <Flex px={5} py={3} gap={6}
+                borderTop="1px solid" borderColor="gray.100"
+                bg="gray.50" align="center">
+                <Badge colorScheme="blue" borderRadius="full" px={2.5} py={0.5} fontSize="xs">
+                  {days} jour{days > 1 ? "s" : ""}
+                </Badge>
+                <Text fontSize="xs" color="gray.400">
+                  du {new Date(pickupDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
+                  {" "}au {new Date(returnDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
+                </Text>
+              </Flex>
             )}
           </Box>
-        </Flex>
 
-        {error && (
-          <Flex direction="column" align="center" justify="center" py={20} gap={3}>
-            <Text fontSize="2xl">😕</Text>
-            <Text color="gray.500">{error}</Text>
-            <Button size="sm" colorScheme="blue" onClick={() => window.location.reload()}>
-              Réessayer
-            </Button>
-          </Flex>
-        )}
+          {/* Category filter pills — same style as status pills in HomeAirline */}
+          {!loading && allVehicles.length > 0 && (
+            <Flex gap={2} mt={5} flexWrap="wrap" justify="center">
+              {categories.map(cat => (
+                <Box key={cat} as="button"
+                  px={3} py={1} borderRadius="full"
+                  fontSize="xs" fontWeight={600}
+                  bg={category === cat ? "white" : "whiteAlpha.100"}
+                  color={category === cat ? "blue.700" : "white"}
+                  border="1.5px solid"
+                  borderColor={category === cat ? "white" : "whiteAlpha.300"}
+                  cursor="pointer" transition="all 0.15s"
+                  onClick={() => setCategory(cat)}>
+                  {cat === "all" ? "Tous les véhicules" : (CATEGORY_LABELS[cat] ?? cat)}
+                </Box>
+              ))}
+            </Flex>
+          )}
 
-        <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }} gap={6}>
-          {loading
-            ? Array.from({ length: 6 }).map((_, i) => <CarCardSkeleton key={i} />)
-            : filtered.map(v => (
+        </Box>
+      </Box>
+
+      {/* ── Vehicle grid ── */}
+      <Box bg="#f5f6fa" minH="60vh">
+        <Box maxW="1200px" mx="auto" px={{ base: 4, md: 6 }} py={8}>
+
+          {!loading && (
+            <Text fontSize="sm" color="gray.500" mb={6}>
+              {filtered.length} véhicule{filtered.length !== 1 ? "s" : ""}
+              {destination ? ` · ${destination}` : ""}
+              {category !== "all" ? ` · ${CATEGORY_LABELS[category] ?? category}` : ""}
+            </Text>
+          )}
+
+          {error && (
+            <Flex direction="column" align="center" py={20} gap={3}>
+              <Text color="gray.500">{error}</Text>
+              <Button size="sm" colorScheme="blue"
+                onClick={() => window.location.reload()}>Réessayer</Button>
+            </Flex>
+          )}
+
+          <Grid
+            templateColumns={{ base: "1fr", md: "repeat(2,1fr)", lg: "repeat(3,1fr)" }}
+            gap={5}>
+            {loading
+              ? Array.from({ length: 6 }).map((_, i) => <CarCardSkeleton key={i} />)
+              : filtered.map(v => (
                 <VehicleCard
                   key={v.id}
                   vehicle={v}
@@ -509,20 +654,29 @@ const HomeLocation = () => {
                   navigate={navigate}
                 />
               ))
-          }
-        </Grid>
+            }
+          </Grid>
 
-        {!loading && !error && filtered.length === 0 && (
-          <Flex direction="column" align="center" justify="center" py={20} gap={2}>
-            <Text fontSize="3xl">🚗</Text>
-            <Text fontWeight={600} color="gray.700">Aucun véhicule trouvé</Text>
-            <Text fontSize="sm" color="gray.500">
-              {category !== "all"
-                ? "Essayez une autre catégorie."
-                : "Aucun véhicule disponible pour le moment."}
-            </Text>
-          </Flex>
-        )}
+          {!loading && !error && filtered.length === 0 && (
+            <Flex direction="column" align="center" py={20} gap={3}>
+              <Text fontSize="3xl">🚗</Text>
+              <Text fontWeight={600} color="gray.700">Aucun véhicule trouvé</Text>
+              <Text fontSize="sm" color="gray.400">
+                {category !== "all" || destination
+                  ? "Essayez d'autres filtres."
+                  : "Aucun véhicule disponible pour le moment."}
+              </Text>
+              {(category !== "all" || destination) && (
+                <Button size="sm" colorScheme="blue" variant="outline"
+                  borderRadius="xl"
+                  onClick={() => { setCategory("all"); setDestination("") }}>
+                  Réinitialiser
+                </Button>
+              )}
+            </Flex>
+          )}
+
+        </Box>
       </Box>
     </>
   )

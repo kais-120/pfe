@@ -9,10 +9,10 @@ import logo from "../../assets/image.png"
 
 const NAV_LINKS = [
   { name: "Hôtels",path: "/",icon: FaHotel},
-  { name: "Vols",path: "/flights",icon: FaPlane},
+  { name: "Vols",path: "/airline",icon: FaPlane},
   { name: "Location de voiture", path: "/location",icon: FaCar},
-  { name: "Agences",path: "/agencies",  icon: FaGlobe},
-  { name: "Offres",path: "/offers",icon: FaTags},
+  { name: "Agences",path: "/agency",  icon: FaGlobe},
+  { name: "Offres",path: "/voyage",icon: FaTags},
 ]
 
 const getDashboardLink = (role) => {

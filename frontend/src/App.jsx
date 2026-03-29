@@ -43,6 +43,13 @@ import ResetPassword from "./Auth/ResetPassword";
 import Settings from "./Auth/Settings";
 import HomeLocation from "./HomeLocation";
 import QrScannerPage from "./dashboard/Partner/QrScannerPage";
+import CarDetail from "./Pages/ServiceInfo/CarDetail";
+import HomeAgency from "./HomeAgency";
+import OfferDetail from "./Pages/ServiceInfo/OfferDetail";
+import HomeAirline from "./HomeAirline";
+import FlightDetail from "./Pages/ServiceInfo/FlightDetail";
+import HomeVoyage from "./HomeVoyage";
+import CircuitDetail from "./Pages/ServiceInfo/CircuitDetail";
 
 function App() {
   return (
@@ -57,7 +64,14 @@ function App() {
   <Route path="/reset-password/:hash" element={<ResetPassword/>} />
   <Route path="/" element={<Home/>} />
   <Route path="/location" element={<HomeLocation/>} />
+  <Route path="/agency" element={<HomeAgency/>} />
+  <Route path="/airline" element={<HomeAirline/>} />
+  <Route path="/voyage" element={<HomeVoyage/>} />
+  <Route path="/flight/:id" element={<FlightDetail/>} />
   <Route path="/hotel/:id" element={<HotelInfo/>} />
+  <Route path="/car/:id" element={<CarDetail/>} />
+  <Route path="/offer/:id" element={<OfferDetail/>} />
+  <Route path="/voyage/circuit/:id" element={<CircuitDetail/>} />
   <Route path="/partner" element={<DocumentPartner/>} />
   <Route element={<AuthReq />}>
     <Route path="/login" element={<Login/>} />

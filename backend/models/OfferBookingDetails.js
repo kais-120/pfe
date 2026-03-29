@@ -1,7 +1,7 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../configs/db");
 
-const TourBookingDetails = sequelize.define("tour_booking_details",{
+const OfferBookingDetails = sequelize.define("offer_booking_details",{
     id:{
         type:DataTypes.BIGINT,
         autoIncrement:true,
@@ -19,10 +19,6 @@ const TourBookingDetails = sequelize.define("tour_booking_details",{
         type:DataTypes.INTEGER,
         allowNull:false,
     },
-    price:{
-        type:DataTypes.DECIMAL,
-        allowNull:false,
-    },
     booking_id:{
         type:DataTypes.BIGINT,
         allowNull:false,
@@ -32,11 +28,11 @@ const TourBookingDetails = sequelize.define("tour_booking_details",{
         },
         onDelete:'CASCADE',
     },
-    tour_id:{
+    offer_id:{
         type:DataTypes.BIGINT,
         allowNull:false,
         references:{
-            model:"voyage",
+            model:"offers",
             key:"id"
         },
         onDelete:'CASCADE',
@@ -47,4 +43,4 @@ const TourBookingDetails = sequelize.define("tour_booking_details",{
     }
     
 });
-module.exports = TourBookingDetails;
+module.exports = OfferBookingDetails;

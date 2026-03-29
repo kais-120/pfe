@@ -2,7 +2,7 @@ const { DataTypes } = require("sequelize");
 const sequelize = require("../configs/db");
 
 const Offer = sequelize.define(
-  "Offer",
+  "offers",
   {
     id: {
       type: DataTypes.BIGINT,

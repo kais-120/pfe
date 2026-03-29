@@ -1,58 +1,60 @@
 const { body, validationResult } = require("express-validator");
-const { Hotel, User, Booking, HotelBookingDetails, Reviews, Agence, Offer, Compagnie, Voyage, Circuit } = require("../models");
+const { Hotel, User, Booking, HotelBookingDetails, Reviews, Agence, Offer, Compagnie, Voyage, Circuit, CarRentalBookingDetails } = require("../models");
 const Room = require("../models/Room");
 const ImageService = require("../models/ImageServices");
 const Location = require("../models/Location");
 const Vehicle = require("../models/Vehicle");
 const Flight = require("../models/Flight");
 const FlightClasses = require("../models/FlightClasses");
+const { Op } = require("sequelize");
+const { default: axios } = require("axios");
 
-exports.GetPublicHotel = async (req,res) => {
-        try{
-            const { id } = req.params
-           const hotelData = await Hotel.findByPk(id,{
-            include:[
-                {
-                        model:Room,
-                        as:"rooms"
-                },
-                {
-                  model:Reviews,
-                  as:"hotelReview",
-                  include:[
-                    {
-                      model:User,
-                      as:"clientReview",
-                      attributes:["name"]
-                    }
-                  ]
-                }
-            ]
-        });
-        if(!hotelData){
-            return res.status(404).json({message:"hotel not found"});
+exports.GetPublicHotel = async (req, res) => {
+  try {
+    const { id } = req.params
+    const hotelData = await Hotel.findByPk(id, {
+      include: [
+        {
+          model: Room,
+          as: "rooms"
+        },
+        {
+          model: Reviews,
+          as: "hotelReview",
+          include: [
+            {
+              model: User,
+              as: "clientReview",
+              attributes: ["name"]
+            }
+          ]
         }
+      ]
+    });
+    if (!hotelData) {
+      return res.status(404).json({ message: "hotel not found" });
+    }
 
-         const images = await ImageService.findAll({
-          where: {
-            type: "hotel",
-          },
-        });
-          const hotelJSON = hotelData.toJSON();
-          const imagesHotel = images.filter(
-        (img) => String(img.service_id) === String(hotelJSON.id)
-      );
-          const hotel = {
+    const images = await ImageService.findAll({
+      where: {
+        type: "hotel",
+      },
+    });
+    const hotelJSON = hotelData.toJSON();
+    const imagesHotel = images.filter(
+      (img) => String(img.service_id) === String(hotelJSON.id)
+    );
+    const hotel = {
       ...hotelJSON,
       imagesHotel,
     };
-            return res.json({message:"hotel found",hotel});
-        }catch(err){
-            console.log(err)
-            return res.status(500).send({message:"error server"})
-        }
+    return res.json({ message: "hotel found", hotel });
+  } catch (err) {
+    console.log(err)
+    return res.status(500).send({ message: "error server" })
+  }
 
-    }
+}
 
 
 exports.GetSearchHotels = [
@@ -148,200 +150,202 @@ exports.GetSearchHotels = [
       })
 
     } catch (err) {
-      return res.status(500).json({message: "server error"})
+      return res.status(500).json({ message: "server error" })
     }
   }
 ]
 
-exports.GetAllHotel = async (req,res) => {
-        try{
-           const hotelData = await Hotel.findAll({
-            limit: 9,
-            include:[
-                {
-                    model:Room,
-                    as:"rooms"
-                }
-            ]
-        });
-        const images = await ImageService.findAll({
-              where: {
-                type: "hotel",
-              },
-            });
-
-            const hotel = hotelData.map((hotel) => {
-              const hotelJSON = hotel.toJSON();
-
-              const imagesHotel = images.filter(
-                (img) => String(img.service_id) === String(hotelJSON.id)
-              );
-
-              return {
-                ...hotelJSON,
-                imagesHotel,
-              };
-            });
-        
-            return res.json({message:"hotel found",hotel});
-        }catch(err){
-            console.log(err)
-            return res.status(500).send({message:"error server"})
+exports.GetAllHotel = async (req, res) => {
+  try {
+    const hotelData = await Hotel.findAll({
+      limit: 9,
+      include: [
+        {
+          model: Room,
+          as: "rooms"
         }
+      ]
+    });
+    const images = await ImageService.findAll({
+      where: {
+        type: "hotel",
+      },
+    });
 
-    }
-exports.GetAllServices = async (req,res) => {
-        try{
-            const hotel = await Hotel.findAll({
-                include:[
-                { 
-                    model:User,
-                    as:"partnerHotel",
-                    attributes: { exclude: ["password"] }
-                }
-            ]
-            });
-            return res.json({message:"hotel found",hotel});
-        }catch(err){
-            console.log(err)
-            return res.status(500).send({message:"error server"})
+    const hotel = hotelData.map((hotel) => {
+      const hotelJSON = hotel.toJSON();
+
+      const imagesHotel = images.filter(
+        (img) => String(img.service_id) === String(hotelJSON.id)
+      );
+
+      return {
+        ...hotelJSON,
+        imagesHotel,
+      };
+    });
+
+    return res.json({ message: "hotel found", hotel });
+  } catch (err) {
+    console.log(err)
+    return res.status(500).send({ message: "error server" })
+  }
+
+}
+exports.GetAllServices = async (req, res) => {
+  try {
+    const hotel = await Hotel.findAll({
+      include: [
+        {
+          model: User,
+          as: "partnerHotel",
+          attributes: { exclude: ["password"] }
         }
+      ]
+    });
+    return res.json({ message: "hotel found", hotel });
+  } catch (err) {
+    console.log(err)
+    return res.status(500).send({ message: "error server" })
+  }
 
-    }
-exports.GetHotel = async (req,res) => {
-        try{
-            const partner_id = req.userId;
-            const hotel = await Hotel.findOne({where: {partner_id},
-                include:[
-                    {
-                        model:Room,
-                        as:"rooms"
-                    },
-                    {
-                        model:Reviews,
-                        as:"hotelReview",
-                        where :{type_service:"hotels"},
-                        include:[
-                            {
-                                model:User,
-                                as:"clientReview",
-                                attributes:["name"]
-                            }
-                        ]
-                    }
-                ]
-            });
-            if(!hotel){
-                return res.status(404).json({message:"hotel not found"});
+}
+exports.GetHotel = async (req, res) => {
+  try {
+    const partner_id = req.userId;
+    const hotel = await Hotel.findOne({
+      where: { partner_id },
+      include: [
+        {
+          model: Room,
+          as: "rooms"
+        },
+        {
+          model: Reviews,
+          as: "hotelReview",
+          where: { type_service: "hotels" },
+          include: [
+            {
+              model: User,
+              as: "clientReview",
+              attributes: ["name"]
             }
-            const images = await ImageService.findAll({where :{type:"hotel",service_id:hotel.id}})
-            const data = {...hotel.toJSON(),images}
-            return res.json({message:"hotel found",hotel:data});
-        }catch(err){
-            console.log(err)
-            return res.status(500).send({message:"error server"})
+          ]
         }
-
+      ]
+    });
+    if (!hotel) {
+      return res.status(404).json({ message: "hotel not found" });
     }
+    const images = await ImageService.findAll({ where: { type: "hotel", service_id: hotel.id } })
+    const data = { ...hotel.toJSON(), images }
+    return res.json({ message: "hotel found", hotel: data });
+  } catch (err) {
+    console.log(err)
+    return res.status(500).send({ message: "error server" })
+  }
+
+}
 exports.AddHotel = [
-     body("name").notEmpty().withMessage("name is required"),
-    body("description").notEmpty().withMessage("description is required"),
-    body("address").notEmpty().withMessage("address by day is required"),
-    body("equipments").notEmpty().withMessage("equipments by day is required"),
-    async (req,res) => {
-         const errors = validationResult(req);
-            if(!errors.isEmpty()){
-                return res.status(422).json({ errors: errors.array().map(err => err.msg) });
-        }
-        try{
-            const partner_id = req.userId;
-            const {name,description,address,equipments} = req.body;
-            const hotel = await Hotel.create({name,description,address,equipments,partner_id});
-            const files = req.files.service_doc;
-            for (const element of files) {
-            await ImageService.create({
-                image_url: element.filename,
-                type: "hotel",
-                service_id: hotel.id
-            });
-            }
-            return res.json({message:"hotel created"});
-        }catch(err){
-            return res.status(500).send({message:"error server"})
-        }
-
+  body("name").notEmpty().withMessage("name is required"),
+  body("description").notEmpty().withMessage("description is required"),
+  body("address").notEmpty().withMessage("address by day is required"),
+  body("equipments").notEmpty().withMessage("equipments by day is required"),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ errors: errors.array().map(err => err.msg) });
     }
+    try {
+      const partner_id = req.userId;
+      const { name, description, address, equipments } = req.body;
+      const hotel = await Hotel.create({ name, description, address, equipments, partner_id });
+      const files = req.files.service_doc;
+      for (const element of files) {
+        await ImageService.create({
+          image_url: element.filename,
+          type: "hotel",
+          service_id: hotel.id
+        });
+      }
+      return res.json({ message: "hotel created" });
+    } catch (err) {
+      return res.status(500).send({ message: "error server" })
+    }
+
+  }
 ]
 exports.AddRoom = [
-    body("name").notEmpty().withMessage("name is required"),
-    body("capacity").notEmpty().withMessage("capacity is required")
+  body("name").notEmpty().withMessage("name is required"),
+  body("capacity").notEmpty().withMessage("capacity is required")
     .isNumeric().withMessage("capacity should be numeric"),
-    body("price_by_day").notEmpty().withMessage("price by day is required")
+  body("price_by_day").notEmpty().withMessage("price by day is required")
     .isNumeric().withMessage("price by day should be a number"),
-    body("price_by_adult").notEmpty().withMessage("price by adult is required")
+  body("price_by_adult").notEmpty().withMessage("price by adult is required")
     .isNumeric().withMessage("price by adult should be a number"),
-    body("count").notEmpty().withMessage("email is required")
+  body("count").notEmpty().withMessage("email is required")
     .isNumeric().withMessage("count should be numeric"),
-    async (req,res) => {
-        const errors = validationResult(req);
-            if(!errors.isEmpty()){
-                return res.status(422).json({ errors: errors.array().map(err => err.msg) });
-        }
-        try{
-        const {name,capacity,price_by_day,count,price_by_children,price_by_adult} = req.body;
-        const userId = req.userId;
-        const hotel = await Hotel.findOne({where : {partner_id:userId}});
-        if(!hotel){
-            return res.status(404).json({message:"hotel not found"});
-        }
-        await Room.create({name,capacity,price_by_day,price_by_adult,price_by_children,count,hotel_id:hotel.id});
-        return res.json({message:"hotel created"});
-    }catch{
-            return res.status(500).send({message:"error server"})
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ errors: errors.array().map(err => err.msg) });
     }
+    try {
+      const { name, capacity, price_by_day, count, price_by_children, price_by_adult } = req.body;
+      const userId = req.userId;
+      const hotel = await Hotel.findOne({ where: { partner_id: userId } });
+      if (!hotel) {
+        return res.status(404).json({ message: "hotel not found" });
+      }
+      await Room.create({ name, capacity, price_by_day, price_by_adult, price_by_children, count, hotel_id: hotel.id });
+      return res.json({ message: "hotel created" });
+    } catch {
+      return res.status(500).send({ message: "error server" })
     }
+  }
 ]
 
 exports.AddLocation = [
-    body("name").notEmpty().withMessage("name is required"),
-    body("address").notEmpty().withMessage("address by day is required"),
-    async (req,res) => {
-         const errors = validationResult(req);
-            if(!errors.isEmpty()){
-                return res.status(422).json({ errors: errors.array().map(err => err.msg) });
-        }
-        try{
-            const partner_id = req.userId;
-            const {name,address} = req.body;
-            await Location.create({name,address,partner_id});
-            return res.json({message:"location created"});
-        }catch(err){
-            return res.status(500).send({message:"error server"})
-        }
-
+  body("name").notEmpty().withMessage("name is required"),
+  body("address").notEmpty().withMessage("address by day is required"),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ errors: errors.array().map(err => err.msg) });
     }
+    try {
+      const partner_id = req.userId;
+      const { name, address } = req.body;
+      await Location.create({ name, address, partner_id });
+      return res.json({ message: "location created" });
+    } catch (err) {
+      return res.status(500).send({ message: "error server" })
+    }
+
+  }
 ]
 
-exports.GetLocation = async (req,res) => {
-        try{
-            const partner_id = req.userId;
-            const locationData = await Location.findOne({where: {partner_id},
-                include:[
-                    {
-                        model:Vehicle,
-                        as:"vehicle",
-                        required:false,
-                    },
-                ]
-            });
-            if(!locationData){
-                return res.status(404).send({message:"location not found"});
-            }
-          const images = await ImageService.findAll({
-          where: {
-            type: "vehicle",
-          },
-        });
+exports.GetLocation = async (req, res) => {
+  try {
+    const partner_id = req.userId;
+    const locationData = await Location.findOne({
+      where: { partner_id },
+      include: [
+        {
+          model: Vehicle,
+          as: "vehicle",
+          required: false,
+        },
+      ]
+    });
+    if (!locationData) {
+      return res.status(404).send({ message: "location not found" });
+    }
+    const images = await ImageService.findAll({
+      where: {
+        type: "vehicle",
+      },
+    });
 
     const locationJSON = locationData.toJSON();
     const vehiclesWithImages = locationJSON.vehicle.map((vehicle) => {
@@ -358,11 +362,11 @@ exports.GetLocation = async (req,res) => {
       ...locationJSON,
       vehicle: vehiclesWithImages,
     };
-            return res.json({message:"location found",location});
-        }catch(err){
-            console.log(err)
-            return res.status(500).send({message:"error server"})
-        }
+    return res.json({ message: "location found", location });
+  } catch (err) {
+    console.log(err)
+    return res.status(500).send({ message: "error server" })
+  }
 
 }
 
@@ -405,11 +409,94 @@ exports.GetPublicLocation = async (req, res) => {
       };
     });
 
-    return res.send({message: "list of location",data: result,});
+    return res.send({ message: "list of location", data: result, });
 
   } catch (err) {
     console.log(err);
     return res.status(500).send({ message: "server error" });
+  }
+};
+
+exports.checkAvailability = async (req, res) => {
+  try {
+    const { vehicle_id, start_date, end_date } = req.body
+
+    if (!vehicle_id || !start_date || !end_date) {
+      return res.status(400).json({ message: "Missing data" })
+    }
+
+    const conflict = await CarRentalBookingDetails.findOne({
+      where: {
+        car_id: vehicle_id,
+
+        [Op.and]: [
+          {
+            pickup_date: {
+              [Op.lt]: end_date,
+            },
+          },
+          {
+            return_date: {
+              [Op.gt]: start_date,
+            },
+          },
+        ],
+      },
+
+      include: [
+        {
+          model: Booking,
+          as: "bookingCar",
+          where: {
+            status: {
+              [Op.ne]: "annulée",
+            },
+          },
+        },
+      ],
+    })
+
+    if (conflict) {
+      return res.json({
+        available: false,
+        message: "car is already booking",
+      })
+    }
+
+    return res.json({
+      available: true,
+    })
+
+  } catch (error) {
+    return res.status(500).json({
+      message: "Server error",
+    })
+  }
+}
+
+exports.GetVehicleById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const vehicleData = await Vehicle.findByPk(id);
+
+    if (!vehicleData) {
+      return res.status(404).send({ message: "Vehicle not found" });
+    }
+
+    const images = await ImageService.findAll({
+      where: { type: "vehicle", service_id: id },
+    });
+
+    const vehicle = {
+      ...vehicleData.toJSON(),
+      images: images.map(img => img.toJSON()),
+    };
+
+    return res.send({ message: "Vehicle detail", vehicle });
+
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send({ message: "Server error" });
   }
 };
 
@@ -456,18 +543,18 @@ exports.AddVehicle = [
         return res.status(404).json({ message: "location not found" });
       }
 
-      const {brand,model,year,category,fuel,seats,price_per_day,min_age,license_years,deposit,caution_standard,description, features} = req.body;
-    const vehicle = await Vehicle.create({location_id: location.id,brand,model,year,category,fuel,seats,price_per_day,min_age,license_years,deposit,caution_standard,description,features});
-       const files = req.files.service_doc;
-            for (const element of files) {
-            await ImageService.create({
-                image_url: element.filename,
-                type: "vehicle",
-                service_id: vehicle.id
-            });
-            }
+      const { brand, model, year, category, fuel, seats, price_per_day, min_age, license_years, deposit, caution_standard, description, features } = req.body;
+      const vehicle = await Vehicle.create({ location_id: location.id, brand, model, year, category, fuel, seats, price_per_day, min_age, license_years, deposit, caution_standard, description, features });
+      const files = req.files.service_doc;
+      for (const element of files) {
+        await ImageService.create({
+          image_url: element.filename,
+          type: "vehicle",
+          service_id: vehicle.id
+        });
+      }
 
-      return res.json({message: "vehicle created"});
+      return res.json({ message: "vehicle created" });
     } catch (err) {
       console.log(err)
       return res.status(500).send({ message: "error server" });
@@ -476,7 +563,7 @@ exports.AddVehicle = [
 ];
 
 exports.AddAgency = [
-body("name").notEmpty().withMessage("name is required"),
+  body("name").notEmpty().withMessage("name is required"),
   body("description").notEmpty().withMessage("Description is required"),
   body("address").notEmpty().withMessage("address is required"),
   body("phone").notEmpty().withMessage("phone is required"),
@@ -496,10 +583,10 @@ body("name").notEmpty().withMessage("name is required"),
     }
     try {
       const userId = req.userId;
-    const file = req.files.service_doc;
-       if(!file){
-            return res.status(422).send({ message: "logo not found" });
-       }
+      const file = req.files.service_doc;
+      if (!file) {
+        return res.status(422).send({ message: "logo not found" });
+      }
 
       const {
         name,
@@ -528,9 +615,9 @@ body("name").notEmpty().withMessage("name is required"),
         partner_id: userId,
       });
 
-    await agence.update({logo:file.filename});
+      await agence.update({ logo: file.filename });
 
-      return res.status(201).send({message: "Agence créée avec succès"});
+      return res.status(201).send({ message: "Agence créée avec succès" });
     } catch (err) {
       console.log(err);
       return res.status(500).send({ message: "Erreur serveur" });
@@ -538,48 +625,129 @@ body("name").notEmpty().withMessage("name is required"),
   },
 ];
 
-exports.GetAgency = async (req,res) => {
-        try{
-            const partner_id = req.userId;
-            const agencyData = await Agence.findOne({where: {partner_id},
-            include:[
-                {
-                    model:Offer,
-                    as:"offers",
-                    required:false,
-                },
-                
-            ]
-        });
-            if(!agencyData){
-                return res.status(404).json({message:"agency not found"});
-            }
-             const images = await ImageService.findAll({
-                where: {
-                  type: "agence",
-                },
-              });
-
-          const agencyJSON = agencyData.toJSON();
-          const offerWithImages = agencyJSON.offers.map((offers) => {
-            const imagesOffer = images.filter(
-              (img) => String(img.service_id) === String(offers.id)
-            );
-
-            return {
-              ...offers,
-              imagesOffer,
-            };
-          });
-          const agency = {
-            ...agencyJSON,
-            offer: offerWithImages,
-          };
-            return res.json({message:"agency found",agency});
-        }catch(err){
-          console.log(err)
-            return res.status(500).send({message:"error server"})
+exports.GetPublicAgency = async (req, res) => {
+  try {
+    const agencyData = await Agence.findAll({
+      limit: 6,
+      include: [
+        {
+          model: Offer,
+          as: "offers",
+          required: true,
         }
+      ]
+    });
+
+    const images = await ImageService.findAll({
+      where: {
+        type: "offer",
+      },
+    });
+
+    const result = agencyData.map((agency) => {
+      const ag = agency.toJSON();
+
+      const offersWithImages = (ag.offers || []).map((offer) => {
+        const imagesOffer = images.filter(
+          (img) => String(img.service_id) === String(offer.id)
+        );
+
+        return {
+          ...offer,
+          images: imagesOffer,
+        };
+      });
+
+      return {
+        ...ag,
+        offers: offersWithImages,
+      };
+    });
+
+    return res.send({ message: "list of agency", data: result, });
+
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send({ message: "server error" });
+  }
+};
+
+exports.GetOfferById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const offerData = await Offer.findByPk(id, {
+      include: [
+        {
+          model: Agence,
+          as: "agencyOffer"
+        }
+      ]
+    });
+
+    if (!offerData) {
+      return res.status(404).send({ message: "offer not found" });
+    }
+
+    const images = await ImageService.findAll({
+      where: { type: "offer", service_id: id },
+    });
+
+    const offer = {
+      ...offerData.toJSON(),
+      images: images.map(img => img.toJSON()),
+    };
+
+    return res.send({ message: "Vehicle detail", offer });
+
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send({ message: "Server error" });
+  }
+};
+
+exports.GetAgency = async (req, res) => {
+  try {
+    const partner_id = req.userId;
+    const agencyData = await Agence.findOne({
+      where: { partner_id },
+      include: [
+        {
+          model: Offer,
+          as: "offers",
+          required: false,
+        },
+
+      ]
+    });
+    if (!agencyData) {
+      return res.status(404).json({ message: "agency not found" });
+    }
+    const images = await ImageService.findAll({
+      where: {
+        type: "agence",
+      },
+    });
+
+    const agencyJSON = agencyData.toJSON();
+    const offerWithImages = agencyJSON.offers.map((offers) => {
+      const imagesOffer = images.filter(
+        (img) => String(img.service_id) === String(offers.id)
+      );
+
+      return {
+        ...offers,
+        imagesOffer,
+      };
+    });
+    const agency = {
+      ...agencyJSON,
+      offer: offerWithImages,
+    };
+    return res.json({ message: "agency found", agency });
+  } catch (err) {
+    console.log(err)
+    return res.status(500).send({ message: "error server" })
+  }
 
 };
 exports.AddOffer = [
@@ -633,12 +801,12 @@ exports.AddOffer = [
           .status(400)
           .send({ message: "not_included must be a JSON array" });
       }
-    const userId = req.userId;
+      const userId = req.userId;
       const agency = await Agence.findOne({
         where: { partner_id: userId },
       });
-      if(!agency){
-         return res.status(404).json({ message: "agency not found" });
+      if (!agency) {
+        return res.status(404).json({ message: "agency not found" });
       }
       const offer = await Offer.create({
         title,
@@ -650,16 +818,16 @@ exports.AddOffer = [
         description,
         included,
         not_included,
-        agency_id:agency.id
+        agency_id: agency.id
       });
       const files = req.files.service_doc;
-            for (const element of files) {
-            await ImageService.create({
-                image_url: element.filename,
-                type: "agence",
-                service_id: offer.id
-            });
-            }
+      for (const element of files) {
+        await ImageService.create({
+          image_url: element.filename,
+          type: "offer",
+          service_id: offer.id
+        });
+      }
       return res.status(201).json({
         message: "Offer created successfully",
         offer,
@@ -687,56 +855,110 @@ exports.AddAirline = [
 
   body("amenities")
     .isArray({ min: 1 }).withMessage("select at less service"),
-  ,async (req,res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      errors: errors.array(),
-    });
+  , async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        errors: errors.array(),
+      });
+    }
+
+    try {
+      const { name, hub, description, classes, amenities } = req.body;
+      const partner_id = req.userId;
+
+      await Compagnie.create({
+        name,
+        hub,
+        description,
+        classes,
+        services: amenities,
+        partner_id
+      });
+
+      return res.status(201).send({ message: "airline created" });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).send({ message: "Server error", });
+    }
   }
-
-  try {
-    const { name, hub, description, classes, amenities } = req.body;
-    const partner_id = req.userId;
-
-    await Compagnie.create({
-      name,
-      hub,
-      description,
-      classes,
-      services:amenities,
-      partner_id
-    });
-
-    return res.status(201).send({message:"airline created"});
-  } catch (err) {
-    console.error(err);
-    return res.status(500).send({message: "Server error",});
-  }
-}
 ];
 
-exports.GetAirline = async (req,res) => {
-        try{
-            const partner_id = req.userId;
-            const airline = await Compagnie.findOne({where: {partner_id},
-            include:[
-              {
-                model:Flight,
-                as:"FlightCompagnie",
-                required:false,
-              }
-            ]
-          });
-            if(!airline){
-                return res.status(404).json({message:"airline not found"});
-            }
-            return res.json({message:"airline found",airline});
-        }catch(err){
-          console.log(err)
-            return res.status(500).send({message:"error server"})
+exports.GetAirline = async (req, res) => {
+  try {
+    const partner_id = req.userId;
+    const airline = await Compagnie.findOne({
+      where: { partner_id },
+      include: [
+        {
+          model: Flight,
+          as: "FlightCompagnie",
+          required: false,
         }
+      ]
+    });
+    if (!airline) {
+      return res.status(404).json({ message: "airline not found" });
+    }
+    return res.json({ message: "airline found", airline });
+  } catch (err) {
+    console.log(err)
+    return res.status(500).send({ message: "error server" })
+  }
 
+};
+exports.GetFlightById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const flight = await Flight.findByPk(id, {
+      include: [
+        {
+          model: Compagnie,
+          as: "compagnieFlight",
+          required: false,
+        }, {
+          model: FlightClasses,
+          as: "flightClasses"
+        }
+      ]
+    });
+    if (!flight) {
+      return res.status(404).json({ message: "airline not found" });
+    }
+    return res.json({ message: "airline found", flight });
+  } catch (err) {
+    console.log(err)
+    return res.status(500).send({ message: "error server" })
+  }
+
+};
+
+exports.GetPublicAirline = async (req, res) => {
+  try {
+    const airline = await Compagnie.findAll({
+      limit: 6,
+      include: [
+        {
+          model: Flight,
+          as: "FlightCompagnie",
+          required: true,
+          include: [
+            {
+              model: FlightClasses,
+              as: "flightClasses"
+            }
+          ]
+        }
+      ]
+    });
+
+
+    return res.send({ message: "list of airline", airline });
+
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send({ message: "server error" });
+  }
 };
 
 exports.AddFlight = [
@@ -761,7 +983,7 @@ exports.AddFlight = [
     }),
   body("duration").optional().isString(),
   body("classes").notEmpty().withMessage("Classes are required")
-  .isObject().withMessage("Classes must be an object")
+    .isObject().withMessage("Classes must be an object")
     .custom((value) => {
       const hasAtLeastOne = Object.values(value).some(
         v => v !== "" && v !== null && Number(v) > 0
@@ -831,7 +1053,7 @@ exports.AddFlight = [
 
       if (typeof classes === "string") classes = JSON.parse(classes);
       if (typeof seatsClasses === "string") seatsClasses = JSON.parse(seatsClasses);
-      const airline = Compagnie.findOne({partner_id});
+      const airline = Compagnie.findOne({ partner_id });
 
 
       const flight = await Flight.create({
@@ -845,7 +1067,7 @@ exports.AddFlight = [
         seats_available,
         baggage_kg,
         status,
-        airline_id:airline.id
+        airline_id: airline.id
       }, { transaction: t });
 
 
@@ -878,117 +1100,199 @@ exports.AddFlight = [
 ];
 
 exports.AddVoyage = [
-body("name").notEmpty().withMessage("Name is required"),
+  body("name").notEmpty().withMessage("Name is required"),
   body("description").notEmpty().withMessage("Description is required"),
   body("location").notEmpty().withMessage("Location is required"),
   body("website").optional({ checkFalsy: true }).isURL().withMessage("Invalid website URL"),
   body("phone").optional().matches(/^[0-9+\s-]{8}$/).withMessage("Invalid phone number"),
   body("categories").isArray().withMessage("Categories must be an array"),
   body("equipments").isArray().withMessage("Equipments must be an array"),
-  async (req,res) => {
-     const errors = validationResult(req);
+  async (req, res) => {
+    const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(422).json({ errors: errors.array() });
     }
-  try {
-    const {
-      name,description,location,website,phone,categories,equipments} = req.body;
+    try {
+      const {
+        name, description, location, website, phone, categories, equipments } = req.body;
       const partner_id = req.userId;
-    await Voyage.create({
-      name,
-      description,
-      location,
-      website,
-      phone,
-      categories,
-      equipments,
-      partner_id
-    });
+      await Voyage.create({
+        name,
+        description,
+        location,
+        website,
+        phone,
+        categories,
+        equipments,
+        partner_id
+      });
 
-    res.status(201).send({message: "voyage created"});
-  } catch (err) {
-    console.log(err)
-    res.status(500).send({ message: "server error" });
-  }
+      res.status(201).send({ message: "voyage created" });
+    } catch (err) {
+      console.log(err)
+      res.status(500).send({ message: "server error" });
+    }
 
   }
 ];
-exports.GetVoyage = async (req,res) => {
-        try{
-            const partner_id = req.userId;
-            const voyageData = await Voyage.findOne({where: {partner_id},
-            include:[
-              {
-                model:Circuit,
-                as:"circuits",
-              }
-            ]
-            });
-            if(!voyageData){
-                return res.status(404).json({message:"airline not found"});
-            }
-           const images = await ImageService.findAll({
-              where: {
-                type: "circuit",
-              },
-            });
-            const voyageJSON = voyageData.toJSON();
-
-            const circuitsWithImages = voyageJSON.circuits.map((circuits) => {
-              const imagesCircuits = images.filter(
-                (img) => String(img.service_id) === String(circuits.id)
-              );
-
-              return {
-                ...circuits,
-                imagesCircuits,
-              };
-            });
-            // return res.json({message:"airline found",circuitsWithImages});
-
-            const voyage = {
-              ...voyageJSON,
-              circuits: circuitsWithImages,
-            };
-            return res.json({message:"voyage found",voyage});
-        }catch(err){
-          console.log(err)
-            return res.status(500).send({message:"error server"})
+exports.GetVoyage = async (req, res) => {
+  try {
+    const partner_id = req.userId;
+    const voyageData = await Voyage.findOne({
+      where: { partner_id },
+      include: [
+        {
+          model: Circuit,
+          as: "circuits",
         }
+      ]
+    });
+    if (!voyageData) {
+      return res.status(404).json({ message: "airline not found" });
+    }
+    const images = await ImageService.findAll({
+      where: {
+        type: "circuit",
+      },
+    });
+    const voyageJSON = voyageData.toJSON();
+
+    const circuitsWithImages = voyageJSON.circuits.map((circuits) => {
+      const imagesCircuits = images.filter(
+        (img) => String(img.service_id) === String(circuits.id)
+      );
+
+      return {
+        ...circuits,
+        imagesCircuits,
+      };
+    });
+
+    const voyage = {
+      ...voyageJSON,
+      circuits: circuitsWithImages,
+    };
+    return res.json({ message: "voyage found", voyage });
+  } catch (err) {
+    console.log(err)
+    return res.status(500).send({ message: "error server" })
+  }
 
 };
+
+exports.GetCircuitById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const circuitData = await Circuit.findByPk(id, {
+      include: [
+        {
+          model: Voyage,
+          as: "voyagesCircuit",
+        }
+      ]
+    });
+    if (!circuitData) {
+      return res.status(404).json({ message: "circuit not found" });
+    }
+
+    const images = await ImageService.findAll({
+      where: { type: "circuit", service_id: id },
+    });
+
+    const circuit = {
+      ...circuitData.toJSON(),
+      images: images.map(img => img.toJSON()),
+    };
+
+    return res.json({ message: "circuit found", circuit });
+  } catch (err) {
+    console.log(err)
+    return res.status(500).send({ message: "error server" })
+  }
+
+};
+
+exports.GetPublicVoyage = async (req, res) => {
+  try {
+    const voyageData = await Voyage.findAll({
+      limit: 6,
+      include: [
+        {
+          model: Circuit,
+          as: "circuits",
+          required: true,
+        }
+      ]
+    });
+
+    if (!voyageData || voyageData.length === 0) {
+      return res.status(404).json({ message: "voyage not found" });
+    }
+    const images = await ImageService.findAll({
+      where: {
+        type: "circuit",
+      },
+    });
+    const voyageJSON = voyageData.map(v => v.toJSON());
+    const voyages = voyageJSON.map(voyage => {
+
+      const circuitsWithImages = voyage.circuits.map((circuit) => {
+        const imagesCircuits = images.filter(
+          (img) => String(img.service_id) === String(circuit.id)
+        );
+
+        return {
+          ...circuit,
+          imagesCircuits,
+        };
+      });
+
+      return {
+        ...voyage,
+        circuits: circuitsWithImages,
+      };
+    });
+    return res.json({ message: "voyage found", voyages });
+
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send({ message: "server error" });
+  }
+};
+
 exports.AddCircuit = [
   body("title").notEmpty().withMessage("Title is required"),
   body("location").notEmpty().withMessage("Location is required"),
   body("description").isLength({ min: 10 }).withMessage("Description must be at least 10 chars"),
-  body("category").isIn(["voyage","camping","désert","aventure","plage","montagne","culturel"]).withMessage("Invalid category"),
-  body("difficulty").isIn(["facile", "modéré", "difficile","très difficile"]).withMessage("Invalid difficulty"),
+  body("category").isIn(["voyage", "camping", "désert", "aventure", "plage", "montagne", "culturel"]).withMessage("Invalid category"),
+  body("difficulty").isIn(["facile", "modéré", "difficile", "très difficile"]).withMessage("Invalid difficulty"),
   body("price_per_person").isFloat({ gt: 0 }).withMessage("Price must be > 0"),
   body("duration_days").isInt({ gt: 0 }).withMessage("Duration must be > 0"),
   body("max_people").isInt({ gt: 0 }).withMessage("Max people must be > 0"),
   body("inclusions").optional({ checkFalsy: true }).isArray(),
   body("available_dates").optional({ checkFalsy: true }).isArray(),
-  async (req,res) => {
+  async (req, res) => {
     try {
-      const {title,location,description,category,difficulty,price_per_person,duration_days,max_people,inclusions,available_dates} = req.body;
+      const { title, location, description, category, difficulty, price_per_person, duration_days, max_people, inclusions, available_dates } = req.body;
       const partner_id = req.userId;
-      const voyage = Voyage.findOne({where:{partner_id}});
-      if(!voyage){
-      res.status(404).send({message:"voyage not found"});
+      const voyage = Voyage.findOne({ where: { partner_id } });
+      if (!voyage) {
+        res.status(404).send({ message: "voyage not found" });
       }
-      const circuit = await Circuit.create({title,location,description,category,difficulty,price_per_person,duration_days,max_people,inclusions,available_dates,voyage_id:voyage.id});
-       const files = req.files.service_doc;
-            for (const element of files) {
-            await ImageService.create({
-                image_url: element.filename,
-                type: "circuit",
-                service_id: circuit.id
-            });
-            }
-    res.status(201).send({message:"circuit created"});
-  } catch (err) {
-    console.log(err)
-    res.status(500).send({ message: "server error" });
-  }
+      const circuit = await Circuit.create({ title, location, description, category, difficulty, price_per_person, duration_days, max_people, inclusions, available_dates, voyage_id: voyage.id });
+      const files = req.files.service_doc;
+      for (const element of files) {
+        await ImageService.create({
+          image_url: element.filename,
+          type: "circuit",
+          service_id: circuit.id
+        });
+      }
+      res.status(201).send({ message: "circuit created" });
+    } catch (err) {
+      console.log(err)
+      res.status(500).send({ message: "server error" });
+    }
   }
 ];
+

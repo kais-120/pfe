@@ -1,13 +1,17 @@
 const Agence = require("./Agence");
 const Booking = require("./Booking");
+const CarRentalBookingDetails = require("./CarRentalBookingDetails");
 const Circuit = require("./Circuit");
+const CircuitBookingDetails = require("./CircuitBookingDetails");
 const Compagnie = require("./Compagnie");
 const Flight = require("./Flight");
+const FlightBookingDetails = require("./FlightBookingDetails");
 const FlightClasses = require("./FlightClasses");
 const Hotel = require("./Hotel");
 const HotelBookingDetails = require("./HotelBookingDetails");
 const Location = require("./Location");
 const Offer = require("./Offer");
+const OfferBookingDetails = require("./OfferBookingDetails");
 const Otp = require("./Otp");
 const PartnerFile = require("./PartnerFiles");
 const RefuseReason = require("./RefuseReason");
@@ -177,7 +181,7 @@ Agence.hasMany(Offer, {
   as: "offers"
 })
 
-Offer.belongsTo(Location, {
+Offer.belongsTo(Agence, {
   foreignKey: "agency_id",
   as: "agencyOffer"
 })
@@ -195,7 +199,7 @@ Compagnie.hasMany(Flight,{
     foreignKey: "airline_id",
     as: "FlightCompagnie"
 })
-Flight.hasMany(Compagnie,{
+Flight.belongsTo(Compagnie,{
     foreignKey: "airline_id",
     as: "compagnieFlight"
 })
@@ -209,6 +213,84 @@ Circuit.belongsTo(Voyage,{
     as:"voyagesCircuit"
 });
 
+Booking.hasMany(CarRentalBookingDetails, {
+  foreignKey: "booking_id",
+  as: "carDetails"
+})
+
+CarRentalBookingDetails.belongsTo(Booking, {
+  foreignKey: "booking_id",
+  as: "bookingCar"
+})
+
+Booking.hasMany(FlightBookingDetails, {
+  foreignKey: "booking_id",
+  as: "flightBooking"
+})
+
+FlightBookingDetails.belongsTo(Flight, {
+  foreignKey: "booking_id",
+  as: "flightDetails"
+})
+
+Flight.hasMany(FlightBookingDetails, {
+  foreignKey: "flight_id",
+  as: "flightDetails"
+})
+
+FlightBookingDetails.belongsTo(Booking, {
+  foreignKey: "flight_id",
+  as: "bookingsBooking"
+})
+
+
+Booking.hasMany(CircuitBookingDetails, {
+  foreignKey: "booking_id",
+  as: "circuitBooking"
+})
+
+CircuitBookingDetails.belongsTo(Booking, {
+  foreignKey: "booking_id",
+  as: "circuitBookingDetails"
+})
+
+Circuit.hasMany(CircuitBookingDetails, {
+  foreignKey: "circuit_id",
+  as: "bookingCircuit"
+})
+
+CircuitBookingDetails.belongsTo(Circuit, {
+  foreignKey: "circuit_id",
+  as: "circuitDetails"
+})
+
+
+
+
+Booking.hasMany(OfferBookingDetails, {
+  foreignKey: "booking_id",
+  as: "offerBooking"
+})
+
+OfferBookingDetails.belongsTo(Booking, {
+  foreignKey: "booking_id",
+  as: "bookingOffer"
+})
+
+Offer.hasMany(OfferBookingDetails, {
+  foreignKey: "offer_id",
+  as: "offerDetails"
+})
+
+OfferBookingDetails.belongsTo(Offer, {
+  foreignKey: "offer_id",
+  as: "detailsOffer"
+})
+
+
+
 module.exports = {  User, Otp,Agence,PartnerFile,Hotel,Compagnie,Voyage,
                     RefuseReason,Room,Booking,HotelBookingDetails,
-                    Reviews,Location,Vehicle,Offer,Flight,FlightClasses,Circuit};
+                    Reviews,Location,Vehicle,Offer,Flight,FlightClasses,Circuit,
+                    CarRentalBookingDetails,FlightBookingDetails,CircuitBookingDetails,
+                    OfferBookingDetails};
