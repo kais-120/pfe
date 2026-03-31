@@ -16,11 +16,11 @@ import {
 import { LucideAlertCircle } from "lucide-react"
 
 const validationSchema = yup.object().shape({
-  firstName:       yup.string().min(3, "Minimum 3 caractères").required("Le nom est requis"),
-  lastName:        yup.string().min(3, "Minimum 3 caractères").required("Le prénom est requis"),
-  email:           yup.string().email("Email invalide").required("L'email est requis"),
-  phone:           yup.string().matches(/^\d+$/, "Chiffres uniquement").length(8, "Doit contenir 8 chiffres").required("Le téléphone est requis"),
-  password:        yup.string().min(6, "Minimum 6 caractères").required("Le mot de passe est requis"),
+  firstName: yup.string().min(3, "Minimum 3 caractères").required("Le nom est requis"),
+  lastName: yup.string().min(3, "Minimum 3 caractères").required("Le prénom est requis"),
+  email: yup.string().email("Email invalide").required("L'email est requis"),
+  phone: yup.string().matches(/^\d+$/, "Chiffres uniquement").length(8, "Doit contenir 8 chiffres").required("Le téléphone est requis"),
+  password: yup.string().min(6, "Minimum 6 caractères").required("Le mot de passe est requis"),
   confirmPassword: yup.string().required("Confirmation requise").oneOf([yup.ref("password"), null], "Les mots de passe ne correspondent pas"),
 })
 
@@ -116,7 +116,7 @@ const AddAgent = () => {
         </Flex>
 
         {/* Page header */}
-        <Box  mb={8}>
+        <Box mb={8}>
           <Text fontSize="xs" fontWeight={700} color="blue.500"
             textTransform="uppercase" letterSpacing="widest" mb={1}>
             Gestion des utilisateurs

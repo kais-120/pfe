@@ -79,8 +79,7 @@ function DestCombobox({ value, onChange }) {
   )
 }
 
-/* ── Image slider ───────────────────────────────────────────────── */
-function ImageSlider({ images, hotelId }) {
+function ImageSlider({ images }) {
   const [idx, setIdx] = useState(0)
   if (!images?.length) return (
     <Flex h="200px" borderRadius="xl" bg="gray.100"
@@ -134,7 +133,7 @@ function EquipTag({ equipKey }) {
 }
 
 /* ── Hotel card ─────────────────────────────────────────────────── */
-function HotelCard({ hotel, nights }) {
+function HotelCard({ hotel, nights,rooms,checkIn,checkOut }) {
   const navigate = useNavigate()
   const minPrice = hotel.rooms?.length
     ? Math.min(...hotel.rooms.map(r => r.price_by_day)) : null
@@ -200,7 +199,7 @@ function HotelCard({ hotel, nights }) {
           </Box>
           <Button colorScheme="blue" borderRadius="xl" size="sm"
             fontWeight={600} px={5}
-            onClick={() => navigate(`/hotel/${hotel.id}`)}>
+            onClick={() => navigate(`/hotel/${hotel.id}`,{state:{checkIn,checkOut,rooms}})}>
             Voir l'hôtel
           </Button>
         </Flex>
@@ -209,7 +208,6 @@ function HotelCard({ hotel, nights }) {
   )
 }
 
-/* ── Skeleton card ──────────────────────────────────────────────── */
 function CardSkeleton() {
   return (
     <Box bg="white" borderRadius="2xl" overflow="hidden"
@@ -228,7 +226,6 @@ function CardSkeleton() {
   )
 }
 
-/* ── Filter checkbox ────────────────────────────────────────────── */
 function FilterBox({ label, checked, onChange }) {
   return (
     <Flex as="button" type="button" align="center" gap={2.5}
@@ -245,7 +242,6 @@ function FilterBox({ label, checked, onChange }) {
   )
 }
 
-/* ── Main page ──────────────────────────────────────────────────── */
 export default function SearchHotels() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -260,7 +256,13 @@ export default function SearchHotels() {
   const [destination, setDestination] = useState(initDest)
   const [checkIn, setCheckIn] = useState(initCheckIn)
   const [checkOut, setCheckOut] = useState(initCheckOut)
-  const [room, setRoom] = useState({ rooms: initRooms, adults: initAdults, children: initChildren })
+  const [room, setRoom] = useState(
+  Array.from({ length: initRooms }, () => ({
+    adults: initAdults,
+    children: initChildren
+  }))
+)
+
 
   const [hotels, setHotels] = useState([])
   const [loading, setLoading] = useState(true)
@@ -274,6 +276,7 @@ export default function SearchHotels() {
     const d = (new Date(initCheckOut) - new Date(initCheckIn)) / 86400000
     return d > 0 ? Math.round(d) : null
   })()
+const formatDate = (d) => new Date(d).toISOString().split('T')[0]
 
   useEffect(() => {
     ; (async () => {
@@ -281,11 +284,9 @@ export default function SearchHotels() {
         setLoading(true)
         const res = await Axios.post("/service/get/hotels/search", {
           destination: initDest,
-          checkIn: initCheckIn,
-          checkOut: initCheckOut,
-          numberAdult: initAdults,
-          numberChildren: initChildren,
-          numberRoom: initRooms,
+          checkIn:formatDate(initCheckIn),
+          checkOut: formatDate(initCheckOut),
+          rooms:room
         })
         setHotels(res.data.hotels ?? res.data.hotel ?? [])
       } catch {
@@ -302,7 +303,7 @@ export default function SearchHotels() {
     const numberAdult = room?.adults ?? initAdults
     const numberChildren = room?.children ?? initChildren
     navigate(
-      `/search?destination=${destination}` +
+      `/search"hotel?destination=${destination}` +
       `&checkIn=${checkIn ?? ""}` +
       `&checkOut=${checkOut ?? ""}` +
       `&numberAdult=${numberAdult}` +
@@ -616,7 +617,7 @@ export default function SearchHotels() {
               ) : (
                 <Grid templateColumns={{ base: "1fr", md: "repeat(2,1fr)" }} gap={5}>
                   {filtered.map(hotel => (
-                    <HotelCard key={hotel.id} hotel={hotel} nights={nights} />
+                    <HotelCard key={hotel.id} hotel={hotel} nights={nights} rooms={room} checkIn={initCheckIn} checkOut={initCheckOut} />
                   ))}
                 </Grid>
               )}

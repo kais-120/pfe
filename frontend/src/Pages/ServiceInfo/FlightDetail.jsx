@@ -6,7 +6,7 @@ import {
 } from "@chakra-ui/react"
 import {
   FaPlane, FaArrowLeft, FaWifi, FaUtensils,
-  FaSuitcase, FaStar, FaCheck,
+  FaSuitcase, FaStar, FaCheck, FaChild, FaUser,
 } from "react-icons/fa"
 import {
   LuPlane, LuCalendar, LuClock, LuUsers,
@@ -15,6 +15,7 @@ import {
 } from "react-icons/lu"
 import Header from "../../components/home/Header"
 import { Axios } from "../../Api/Api"
+import { Helmet } from "react-helmet"
 
 /* ── Helpers ────────────────────────────────────────────────────── */
 const STATUS_META = {
@@ -32,13 +33,13 @@ const SERVICE_META = {
   lounge: { Icon: FaStar, label: "Accès salon VIP" },
 }
 
-const fmtDate = (d) => d
+const fmtDate = d => d
   ? new Date(d).toLocaleDateString("fr-FR", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   })
   : "—"
 
-const fmtTime = (d) => d
+const fmtTime = d => d
   ? new Date(d).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
   : "—"
 
@@ -49,17 +50,52 @@ const calcDuration = (dep, arr) => {
   return `${h}h${mn > 0 ? mn + "min" : ""}`
 }
 
-const occup = (total, avail) => {
-  if (!total) return 0
-  return Math.round(((total - (avail ?? 0)) / total) * 100)
+const occup = (total, avail) =>
+  total ? Math.round(((total - (avail ?? 0)) / total) * 100) : 0
+
+/* ── Counter row ────────────────────────────────────────────────── */
+function Counter({ label, sub, value, min = 0, max, onInc, onDec }) {
+  return (
+    <Flex justify="space-between" align="center" py={2.5}
+      borderBottom="1px solid" borderColor="gray.50"
+      _last={{ borderBottom: "none" }}>
+      <Box>
+        <Text fontSize="sm" fontWeight={600} color="gray.800">{label}</Text>
+        {sub && <Text fontSize="xs" color="gray.400">{sub}</Text>}
+      </Box>
+      <Flex align="center" gap={3}>
+        <Box as="button"
+          w="28px" h="28px" borderRadius="full"
+          border="1px solid" borderColor={value <= min ? "gray.200" : "blue.300"}
+          color={value <= min ? "gray.300" : "blue.500"}
+          bg="white" display="flex" alignItems="center" justifyContent="center"
+          cursor={value <= min ? "not-allowed" : "pointer"}
+          fontSize="lg" lineHeight={1} transition="all 0.15s"
+          _hover={value > min ? { bg: "blue.50" } : {}}
+          onClick={() => value > min && onDec()}>–</Box>
+        <Text fontSize="sm" fontWeight={700} minW="16px" textAlign="center" color="gray.800">
+          {value}
+        </Text>
+        <Box as="button"
+          w="28px" h="28px" borderRadius="full"
+          border="1px solid"
+          borderColor={max && value >= max ? "gray.200" : "blue.300"}
+          color={max && value >= max ? "gray.300" : "blue.500"}
+          bg="white" display="flex" alignItems="center" justifyContent="center"
+          cursor={max && value >= max ? "not-allowed" : "pointer"}
+          fontSize="lg" lineHeight={1} transition="all 0.15s"
+          _hover={!(max && value >= max) ? { bg: "blue.50" } : {}}
+          onClick={() => !(max && value >= max) && onInc()}>+</Box>
+      </Flex>
+    </Flex>
+  )
 }
 
 /* ── Spec card ──────────────────────────────────────────────────── */
 function SpecCard({ icon: Icon, label, value, color = "blue" }) {
   return (
     <Flex align="center" gap={3} p={3}
-      bg="gray.50" borderRadius="xl"
-      border="1px solid" borderColor="gray.100">
+      bg="gray.50" borderRadius="xl" border="1px solid" borderColor="gray.100">
       <Flex w="36px" h="36px" borderRadius="lg"
         bg={`${color}.50`} color={`${color}.500`}
         align="center" justify="center" flexShrink={0}>
@@ -73,7 +109,6 @@ function SpecCard({ icon: Icon, label, value, color = "blue" }) {
   )
 }
 
-/* ── Section title ──────────────────────────────────────────────── */
 function SectionTitle({ children }) {
   return (
     <Text fontSize="xl" fontWeight={800} color="gray.800"
@@ -83,7 +118,6 @@ function SectionTitle({ children }) {
   )
 }
 
-/* ── Skeleton ───────────────────────────────────────────────────── */
 function PageSkeleton() {
   return (
     <Box maxW="1100px" mx="auto" px={6} py={10}>
@@ -95,7 +129,7 @@ function PageSkeleton() {
           </Grid>
           <SkeletonText noOfLines={4} spacing={3} />
         </VStack>
-        <Skeleton h="400px" borderRadius="2xl" />
+        <Skeleton h="480px" borderRadius="2xl" />
       </Grid>
     </Box>
   )
@@ -106,21 +140,23 @@ export default function FlightDetail() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const [flight,setFlight] = useState(null)
-  const [airline,setAirline] = useState(location.state?.airline ?? null)
-  const [loading,setLoading] = useState(!location.state?.flight)
-  const [error,setError] = useState(null)
-  const [selectedClass, setSelectedClass] = useState(null)
-  const [guests,setGuests]   = useState(1)
+  const [flight, setFlight] = useState(null)
+  const [airline, setAirline] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [selectedClass, setSelectedClass] = useState(location?.state?.type || null)
+  const [adults, setAdults] = useState(location?.state?.adults || 1)
+  const [children, setChildren] = useState(location?.state?.children || 0)
 
+  /* Fetch */
   useEffect(() => {
     ; (async () => {
       try {
         setLoading(true)
         const res = await Axios.get(`/service/airline/flight/public/get/${id}`)
-        console.log(res)
-        setFlight(res.data.flight)
-        setAirline(res.data.airline ?? null)
+        const f = res.data.flight
+        setFlight(f)
+        setAirline(f?.compagnieFlight ?? res.data.airline ?? null)
       } catch {
         setError("Impossible de charger ce vol.")
       } finally {
@@ -129,17 +165,18 @@ export default function FlightDetail() {
     })()
   }, [id])
 
+  /* Auto-select cheapest class */
   useEffect(() => {
     if (flight?.flightClasses?.length > 0 && !selectedClass) {
       const cheapest = flight.flightClasses.reduce((min, c) =>
-        c.price < min.price ? c : min, flight.flightClasses[0])
+        c.price_adult < min.price_adult ? c : min,
+        flight.flightClasses[0]
+      )
       setSelectedClass(cheapest)
     }
   }, [flight])
 
-
   if (loading) return <><Header /><PageSkeleton /></>
-
   if (error || !flight) return (
     <>
       <Header />
@@ -155,28 +192,28 @@ export default function FlightDetail() {
     ? `${flight.duration}h`
     : calcDuration(flight.departure, flight.arrival)
   const pct = occup(flight.seats_total, flight.seats_available)
-
   const isDisabled = flight.status === "annulé" || flight.seats_available === 0
 
-  
-  
+  /* Price calculation using new fields */
+  const totalPrice = selectedClass
+    ? selectedClass.price_adult * adults + selectedClass.price_children * children
+    : 0
 
   return (
     <>
+    <Helmet title={"Vol"}></Helmet>
+
       <Header />
 
       <Box maxW="1100px" mx="auto" px={{ base: 4, md: 6 }} py={8}>
 
         {/* Back */}
         <Button variant="ghost" size="sm" color="gray.500" mb={5} pl={0}
-          _hover={{ color: "blue.600", bg: "transparent" }}
-          onClick={() => navigate(-1)}>
-          <Flex align="center" gap={2}>
-            <FaArrowLeft size={12} />Retour aux vols
-          </Flex>
+          _hover={{ color: "blue.600", bg: "transparent" }} onClick={() => navigate(-1)}>
+          <Flex align="center" gap={2}><FaArrowLeft size={12} />Retour aux vols</Flex>
         </Button>
 
-        {/* ── Route hero card ── */}
+        {/* ── Route hero ── */}
         <Box bg="blue.600" borderRadius="2xl" p={6} mb={8}
           position="relative" overflow="hidden"
           boxShadow="0 4px 24px rgba(24,95,165,0.35)">
@@ -206,10 +243,15 @@ export default function FlightDetail() {
                 px={2.5} py={0.5} fontSize="xs" fontWeight={700}>
                 {s.label}
               </Badge>
+              {flight.type_flight && (
+                <Badge colorScheme="purple" borderRadius="full"
+                  px={2.5} py={0.5} fontSize="xs" fontWeight={600}>
+                  {flight.type_flight}
+                </Badge>
+              )}
             </Flex>
           </Flex>
 
-          {/* Route visual */}
           <Flex align="center" gap={4} position="relative" zIndex={1}>
             <Box minW="120px">
               <Text fontSize="3xl" fontWeight={900} color="white" lineHeight={1}>
@@ -229,8 +271,7 @@ export default function FlightDetail() {
             <Box flex={1} textAlign="center">
               <Box h="1.5px" bg="whiteAlpha.400" position="relative" mx={2}>
                 <Flex position="absolute" top="50%" left="50%"
-                  transform="translate(-50%, -50%)"
-                  bg="blue.600" px={2}>
+                  transform="translate(-50%,-50%)" bg="blue.600" px={2}>
                   <FaPlane size={18} color="white" />
                 </Flex>
               </Box>
@@ -265,7 +306,7 @@ export default function FlightDetail() {
           {/* ── LEFT ── */}
           <VStack align="stretch" spacing={8}>
 
-            {/* Specs grid */}
+            {/* Specs */}
             <Box>
               <SectionTitle>Informations du vol</SectionTitle>
               <Grid templateColumns={{ base: "1fr 1fr", md: "repeat(3,1fr)" }} gap={3}>
@@ -275,8 +316,7 @@ export default function FlightDetail() {
                 <SpecCard icon={LuBaggageClaim} label="Bagage inclus"
                   value={`${flight.baggage_kg} kg`} color="blue" />
                 {dur && (
-                  <SpecCard icon={LuClock} label="Durée du vol"
-                    value={dur} color="purple" />
+                  <SpecCard icon={LuClock} label="Durée du vol" value={dur} color="purple" />
                 )}
                 <SpecCard icon={LuCalendar} label="Départ"
                   value={fmtDate(flight.departure)} color="orange" />
@@ -287,7 +327,7 @@ export default function FlightDetail() {
               </Grid>
             </Box>
 
-            {/* Occupancy */}
+            {/* Occupancy bar */}
             <Box>
               <SectionTitle>Disponibilité</SectionTitle>
               <Box bg="white" borderRadius="2xl" p={5}
@@ -297,7 +337,7 @@ export default function FlightDetail() {
                   <Text fontSize="sm" color="gray.600">
                     <Text as="span" fontWeight={700} color="gray.900">
                       {flight.seats_available}
-                    </Text> sièges restants sur{" "}
+                    </Text>{" "}sièges restants sur{" "}
                     <Text as="span" fontWeight={700}>{flight.seats_total}</Text>
                   </Text>
                   <Text fontSize="sm" fontWeight={700}
@@ -306,39 +346,32 @@ export default function FlightDetail() {
                   </Text>
                 </Flex>
                 <Box bg="gray.100" borderRadius="full" h="8px" overflow="hidden">
-                  <Box
-                    bg={pct > 80 ? "red.400" : pct > 50 ? "orange.400" : "green.400"}
-                    h="100%" borderRadius="full" w={`${pct}%`}
-                    transition="width 0.6s" />
+                  <Box bg={pct > 80 ? "red.400" : pct > 50 ? "orange.400" : "green.400"}
+                    h="100%" borderRadius="full" w={`${pct}%`} transition="width 0.6s" />
                 </Box>
                 {flight.seats_available < 10 && (
                   <Text fontSize="xs" color="red.500" fontWeight={600} mt={2}>
-                    Plus que {flight.seats_available} place{flight.seats_available > 1 ? "s" : ""} disponible{flight.seats_available > 1 ? "s" : ""} !
+                    ⚠️ Plus que {flight.seats_available} place{flight.seats_available > 1 ? "s" : ""} !
                   </Text>
                 )}
               </Box>
             </Box>
 
-            {/* Classes — selectable cards */}
+            {/* ── Classes — NEW with price_adult / price_children ── */}
             {flight.flightClasses?.length > 0 && (
               <Box>
                 <SectionTitle>Choisissez votre classe</SectionTitle>
-                <Grid templateColumns="repeat(auto-fill, minmax(210px,1fr))" gap={3}>
+                <Grid templateColumns="repeat(auto-fill, minmax(220px,1fr))" gap={3}>
                   {flight.flightClasses.map(cls => {
                     const isSelected = selectedClass?.id === cls.id
                     const isFull = cls.seats_available === 0
                     return (
-                      <Box
-                        key={cls.id}
-                        as="button"
-                        textAlign="left"
-                        w="full"
-                        onClick={() => {!isFull && setSelectedClass(cls);setGuests(1)}}
+                      <Box key={cls.id} as="button" textAlign="left" w="full"
+                        onClick={() => { if (!isFull) { setSelectedClass(cls); setAdults(1); setChildren(0) } }}
                         cursor={isFull ? "not-allowed" : "pointer"}
                         opacity={isFull ? 0.55 : 1}
                         bg={isSelected ? "blue.600" : "white"}
-                        borderRadius="2xl"
-                        overflow="hidden"
+                        borderRadius="2xl" overflow="hidden"
                         border="2px solid"
                         borderColor={isSelected ? "blue.600" : "blue.100"}
                         boxShadow={isSelected
@@ -350,17 +383,14 @@ export default function FlightDetail() {
                           : {}}>
 
                         {/* Header */}
-                        <Box
-                          px={4} py={2.5}
+                        <Box px={4} py={2.5}
                           bg={isSelected ? "blue.700" : "blue.50"}
                           borderBottom="1px solid"
                           borderColor={isSelected ? "blue.500" : "blue.100"}>
                           <Flex align="center" justify="space-between">
                             <Flex align="center" gap={2}>
                               <FaStar size={11}
-                                color={isSelected
-                                  ? "white"
-                                  : "var(--chakra-colors-blue-400)"} />
+                                color={isSelected ? "white" : "var(--chakra-colors-blue-400)"} />
                               <Text fontSize="sm" fontWeight={700}
                                 color={isSelected ? "white" : "blue.700"}>
                                 {cls.class_name}
@@ -369,8 +399,7 @@ export default function FlightDetail() {
                             {isSelected && (
                               <Flex w="18px" h="18px" borderRadius="full"
                                 bg="white" align="center" justify="center">
-                                <FaCheck size={9}
-                                  color="var(--chakra-colors-blue-600)" />
+                                <FaCheck size={9} color="var(--chakra-colors-blue-600)" />
                               </Flex>
                             )}
                             {isFull && (
@@ -380,23 +409,56 @@ export default function FlightDetail() {
                           </Flex>
                         </Box>
 
-                        {/* Body */}
+                        {/* Prices */}
                         <Box px={4} py={3}>
-                          <Flex align="baseline" gap={1} mb={2}>
-                            <Text fontSize="2xl" fontWeight={900} lineHeight={1}
-                              color={isSelected ? "white" : "blue.600"}>
-                              {cls.price}
-                            </Text>
-                            <Text fontSize="xs" fontWeight={700}
-                              color={isSelected ? "blue.200" : "blue.400"}>
-                              TND
-                            </Text>
+                          {/* Adult price */}
+                          <Flex align="center" justify="space-between" mb={1.5}>
+                            <Flex align="center" gap={1.5}>
+                              <FaUser size={10}
+                                color={isSelected ? "rgba(255,255,255,0.7)" : "var(--chakra-colors-gray-400)"} />
+                              <Text fontSize="xs"
+                                color={isSelected ? "blue.100" : "gray.500"}>
+                                Adulte
+                              </Text>
+                            </Flex>
+                            <Flex align="baseline" gap={0.5}>
+                              <Text fontSize="lg" fontWeight={900} lineHeight={1}
+                                color={isSelected ? "white" : "blue.600"}>
+                                {cls.price_adult}
+                              </Text>
+                              <Text fontSize="10px" fontWeight={700}
+                                color={isSelected ? "blue.200" : "blue.400"}>
+                                TND
+                              </Text>
+                            </Flex>
                           </Flex>
-                          <Flex align="center" gap={1.5}>
+                          {/* Children price */}
+                          <Flex align="center" justify="space-between" mb={2.5}>
+                            <Flex align="center" gap={1.5}>
+                              <FaChild size={10}
+                                color={isSelected ? "rgba(255,255,255,0.7)" : "var(--chakra-colors-gray-400)"} />
+                              <Text fontSize="xs"
+                                color={isSelected ? "blue.100" : "gray.500"}>
+                                Enfant
+                              </Text>
+                            </Flex>
+                            <Flex align="baseline" gap={0.5}>
+                              <Text fontSize="lg" fontWeight={900} lineHeight={1}
+                                color={isSelected ? "white" : "blue.600"}>
+                                {cls.price_children}
+                              </Text>
+                              <Text fontSize="10px" fontWeight={700}
+                                color={isSelected ? "blue.200" : "blue.400"}>
+                                TND
+                              </Text>
+                            </Flex>
+                          </Flex>
+                          {/* Seats available */}
+                          <Flex align="center" gap={1.5}
+                            pt={2} borderTop="1px solid"
+                            borderColor={isSelected ? "whiteAlpha.300" : "blue.50"}>
                             <LuUsers size={12}
-                              color={isSelected
-                                ? "rgba(255,255,255,0.7)"
-                                : "var(--chakra-colors-gray-400)"} />
+                              color={isSelected ? "rgba(255,255,255,0.7)" : "var(--chakra-colors-gray-400)"} />
                             <Text fontSize="xs"
                               color={isSelected ? "blue.100" : "gray.500"}>
                               <Text as="span" fontWeight={700}
@@ -452,10 +514,11 @@ export default function FlightDetail() {
             <VStack align="stretch" spacing={4}
               position={{ base: "static", lg: "sticky" }} top="88px">
 
-              {/* Booking card */}
               <Box bg="white" borderRadius="2xl" overflow="hidden"
                 border="1px solid" borderColor="gray.100"
                 boxShadow="0 4px 24px rgba(0,0,0,0.08)">
+
+                {/* Header */}
                 <Box bg="blue.600" px={5} py={4}>
                   <Text color="white" fontWeight={700} fontSize="md">
                     Réserver ce vol
@@ -466,6 +529,8 @@ export default function FlightDetail() {
                 </Box>
 
                 <VStack align="stretch" spacing={3} p={5}>
+
+                  {/* Flight summary */}
                   <Flex justify="space-between">
                     <Text fontSize="sm" color="gray.500">Vol</Text>
                     <Text fontSize="sm" fontWeight={700} color="gray.800" fontFamily="mono">
@@ -492,96 +557,106 @@ export default function FlightDetail() {
                     </Text>
                   </Flex>
 
-                  <Box>
-                    <Text fontSize="sm" color="gray.500"
-                      letterSpacing="wider" mb={2}>
-                      Nombre de personnes
-                    </Text>
-                    <Flex align="center" gap={3}
-                      border="1.5px solid" borderColor="gray.200"
-                      borderRadius="xl" px={4} py={2.5}>
-                      <Box as="button"
-                        w="28px" h="28px" borderRadius="full"
-                        border="1px solid"
-                        borderColor={flight.flightClasses.seats_available <= 1 ? "gray.200" : "orange.300"}
-                        color={guests <= 1 ? "gray.300" : "orange.500"}
-                        bg="white" display="flex" alignItems="center" justifyContent="center"
-                        cursor={guests <= 1 ? "not-allowed" : "pointer"}
-                        fontSize="lg" lineHeight={1} transition="all 0.15s"
-                        onClick={() => setGuests(g => Math.max(1, g - 1))}>–</Box>
-                      <Text flex={1} textAlign="center" fontSize="sm"
-                        fontWeight={700} color="gray.800">
-                        {guests} personne{guests > 1 ? "s" : ""}
-                      </Text>
-                      <Box as="button"
-                        w="28px" h="28px" borderRadius="full"
-                        border="1px solid" borderColor="orange.300"
-                        color="orange.500" bg="white"
-                        display="flex" alignItems="center" justifyContent="center"
-                        cursor="pointer" fontSize="lg" lineHeight={1}
-                        transition="all 0.15s"
-                        _hover={{ bg: "orange.50" }}
-                        onClick={() => setGuests(g =>
-                          Math.min(g + 1, selectedClass.seats_available ?? 99))}>+</Box>
-                    </Flex>
-                  </Box>
-
-                  {/* Selected class summary */}
-                  {selectedClass && (
-                    <>
-                      <Box borderTop="1px solid" borderColor="gray.100" pt={3}>
-                        <Flex justify="space-between" align="center" mb={1}>
-                          <Text fontSize="sm" color="gray.500">Classe choisie</Text>
-                          <Badge colorScheme="blue" borderRadius="full"
-                            px={2} py={0.5} fontSize="xs" fontWeight={600}>
-                            {selectedClass.class_name}
-                          </Badge>
-                        </Flex>
-                        <Flex justify="space-between" align="center">
-                          <Text fontSize="sm" color="gray.500">Prix</Text>
-                          <Flex align="baseline" gap={1}>
-                            <Text fontSize="xl" fontWeight={900} color="blue.600">
-                              {(selectedClass.price * guests)}
-                            </Text>
-                            <Text fontSize="xs" fontWeight={600} color="blue.400">TND</Text>
-                          </Flex>
-                        </Flex>
-                      </Box>
-                    </>
-                  )}
-
+                  {/* No class warning */}
                   {!selectedClass && !isDisabled && (
                     <Box bg="orange.50" borderRadius="xl" p={3}
                       border="1px solid" borderColor="orange.200">
                       <Text fontSize="xs" color="orange.600" fontWeight={600} textAlign="center">
-                        Veuillez sélectionner une classe pour continuer
+                        Sélectionnez une classe pour continuer
                       </Text>
                     </Box>
                   )}
 
-                  <Box pt={1}>
-                    <Button w="full" h="46px" colorScheme="blue"
-                      borderRadius="xl" fontWeight={700}
-                      isDisabled={isDisabled || !selectedClass}
-                      onClick={() => {
-                        if (selectedClass) {
-                          navigate("/booking", {
-                            state: { flight, airline, selectedClass }
-                          })
-                        }
-                      }}>
-                      <Flex align="center" gap={2}>
-                        <LuPlane size={15} />
-                        {flight.status === "annulé" ? "Vol annulé"
-                          : flight.seats_available === 0 ? "Complet"
-                            : !selectedClass ? "Choisissez une classe"
-                              : `Réserver · ${selectedClass.price} TND`}
-                      </Flex>
-                    </Button>
-                  </Box>
+                  {/* Passenger selector */}
+                  {selectedClass && (
+                    <>
+                      <Box borderTop="1px solid" borderColor="gray.100" pt={3}>
+                        <Flex justify="space-between" align="center" mb={3}>
+                          <Text fontSize="xs" fontWeight={700} color="gray.500"
+                            textTransform="uppercase" letterSpacing="wider">
+                            Passagers
+                          </Text>
+                          <Badge colorScheme="blue" borderRadius="full" px={2}>
+                            {selectedClass.class_name}
+                          </Badge>
+                        </Flex>
+
+                        <Counter
+                          label="Adultes" sub={`${selectedClass.price_adult} TND / pers.`}
+                          value={adults} min={1}
+                          max={selectedClass.seats_available}
+                          onInc={() => setAdults(a => a + 1)}
+                          onDec={() => setAdults(a => Math.max(1, a - 1))}
+                        />
+                        <Counter
+                          label="Enfants" sub={`${selectedClass.price_children} TND / pers. · 0–12 ans`}
+                          value={children} min={0}
+                          max={Math.max(0, selectedClass.seats_available - adults)}
+                          onInc={() => setChildren(c => c + 1)}
+                          onDec={() => setChildren(c => Math.max(0, c - 1))}
+                        />
+                      </Box>
+
+                      {/* Price breakdown */}
+                      <Box bg="blue.50" borderRadius="xl" p={4}
+                        border="1px solid" borderColor="blue.100">
+                        <VStack align="stretch" spacing={1.5}>
+                          <Flex justify="space-between">
+                            <Text fontSize="sm" color="gray.500">
+                              {adults} adulte{adults > 1 ? "s" : ""} × {selectedClass.price_adult} TND
+                            </Text>
+                            <Text fontSize="sm" fontWeight={600} color="gray.700">
+                              {adults * selectedClass.price_adult} TND
+                            </Text>
+                          </Flex>
+                          {children > 0 && (
+                            <Flex justify="space-between">
+                              <Text fontSize="sm" color="gray.500">
+                                {children} enfant{children > 1 ? "s" : ""} × {selectedClass.price_children} TND
+                              </Text>
+                              <Text fontSize="sm" fontWeight={600} color="gray.700">
+                                {children * selectedClass.price_children} TND
+                              </Text>
+                            </Flex>
+                          )}
+                          <Box borderTop="1px solid" borderColor="blue.200" pt={1.5}>
+                            <Flex justify="space-between" align="center">
+                              <Text fontSize="sm" fontWeight={700} color="gray.700">Total</Text>
+                              <Flex align="baseline" gap={1}>
+                                <Text fontSize="2xl" fontWeight={900} color="blue.600" lineHeight={1}>
+                                  {totalPrice}
+                                </Text>
+                                <Text fontSize="xs" fontWeight={700} color="blue.400">TND</Text>
+                              </Flex>
+                            </Flex>
+                          </Box>
+                        </VStack>
+                      </Box>
+                    </>
+                  )}
+
+                  {/* CTA */}
+                  <Button w="full" h="46px" colorScheme="blue"
+                    borderRadius="xl" fontWeight={700}
+                    isDisabled={isDisabled || !selectedClass}
+                    onClick={() => {
+                      if (selectedClass) {
+                        navigate("/booking/flight", {
+                          state: { flight, airline, selectedClass, adults, children, totalPrice }
+                        })
+                      }
+                    }}>
+                    <Flex align="center" gap={2}>
+                      <LuPlane size={15} />
+                      {flight.status === "annulé" ? "Vol annulé"
+                        : flight.seats_available === 0 ? "Complet"
+                          : !selectedClass ? "Choisissez une classe"
+                            : `Réserver · ${totalPrice} TND`}
+                    </Flex>
+                  </Button>
+
                 </VStack>
               </Box>
-
 
             </VStack>
           </Box>

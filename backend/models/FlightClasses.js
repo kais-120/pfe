@@ -11,9 +11,13 @@ const { DataTypes } = require("sequelize");
       type: DataTypes.STRING,
       allowNull: false,
     },
-    price: {
+    price_adult: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
+    },
+    price_children: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
     },
     seats_available: {
       type: DataTypes.INTEGER,

@@ -1,24 +1,39 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import {
-  Box, Button, Flex, Grid, Text, VStack,
-  Badge, Skeleton, SkeletonText, HStack,
-  DatePicker,
-  parseDate,
-  Portal,
+  Box, Button, Flex, Grid, Text,
+  Badge, Skeleton, SkeletonText,
+  DatePicker, parseDate, Portal,
+  Combobox,
+  useFilter,
+  useListCollection,
 } from "@chakra-ui/react"
 import {
-  FaPlane, FaSearch, FaWifi, FaUtensils,
+  FaPlane, FaWifi, FaUtensils,
   FaSuitcase, FaStar, FaChevronRight,
+  FaMinus, FaPlus,
+  FaSearch,
 } from "react-icons/fa"
 import {
-  LuPlane, LuCalendar, LuUsers, LuClock,
-  LuMapPin, LuCheck, LuBadgeCheck, LuArrowLeftRight,
+  LuPlane, LuCalendar, LuArrowLeftRight,
 } from "react-icons/lu"
 import Header from "./components/home/Header"
 import { Axios } from "./Api/Api"
 
-/* ── Helpers ────────────────────────────────────────────────────── */
+
+const AIRPORTS = [
+  { label: "Tunis – Carthage", value: "tunis" },
+  { label: "Sfax – Thyna", value: "sfax" },
+  { label: "Monastir – Habib", value: "monastir" },
+  { label: "Djerba – Zarzis", value: "djerba" },
+  { label: "Paris – CDG", value: "paris" },
+  { label: "Lyon – Saint-Exupéry", value: "lyon" },
+  { label: "Marseille – Provence", value: "marseille" },
+  { label: "Londres – Heathrow", value: "londres" },
+  { label: "Istanbul", value: "istanbul" },
+  { label: "Dubai", value: "dubai" },
+]
+
 const STATUS_META = {
   "programmé": { color: "blue", label: "Programmé" },
   "en vol": { color: "green", label: "En vol" },
@@ -32,6 +47,44 @@ const SERVICE_META = {
   meals: { Icon: FaUtensils, label: "Repas inclus" },
   baggage: { Icon: FaSuitcase, label: "Bagage inclus" },
   lounge: { Icon: FaStar, label: "Salon VIP" },
+}
+
+const CLASSES = ["Économique", "Affaires", "Première"]
+
+function AirportCombobox({ placeholder, value, onChange }) {
+  const { contains } = useFilter({ sensitivity: "base" })
+  const { collection, filter } = useListCollection({ initialItems: AIRPORTS, filter: contains })
+  return (
+    <Combobox.Root width="full" collection={collection}
+      inputValue={value}
+      onInputValueChange={e => { filter(e.inputValue); onChange(e.inputValue) }}
+      onValueChange={e => onChange(e.value[0] ?? "")}>
+      <Combobox.Control>
+        <Combobox.Input placeholder={placeholder}
+          style={{
+            height: "38px", border: "none", outline: "none",
+            fontSize: "14px", fontWeight: "600",
+            color: "var(--chakra-colors-gray-800)",
+            background: "transparent", width: "100%",
+          }} />
+        <Combobox.IndicatorGroup style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)" }}>
+          <Combobox.ClearTrigger />
+        </Combobox.IndicatorGroup>
+      </Combobox.Control>
+      <Portal>
+        <Combobox.Positioner>
+          <Combobox.Content style={{ zIndex: 9999 }}>
+            <Combobox.Empty>Aucun aéroport</Combobox.Empty>
+            {collection.items.map(item => (
+              <Combobox.Item item={item} key={item.value}>
+                {item.label}<Combobox.ItemIndicator />
+              </Combobox.Item>
+            ))}
+          </Combobox.Content>
+        </Combobox.Positioner>
+      </Portal>
+    </Combobox.Root>
+  )
 }
 
 const fmtDate = (d) => d
@@ -54,7 +107,141 @@ const occup = (total, avail) => {
   return Math.round(((total - (avail ?? 0)) / total) * 100)
 }
 
-/* ── Flight card ────────────────────────────────────────────────── */
+/* ── Counter row ────────────────────────────────────────────────── */
+function CounterRow({ label, sub, value, onChange, min = 0 }) {
+  return (
+    <Flex align="center" justify="space-between" py={3}
+      borderBottom="1px solid" borderColor="gray.100">
+      <Box>
+        <Text fontSize="sm" fontWeight={600} color="gray.800">{label}</Text>
+        {sub && <Text fontSize="xs" color="gray.400">{sub}</Text>}
+      </Box>
+      <Flex align="center" gap={3}>
+        <Flex as="button" w="30px" h="30px" borderRadius="full"
+          border="1.5px solid" borderColor={value <= min ? "gray.200" : "blue.300"}
+          bg={value <= min ? "gray.50" : "blue.50"}
+          color={value <= min ? "gray.300" : "blue.600"}
+          align="center" justify="center"
+          cursor={value <= min ? "not-allowed" : "pointer"}
+          onClick={() => value > min && onChange(value - 1)}>
+          <FaMinus size={9} />
+        </Flex>
+        <Text fontSize="sm" fontWeight={700} color="gray.800" minW="16px" textAlign="center">
+          {value}
+        </Text>
+        <Flex as="button" w="30px" h="30px" borderRadius="full"
+          border="1.5px solid" borderColor="blue.300"
+          bg="blue.50" color="blue.600"
+          align="center" justify="center" cursor="pointer"
+          onClick={() => onChange(value + 1)}>
+          <FaPlus size={9} />
+        </Flex>
+      </Flex>
+    </Flex>
+  )
+}
+
+/* ── Travelers popover ──────────────────────────────────────────── */
+function TravelersPopover({ adults, setAdults, children, setChildren, cabinClass, setCabinClass }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [open])
+
+  const totalPax = adults + children
+  const label = `${totalPax} Voyageur${totalPax > 1 ? "s" : ""}, ${cabinClass}`
+
+  return (
+    <Box position="relative" ref={ref}>
+      {/* Trigger */}
+      <Box
+        px={4} py={3}
+        borderRight="1px solid" borderColor="gray.150"
+        cursor="pointer"
+        onClick={() => setOpen(o => !o)}>
+        <Text fontSize="xs" fontWeight={700} color="gray.500" mb={0.5}>
+          Voyageurs & classe
+        </Text>
+        <Text fontSize="14px" fontWeight={600} color="gray.800" noOfLines={1}>
+          {label}
+        </Text>
+      </Box>
+
+      {/* Dropdown */}
+      {open && (
+        <Box
+          position="absolute"
+          top="calc(100% + 8px)"
+          left={0}
+          zIndex={9999}
+          bg="white"
+          borderRadius="2xl"
+          border="1px solid"
+          borderColor="gray.100"
+          boxShadow="0 8px 32px rgba(0,0,0,0.14)"
+          p={5}
+          minW="300px">
+
+          {/* Passenger counters */}
+          <Text fontSize="xs" fontWeight={700} color="gray.400"
+            textTransform="uppercase" letterSpacing="wider" mb={1}>
+            Passagers
+          </Text>
+
+          <CounterRow
+            label="Adultes" sub="12 ans et plus"
+            value={adults} onChange={setAdults} min={1} />
+          <CounterRow
+            label="Enfants" sub="2 – 11 ans"
+            value={children} onChange={setChildren} min={0} />
+
+          {/* Cabin class */}
+          <Text fontSize="xs" fontWeight={700} color="gray.400"
+            textTransform="uppercase" letterSpacing="wider" mt={4} mb={2}>
+            Classe de cabine
+          </Text>
+          <Flex gap={2} flexWrap="wrap">
+            {CLASSES.map(cls => (
+              <Box
+                key={cls}
+                as="button"
+                px={3} py={1.5}
+                borderRadius="full"
+                fontSize="xs" fontWeight={600}
+                border="1.5px solid"
+                borderColor={cabinClass === cls ? "blue.500" : "gray.200"}
+                bg={cabinClass === cls ? "blue.600" : "white"}
+                color={cabinClass === cls ? "white" : "gray.600"}
+                cursor="pointer"
+                transition="all 0.15s"
+                onClick={() => setCabinClass(cls)}>
+                {cls}
+              </Box>
+            ))}
+          </Flex>
+
+          {/* Done button */}
+          <Button
+            mt={4} w="full" colorScheme="blue"
+            borderRadius="xl" size="sm" h="38px"
+            fontWeight={700}
+            onClick={() => setOpen(false)}>
+            Confirmer
+          </Button>
+        </Box>
+      )}
+    </Box>
+  )
+}
+
 /* ── Flight card ────────────────────────────────────────────────── */
 function FlightCard({ flight, airline }) {
   const navigate = useNavigate()
@@ -62,7 +249,6 @@ function FlightCard({ flight, airline }) {
   const pct = occup(flight.seats_total, flight.seats_available)
   const dur = calcDuration(flight.departure, flight.arrival)
 
-  // Get the cheapest class price
   const cheapestClass = flight.flightClasses?.length
     ? flight.flightClasses.reduce((min, c) => c.price < min.price ? c : min, flight.flightClasses[0])
     : null
@@ -76,9 +262,7 @@ function FlightCard({ flight, airline }) {
       overflow="hidden">
 
       {/* Airline header strip */}
-      <Flex px={4} py={3}
-        bg="blue.600"
-        align="center" justify="space-between">
+      <Flex px={4} py={3} bg="blue.600" align="center" justify="space-between">
         <Flex align="center" gap={2.5}>
           <Flex w="32px" h="32px" borderRadius="lg"
             bg="whiteAlpha.300" align="center" justify="center">
@@ -106,7 +290,6 @@ function FlightCard({ flight, airline }) {
       <Box p={5}>
         {/* Route visual */}
         <Flex align="center" gap={3} mb={5}>
-          {/* Departure */}
           <Box textAlign="center" minW="70px">
             <Text fontSize="2xl" fontWeight={900} color="gray.900" lineHeight={1}>
               {flight.departure_airport?.slice(0, 3).toUpperCase()}
@@ -120,23 +303,17 @@ function FlightCard({ flight, airline }) {
             <Text fontSize="9px" color="gray.400">{fmtDate(flight.departure)}</Text>
           </Box>
 
-          {/* Middle arrow */}
           <Box flex={1} position="relative">
             <Box h="1.5px" bg="gray.200" w="100%" />
-            <Flex
-              position="absolute" top="50%" left="50%"
-              transform="translate(-50%, -50%)"
-              bg="white" px={2}>
+            <Flex position="absolute" top="50%" left="50%"
+              transform="translate(-50%, -50%)" bg="white" px={2}>
               <Box color="blue.400"><LuPlane size={16} /></Box>
             </Flex>
             {dur && (
-              <Text fontSize="9px" color="gray.400" textAlign="center" mt={1}>
-                {dur}
-              </Text>
+              <Text fontSize="9px" color="gray.400" textAlign="center" mt={1}>{dur}</Text>
             )}
           </Box>
 
-          {/* Arrival */}
           <Box textAlign="center" minW="70px">
             <Text fontSize="2xl" fontWeight={900} color="gray.900" lineHeight={1}>
               {flight.arrival_airport?.slice(0, 3).toUpperCase()}
@@ -163,9 +340,7 @@ function FlightCard({ flight, airline }) {
           </Box>
           <Box bg="gray.50" borderRadius="lg" p={2} textAlign="center">
             <Text fontSize="xs" color="gray.400" mb={0.5}>Bagage</Text>
-            <Text fontSize="sm" fontWeight={700} color="gray.700">
-              {flight.baggage_kg} kg
-            </Text>
+            <Text fontSize="sm" fontWeight={700} color="gray.700">{flight.baggage_kg} kg</Text>
           </Box>
           <Box bg="gray.50" borderRadius="lg" p={2} textAlign="center">
             <Text fontSize="xs" color="gray.400" mb={0.5}>Classes</Text>
@@ -210,9 +385,8 @@ function FlightCard({ flight, airline }) {
           </Flex>
         )}
 
-        {/* ── Price + CTA ── */}
+        {/* Price + CTA */}
         <Flex align="center" justify="space-between" gap={3}>
-          {/* Cheapest class price */}
           {cheapestClass && (
             <Box>
               <Text fontSize="9px" color="gray.400" textTransform="uppercase" letterSpacing="wide">
@@ -227,27 +401,21 @@ function FlightCard({ flight, airline }) {
               <Text fontSize="9px" color="gray.400">{cheapestClass.class_name}</Text>
             </Box>
           )}
-
-          {/* CTA */}
           <Button
-            flex={1}
-            colorScheme="blue" borderRadius="xl"
+            flex={1} colorScheme="blue" borderRadius="xl"
             fontWeight={700} size="sm" h="40px"
             isDisabled={flight.status === "annulé" || flight.seats_available === 0}
             onClick={() => navigate(`/airline/flight/${flight.id}`)}>
             <Flex align="center" gap={2}>
-              Voir les détails
-              <FaChevronRight size={10} />
+              Voir les détails <FaChevronRight size={10} />
             </Flex>
           </Button>
         </Flex>
-
       </Box>
     </Box>
   )
 }
 
-/* ── Card skeleton ──────────────────────────────────────────────── */
 function CardSkeleton() {
   return (
     <Box bg="white" borderRadius="2xl" overflow="hidden"
@@ -264,88 +432,61 @@ function CardSkeleton() {
   )
 }
 
-function DateField({ label, value, onChange, min }) {
+/* ── DateField ──────────────────────────────────────────────────── */
+function DateField({ value, onChange, min }) {
   return (
-    <Box>
-      <DatePicker.Root locale="fr-FR"
-        cursor={"pointer"}
-        min={parseDate(min)}
-        value={value ? [parseDate(value)] : []}
-        onValueChange={(details) => {
-          const date = details.value?.[0]
-          if (date) {
-            const jsDate = new Date(date.year, date.month - 1, date.day + 1)
-            onChange(jsDate.toISOString().split("T")[0])
-          }
-        }}
-      >
-        <DatePicker.Control
-          h="42px"
-          border="none"
-          bg="white"
-
-        >
-          <DatePicker.Input
-          p={0}
-            outline="none"
-            border="none"
-            bg="transparent"
-            fontSize="14px"
-            fontWeight="600"
-            color="gray.800"
-          />
-
-          <DatePicker.IndicatorGroup>
-            <DatePicker.Trigger>
-              <LuCalendar size={14} />
-            </DatePicker.Trigger>
-          </DatePicker.IndicatorGroup>
-        </DatePicker.Control>
-
-        <Portal>
-          <DatePicker.Positioner>
-            <DatePicker.Content>
-              <DatePicker.View view="day">
-                <DatePicker.Header />
-                <DatePicker.DayTable />
-              </DatePicker.View>
-
-              <DatePicker.View view="month">
-                <DatePicker.Header />
-                <DatePicker.MonthTable />
-              </DatePicker.View>
-
-              <DatePicker.View view="year">
-                <DatePicker.Header />
-                <DatePicker.YearTable />
-              </DatePicker.View>
-            </DatePicker.Content>
-          </DatePicker.Positioner>
-        </Portal>
-      </DatePicker.Root>
-    </Box>
+    <DatePicker.Root locale="fr-FR"
+      min={parseDate(min)}
+      value={value ? [parseDate(value)] : []}
+      onValueChange={(details) => {
+        const date = details.value?.[0]
+        if (date) {
+          const jsDate = new Date(date.year, date.month - 1, date.day + 1)
+          onChange(jsDate.toISOString().split("T")[0])
+        }
+      }}>
+      <DatePicker.Control h="32px" border="none" bg="white">
+        <DatePicker.Input p={0} outline="none" border="none" bg="transparent"
+          fontSize="14px" fontWeight="600" color="gray.800" />
+        <DatePicker.IndicatorGroup>
+          <DatePicker.Trigger><LuCalendar size={14} /></DatePicker.Trigger>
+        </DatePicker.IndicatorGroup>
+      </DatePicker.Control>
+      <Portal>
+        <DatePicker.Positioner>
+          <DatePicker.Content>
+            <DatePicker.View view="day"><DatePicker.Header /><DatePicker.DayTable /></DatePicker.View>
+            <DatePicker.View view="month"><DatePicker.Header /><DatePicker.MonthTable /></DatePicker.View>
+            <DatePicker.View view="year"><DatePicker.Header /><DatePicker.YearTable /></DatePicker.View>
+          </DatePicker.Content>
+        </DatePicker.Positioner>
+      </Portal>
+    </DatePicker.Root>
   )
 }
 
-/* ── Main page ──────────────────────────────────────────────────── */
 export default function HomeAirline() {
   const [airlines, setAirlines] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [statusFilter, setStatusFilter] = useState("all")
 
+  const navigate = useNavigate();
+
   const today = new Date().toISOString().split("T")[0]
   const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0]
+
   const [tripType, setTripType] = useState("aller-retour")
   const [fromCity, setFromCity] = useState("")
   const [toCity, setToCity] = useState("")
   const [departDate, setDepartDate] = useState(today)
   const [returnDate, setReturnDate] = useState(tomorrow)
-  const [travelers, setTravelers] = useState("1 Adulte, Économique")
   const [directOnly, setDirectOnly] = useState(false)
-  const [search, setSearch] = useState("")
-  const [destination, setDestination] = useState("")
 
+  // Travelers state
+  const [adults, setAdults] = useState(1)
+  const [children, setChildren] = useState(0)
+  const [cabinClass, setCabinClass] = useState("Économique")
 
   useEffect(() => {
     ; (async () => {
@@ -365,27 +506,33 @@ export default function HomeAirline() {
     (airline.FlightCompagnie ?? []).map(flight => ({ flight, airline }))
   )
 
-  /* Filter */
-  const filtered = allFlights.filter(({ flight, airline }) => {
+  const filtered = allFlights.filter(({ flight }) => {
     const matchStatus = statusFilter === "all" || flight.status === statusFilter
-    const qFrom = fromCity.toLowerCase()
-    const qTo = toCity.toLowerCase()
-    const matchFrom = !qFrom || flight.departure_airport?.toLowerCase().includes(qFrom)
-    const matchTo = !qTo || flight.arrival_airport?.toLowerCase().includes(qTo)
+    const matchFrom = !fromCity || flight.departure_airport?.toLowerCase().includes(fromCity.toLowerCase())
+    const matchTo = !toCity || flight.arrival_airport?.toLowerCase().includes(toCity.toLowerCase())
     return matchStatus && matchFrom && matchTo
   })
-
   const statuses = [...new Set(allFlights.map(({ flight }) => flight.status))]
 
+  const handleSearch = () => {
+    navigate(
+      `/search/airline?from=${fromCity}` +
+      `&to=${toCity ?? ""}` +
+      `&type=${tripType ?? ""}` +
+      `&depart-date=${departDate ?? ""}` +
+      `&return-date=${returnDate}` +
+      `&children=${children}` +
+      `&adults=${adults}` +
+      `&cabin-class=${cabinClass}`
+    )
+  }
   return (
     <>
       <Header />
 
-      {/* ── Hero with BA-style search ── */}
-      <Box
-        bg="linear-gradient(160deg, #0D1B3E 0%, #1A3260 50%, #0D1B3E 100%)"
+      {/* ── Hero ── */}
+      <Box bg="linear-gradient(160deg, #0D1B3E 0%, #1A3260 50%, #0D1B3E 100%)"
         pt={12} pb={8} px={4}>
-
         <Box maxW="1100px" mx="auto">
 
           {/* Title */}
@@ -426,145 +573,117 @@ export default function HomeAirline() {
           </Flex>
 
           {/* Search bar */}
-          <Box
-            bg="white" borderRadius="2xl"
+          <Box bg="white" borderRadius="2xl"
             boxShadow="0 8px 40px rgba(0,0,0,0.25)"
-            overflow="hidden">
+          >
 
             <Grid
               templateColumns={{
                 base: "1fr",
                 md: tripType === "aller-retour"
                   ? "1.2fr auto 1.2fr 1fr 1fr 1.4fr auto"
-                  : "1.4fr auto 1.4fr 1fr 1fr auto"
+                  : "1.4fr auto 1.4fr 1fr 1.4fr auto"
               }}
               align="stretch">
 
               {/* From */}
-              <Box
-                px={4} py={3} position="relative"
-                borderRight="1px solid" borderColor="gray.150">
-                <Text fontSize="xs" fontWeight={700} color="gray.500" mb={0.5}>
-                  De
-                </Text>
-                <Box as="input"
-                  value={fromCity}
-                  onChange={e => setFromCity(e.target.value)}
+              <Box px={4} py={3} borderRight="1px solid" borderColor="gray.150" borderLeftRadius="2xl">
+                <Text fontSize="xs" fontWeight={700} color="gray.500" mb={0.5}>De</Text>
+                {/* <Box as="input" value={fromCity} onChange={e => setFromCity(e.target.value)}
                   placeholder="Ville ou aéroport"
                   style={{
                     width: "100%", border: "none", outline: "none",
                     fontSize: "15px", fontWeight: "600",
-                    color: "var(--chakra-colors-gray-800)",
-                    background: "transparent",
-                  }} />
+                    color: "var(--chakra-colors-gray-800)", background: "transparent",
+                  }} /> */}
+                <AirportCombobox placeholder={"Ville ou aéroport"} value={fromCity} onChange={setFromCity} />
               </Box>
 
-              {/* Swap button */}
-              <Flex
-                align="center" justify="center"
-                px={2}
+              {/* Swap */}
+              <Flex align="center" justify="center" px={2}
                 borderRight="1px solid" borderColor="gray.150">
-                <Flex
-                  as="button"
-                  w="32px" h="32px" borderRadius="full"
+                <Flex as="button" w="32px" h="32px" borderRadius="full"
                   border="1.5px solid" borderColor="gray.300"
                   bg="white" align="center" justify="center"
                   cursor="pointer" transition="all 0.15s"
                   _hover={{ bg: "blue.50", borderColor: "blue.300" }}
-                  onClick={() => {
-                    const tmp = fromCity
-                    setFromCity(toCity)
-                    setToCity(tmp)
-                  }}>
+                  onClick={() => { const t = fromCity; setFromCity(toCity); setToCity(t) }}>
                   <LuArrowLeftRight size={14} color="var(--chakra-colors-gray-500)" />
                 </Flex>
               </Flex>
 
               {/* To */}
               <Box px={4} py={3} borderRight="1px solid" borderColor="gray.150">
-                <Text fontSize="xs" fontWeight={700} color="gray.500" mb={0.5}>
-                  À
-                </Text>
-                <Box as="input"
-                  value={toCity}
-                  onChange={e => setToCity(e.target.value)}
+                <Text fontSize="xs" fontWeight={700} color="gray.500" mb={0.5}>À</Text>
+                {/* <Box as="input" value={toCity} onChange={e => setToCity(e.target.value)}
                   placeholder="Ville ou aéroport"
                   style={{
                     width: "100%", border: "none", outline: "none",
                     fontSize: "15px", fontWeight: "600",
-                    color: "var(--chakra-colors-gray-800)",
-                    background: "transparent",
-                  }} />
+                    color: "var(--chakra-colors-gray-800)", background: "transparent",
+                  }} /> */}
+                <AirportCombobox placeholder={"Ville ou aéroport"} value={toCity} onChange={setToCity} />
+
               </Box>
 
               {/* Depart date */}
               <Box px={4} py={3} borderRight="1px solid" borderColor="gray.150">
-                <Text fontSize="xs" fontWeight={700} color="gray.500" mb={0.5}>
-                  Départ
-                </Text>
+                <Text fontSize="xs" fontWeight={700} color="gray.500" mb={0.5}>Départ</Text>
                 <DateField min={today} value={departDate} onChange={setDepartDate} />
               </Box>
 
-              {/* Return date — only for aller-retour */}
+              {/* Return date */}
               {tripType === "aller-retour" && (
                 <Box px={4} py={3} borderRight="1px solid" borderColor="gray.150">
-                  <Text fontSize="xs" fontWeight={700} color="gray.500" mb={0.5}>
-                    Retour
-                  </Text>
+                  <Text fontSize="xs" fontWeight={700} color="gray.500" mb={0.5}>Retour</Text>
                   <DateField min={departDate} value={returnDate} onChange={setReturnDate} />
                 </Box>
-
               )}
 
-              {/* Travelers & class */}
-              <Box px={4} py={3} borderRight="1px solid" borderColor="gray.150"
-                cursor="pointer">
-                <Text fontSize="xs" fontWeight={700} color="gray.500" mb={0.5}>
-                  Voyageurs & classe
-                </Text>
-                <Text fontSize="14px" fontWeight={600} color="gray.800">
-                  {travelers}
-                </Text>
-              </Box>
+              {/* ── Travelers & classe popover ── */}
+              <TravelersPopover
+                adults={adults} setAdults={setAdults}
+                children={children} setChildren={setChildren}
+                cabinClass={cabinClass} setCabinClass={setCabinClass}
+              />
 
-              {/* Search button */}
+              {/* Search CTA */}
               <Flex
-               as="button"
+                as={"button"}
                 align="center" justify="center"
                 px={6} gap={2} minH="70px"
                 bg="blue.600" color="white"
                 fontWeight={700} fontSize="sm"
                 borderRightRadius="2xl"
-                cursor={!destination ? "not-allowed" : "pointer"}
-                opacity={!destination ? 0.6 : 1}
                 transition="background 0.15s"
-                _hover={destination ? { bg: "blue.700" } : {}}>
+                onClick={(!toCity || !fromCity) ? undefined : handleSearch }
+                cursor={(!toCity || !fromCity) ? "no-drop" : "pointer"}
+                opacity={(!toCity || !fromCity) ? 0.5 : 1}
+              >
+                <FaSearch size={13} />
                 Rechercher
               </Flex>
-
             </Grid>
 
             {/* Options row */}
             <Flex px={5} py={3} gap={6}
-              borderTop="1px solid" borderColor="gray.100"
-              bg="gray.50">
+              borderRadius={"2xl"}
+              borderTop="1px solid" borderColor="gray.100" bg="gray.50">
               <Flex as="label" align="center" gap={2} cursor="pointer">
-                <Box
-                  as="input" type="checkbox"
+                <Box as="input" type="checkbox"
                   checked={directOnly}
                   onChange={e => setDirectOnly(e.target.checked)}
-                  style={{ accentColor: "var(--chakra-colors-blue-600)" }}
-                />
+                  style={{ accentColor: "var(--chakra-colors-blue-600)" }} />
                 <Text fontSize="sm" color="gray.600">Vols directs uniquement</Text>
               </Flex>
             </Flex>
           </Box>
 
-          {/* Status filter pills below bar */}
+          {/* Status filter pills */}
           <Flex gap={2} mt={5} flexWrap="wrap" justify="center">
-            {[{ key: "all", label: "Tous les vols", color: "blue" },
-            ...statuses.map(s => ({ key: s, ...(STATUS_META[s] ?? { color: "gray", label: s }) }))
-            ].map(({ key, label, color }) => (
+            {[{ key: "all", label: "Tous les vols" },
+            ...statuses.map(s => ({ key: s, ...(STATUS_META[s] ?? { label: s }) }))
+            ].map(({ key, label }) => (
               <Box key={key} as="button"
                 px={3} py={1} borderRadius="full"
                 fontSize="xs" fontWeight={600}
@@ -582,38 +701,36 @@ export default function HomeAirline() {
         </Box>
       </Box>
 
-      {/* ── Grid ── */}
       <Box bg="#f5f6fa" minH="60vh">
         <Box maxW="1200px" mx="auto" px={{ base: 4, md: 6 }} py={8}>
 
-          {!loading && (
+          {/* {!loading && (
             <Text fontSize="sm" color="gray.500" mb={6}>
-              {filtered.length} vol{filtered.length !== 1 ? "s" : ""}
+              {allFlights.length} vol{allFlights.length !== 1 ? "s" : ""}
               {(fromCity || toCity) ? ` · ${fromCity || "??"} → ${toCity || "??"}` : ""}
               {statusFilter !== "all" ? ` · ${STATUS_META[statusFilter]?.label}` : ""}
             </Text>
-          )}
+          )} */}
 
           {error && (
             <Flex direction="column" align="center" py={20} gap={3}>
               <Text color="gray.500">{error}</Text>
-              <Button size="sm" colorScheme="blue"
-                onClick={() => window.location.reload()}>Réessayer</Button>
+              <Button size="sm" colorScheme="blue" onClick={() => window.location.reload()}>
+                Réessayer
+              </Button>
             </Flex>
           )}
 
-          <Grid
-            templateColumns={{ base: "1fr", md: "repeat(2,1fr)", lg: "repeat(3,1fr)" }}
-            gap={5}>
+          <Grid templateColumns={{ base: "1fr", md: "repeat(2,1fr)", lg: "repeat(3,1fr)" }} gap={5}>
             {loading
               ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
-              : filtered.map(({ flight, airline }) => (
+              : allFlights.map(({ flight, airline }) => (
                 <FlightCard key={flight.id} flight={flight} airline={airline} />
               ))
             }
           </Grid>
 
-          {!loading && !error && filtered.length === 0 && (
+          {!loading && !error && (
             <Flex direction="column" align="center" py={20} gap={3}>
               <Text fontWeight={600} color="gray.700">Aucun vol trouvé</Text>
               <Text fontSize="sm" color="gray.400">
@@ -621,9 +738,8 @@ export default function HomeAirline() {
                   ? "Essayez d'autres filtres."
                   : "Aucun vol disponible pour le moment."}
               </Text>
-              {(search || statusFilter !== "all") && (
-                <Button size="sm" colorScheme="blue" variant="outline"
-                  borderRadius="xl"
+              {(fromCity || toCity || statusFilter !== "all") && (
+                <Button size="sm" colorScheme="blue" variant="outline" borderRadius="xl"
                   onClick={() => { setFromCity(""); setToCity(""); setStatusFilter("all") }}>
                   Réinitialiser
                 </Button>

@@ -13,20 +13,28 @@ import {
 } from "react-icons/lu"
 import { FaStar, FaUsers } from "react-icons/fa"
 
-const CLASSES  = ["Économique", "Affaires", "Première"]
+const CLASSES = ["Économique", "Affaires", "Première"]
 const STATUSES = [
-  { val: "programmé", color: "blue"   },
-  { val: "retardé",   color: "orange" },
-  { val: "annulé",    color: "red"    },
+  { val: "programmé", color: "blue" },
+  { val: "retardé", color: "orange" },
+  { val: "annulé", color: "red" },
+]
+const TYPE_FLIGHT = [
+  { val: "aller retour", color: "green" },
+  { val: "aller simple", color: "blue" },
 ]
 
 const validationSchema = yup.object({
-  flight_number:   yup.string().required("N° de vol requis"),
-  from:            yup.string().required("Départ requis"),
-  to:              yup.string().required("Arrivée requise"),
-  departure:       yup.string().required("Date de départ requise"),
-  arrival:         yup.string().required("Date d'arrivée requise"),
-  seats_total:     yup.number().positive("Doit être positif").required("Nombre de sièges requis"),
+  flight_number: yup.string().required("N° de vol requis"),
+  from: yup.string().required("Départ requis"),
+  to: yup.string().required("Arrivée requise"),
+  departure: yup.string().required("Date de départ requise"),
+  arrival: yup.string().when("type_flight", {
+    is: "aller retour",
+    then: (schema) => schema.required("Date d'arrivée requise"),
+    otherwise: (schema) => schema.notRequired()
+  }),  
+  seats_total: yup.number().positive("Doit être positif").required("Nombre de sièges requis"),
   seats_available: yup.number().min(0).required("Sièges disponibles requis"),
 })
 
@@ -57,6 +65,7 @@ function FormField({ formik, name, label, required, type = "text", icon: Icon, p
         }}>
         {Icon && <Box color={isInvalid ? "red.400" : "gray.400"} mr={2} flexShrink={0}><Icon size={14} /></Box>}
         <Input
+          outline={"none"}
           name={name} type={type}
           value={formik.values[name]}
           onChange={formik.handleChange} onBlur={formik.handleBlur}
@@ -102,9 +111,10 @@ const AddFlight = () => {
       departure: "", arrival: "", duration: "",
       classes: { "Économique": "", "Affaires": "", "Première": "" },
       seatsClasses: { "Économique": "", "Affaires": "", "Première": "" },
+      classesChildren: { "Économique": "", "Affaires": "", "Première": "" },
       selectedClass: "Économique",
       seats_total: "", seats_available: "",
-      baggage_kg: "23", status: "programmé",
+      baggage_kg: "23", status: "programmé",type_flight:"aller retour"
     },
     validationSchema,
     onSubmit: async (values) => {
@@ -146,34 +156,55 @@ const AddFlight = () => {
       <form onSubmit={formik.handleSubmit}>
         <VStack gap={4} align="stretch">
 
-          {/* Route */}
           <SectionCard title="Itinéraire" icon={LuPlane} iconColor="blue">
             <VStack gap={4} align="stretch">
               <FormField formik={formik} name="flight_number" label="Numéro de vol"
                 required icon={LuPlane} placeholder="Ex: TU301"
                 hint="Code IATA + numéro" />
 
-              <Grid templateColumns="1fr 1fr" gap={4}>
+                <Text fontSize="sm" fontWeight={700} color="gray.700">Type de vol</Text>
+              <Flex gap={2} flexWrap="wrap">
+                {TYPE_FLIGHT.map(({ val, color }) => {
+                  const active = formik.values.type_flight === val
+                  return (
+                    <Box key={val} as="button" type="button"
+                      px={4} py={2} borderRadius="xl" fontSize="sm" fontWeight={600}
+                      border="1.5px solid"
+                      borderColor={active ? `${color}.400` : "gray.200"}
+                      bg={active ? `${color}.50` : "white"}
+                      color={active ? `${color}.600` : "gray.500"}
+                      cursor="pointer" transition="all 0.15s" textTransform="capitalize"
+                      onClick={() => formik.setFieldValue("type_flight", val)}>
+                      {val}
+                    </Box>
+                  )
+                })}
+              </Flex>
+
+              <Grid templateColumns={"1fr 1fr"} gap={4}>
                 <FormField formik={formik} name="from" label="Départ" required
                   icon={LuMapPin} placeholder="Ex: Tunis (TUN)" />
                 <FormField formik={formik} name="to" label="Arrivée" required
                   icon={LuMapPin} placeholder="Ex: Paris (CDG)" />
+                  
               </Grid>
 
-              <Grid templateColumns="1fr 1fr" gap={4}>
+              <Grid templateColumns={formik.values.type_flight === "aller retour" ? "1fr 1fr" : "1fr"} gap={4}>
                 <FormField formik={formik} name="departure" label="Date & heure départ"
                   required type="datetime-local" icon={LuCalendar} />
+                  {formik.values.type_flight === "aller retour" &&
                 <FormField formik={formik} name="arrival" label="Date & heure arrivée"
-                  required type="datetime-local" icon={LuCalendar} />
+                  type="datetime-local" icon={LuCalendar} />
+                  }
               </Grid>
 
               <FormField formik={formik} name="duration" label="Durée du vol"
                 icon={LuClock} placeholder="Ex: 2h30"
                 hint="Format libre : 2h30, 1h45…" />
+
             </VStack>
           </SectionCard>
 
-          {/* Class & pricing */}
           <SectionCard title="Classe & tarification" icon={FaStar} iconColor="yellow">
             <VStack gap={4} align="stretch">
 
@@ -186,7 +217,7 @@ const AddFlight = () => {
                 {/* Class pills — green when price is set, blue when selected */}
                 <Flex gap={3} flexWrap="wrap" mb={4}>
                   {CLASSES.map(cls => {
-                    const active   = formik.values.selectedClass === cls
+                    const active = formik.values.selectedClass === cls
                     const hasPrice = !!formik.values.classes[cls]
                     return (
                       <Flex key={cls} as="button" type="button"
@@ -210,28 +241,31 @@ const AddFlight = () => {
                     )
                   })}
                 </Flex>
-                  <Box mb={5}>
-                    <Text fontSize="xs" color="gray.400" mt={1.5}>
-                  Sélectionnez une classe puis entrez son prix et siège . Répétez pour chaque classe.
-                </Text>
-                  </Box>
+                <Box mb={5}>
+                  <Text fontSize="xs" color="gray.400" mt={1.5}>
+                    Sélectionnez une classe puis entrez son prix et siège . Répétez pour chaque classe.
+                  </Text>
+                </Box>
                 <Flex w="full" align="center"
                   border="1.5px solid" borderColor="blue.300"
                   borderRadius="xl" bg="blue.50" px={3}
-                  _focusWithin={{ borderColor: "blue.500",
-                    boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" }}>
+                  _focusWithin={{
+                    borderColor: "blue.500",
+                    boxShadow: "0 0 0 3px rgba(49,130,206,0.12)"
+                  }}>
                   <Flex w="32px" h="32px" borderRadius="lg" bg="blue.100"
                     color="blue.500" align="center" justify="center"
                     flexShrink={0} mr={2}>
                     <FaStar size={12} />
                   </Flex>
-                  
+
                   <Box flex={1}>
                     <Text fontSize="9px" fontWeight={700} color="blue.400"
                       textTransform="uppercase" letterSpacing="wider" lineHeight={1} mt={1}>
-                      Prix — {formik.values.selectedClass}
+                      Prix adutle — {formik.values.selectedClass}
                     </Text>
                     <Input
+                      outline={"none"}
                       type="number"
                       value={formik.values.classes[formik.values.selectedClass] || ""}
                       onChange={e =>
@@ -251,24 +285,68 @@ const AddFlight = () => {
                     TND
                   </Text>
                 </Flex>
-                
+
+
+                <Flex  mt={5} w="full" align="center"
+                  border="1.5px solid" borderColor="purple.300"
+                  borderRadius="xl" bg="purple.50" px={3}
+                  _focusWithin={{
+                    borderColor: "purple.500",
+                    boxShadow: "0 0 0 3px rgba(49,130,206,0.12)"
+                  }}>
+                  <Flex w="32px" h="32px" borderRadius="lg" bg="purple.100"
+                    color="purple.500" align="center" justify="center"
+                    flexShrink={0} mr={2}>
+                    <FaStar size={12} />
+                  </Flex>
+
+                  <Box flex={1}>
+                    <Text fontSize="9px" fontWeight={700} color="purple.400"
+                      textTransform="uppercase" letterSpacing="wider" lineHeight={1} mt={1}>
+                      Prix enfant — {formik.values.selectedClass}
+                    </Text>
+                    <Input
+                      outline={"none"}
+                      type="number"
+                      value={formik.values.classesChildren[formik.values.selectedClass] || ""}
+                      onChange={e =>
+                        formik.setFieldValue(
+                          `classesChildren.${formik.values.selectedClass}`,
+                          e.target.value
+                        )
+                      }
+                      placeholder="Ex: 250"
+                      border="none" bg="transparent" px={0} h="32px"
+                      fontSize="sm" fontWeight={600} color="gray.800"
+                      _focus={{ boxShadow: "none" }}
+                      _placeholder={{ color: "gray.300" }}
+                    />
+                  </Box>
+                  <Text fontSize="xs" color="purple.400" fontWeight={700} ml={2} flexShrink={0}>
+                    TND
+                  </Text>
+                </Flex>
+
 
                 <Flex mt={5} w="full" align="center"
-                  border="1.5px solid" borderColor="blue.300"
-                  borderRadius="xl" bg="blue.50" px={3}
-                  _focusWithin={{ borderColor: "blue.500",
-                    boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" }}>
-                  <Flex w="32px" h="32px" borderRadius="lg" bg="blue.100"
-                    color="blue.500" align="center" justify="center"
+                  border="1.5px solid" borderColor="green.300"
+                  borderRadius="xl" bg="green.50" px={3}
+                  _focusWithin={{
+                    borderColor: "green.500",
+                    boxShadow: "0 0 0 3px rgba(49,130,206,0.12)"
+                  }}>
+                  <Flex w="32px" h="32px" borderRadius="lg" bg="green.100"
+                    color="green.500" align="center" justify="center"
                     flexShrink={0} mr={2}>
                     <FaUsers size={12} />
                   </Flex>
                   <Box flex={1}>
-                    <Text fontSize="9px" fontWeight={700} color="blue.400"
+                    <Text fontSize="9px" fontWeight={700} color="green.400"
                       textTransform="uppercase" letterSpacing="wider" lineHeight={1} mt={1}>
                       Siège — {formik.values.selectedClass}
                     </Text>
                     <Input
+                      outline={"none"}
                       type="number"
                       value={formik.values.seatsClasses[formik.values.selectedClass] || ""}
                       onChange={e =>
@@ -284,7 +362,7 @@ const AddFlight = () => {
                       _placeholder={{ color: "gray.300" }}
                     />
                   </Box>
-                  <Text fontSize="xs" color="blue.400" fontWeight={700} ml={2} flexShrink={0}>
+                  <Text fontSize="xs" color="green.400" fontWeight={700} ml={2} flexShrink={0}>
                     sièges
                   </Text>
                 </Flex>
@@ -302,7 +380,7 @@ const AddFlight = () => {
                 type="number" icon={LuUsers} placeholder="180" suffix="sièges" />
               <FormField formik={formik} name="seats_available" label="Disponibles" required
                 type="number" placeholder="45" suffix="restants"
-                hint="Au moment de la création" />
+                 />
               <FormField formik={formik} name="baggage_kg" label="Bagage inclus"
                 type="number" icon={LuBaggageClaim} placeholder="23" suffix="kg" />
             </Grid>

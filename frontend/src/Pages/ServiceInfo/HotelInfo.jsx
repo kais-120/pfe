@@ -8,14 +8,17 @@ import {
   FaMapMarkerAlt, FaWifi, FaParking, FaSwimmingPool,
   FaSpa, FaDumbbell, FaStar, FaStarHalfAlt, FaRegStar,
   FaChevronLeft, FaChevronRight, FaArrowLeft,
-  FaUserFriends, FaMoon, FaCheck,
+  FaUserFriends, FaMoon, FaCheck, FaBed,
 } from "react-icons/fa"
+import {
+  LuCheck, LuChevronDown, LuChevronUp,
+  LuUsers, LuShoppingCart, LuX,
+} from "react-icons/lu"
 import Header from "../../components/home/Header"
 import { Axios, imageURL } from "../../Api/Api"
-import { Helmet } from "react-helmet"
 import DatePicker from "../../components/ui/DatePicker"
 
-
+/* ── Equipment list ─────────────────────────────────────────────── */
 const EQUIPMENT_LIST = [
   { key: "spa", label: "Spa & Bien-être", Icon: FaSpa, desc: "Hammam, massages, soins" },
   { key: "gym", label: "Salle de sport", Icon: FaDumbbell, desc: "Équipements modernes" },
@@ -24,100 +27,61 @@ const EQUIPMENT_LIST = [
   { key: "parking", label: "Parking", Icon: FaParking, desc: "Parking privé sécurisé" },
 ]
 
-
-
-/* ── Star rating display ────────────────────────────────────────── */
+/* ── Star rating ────────────────────────────────────────────────── */
 function StarRating({ rating, size = 13 }) {
   return (
     <Flex align="center" gap="2px">
       {[1, 2, 3, 4, 5].map(i => {
-        const Icon = i <= Math.floor(rating)
-          ? FaStar
-          : i - 0.5 <= rating
-            ? FaStarHalfAlt
-            : FaRegStar
+        const Icon = i <= Math.floor(rating) ? FaStar
+          : i - 0.5 <= rating ? FaStarHalfAlt : FaRegStar
         return <Icon key={i} size={size} color="#F59E0B" />
       })}
     </Flex>
   )
 }
 
+/* ── Image gallery ──────────────────────────────────────────────── */
 function ImageGallery({ images }) {
   const [active, setActive] = useState(0)
-
   if (!images?.length) return <Skeleton height="480px" borderRadius="2xl" />
-
   const prev = () => setActive(i => (i - 1 + images.length) % images.length)
   const next = () => setActive(i => (i + 1) % images.length)
-
   return (
     <Box>
-      {/* Main image */}
       <Box position="relative" height="480px" borderRadius="2xl" overflow="hidden" mb={3}>
-        <Image
-          src={`${imageURL}/services/${images[active].image_url}`}
-          alt="hotel"
-          w="100%" h="100%"
-          objectFit="cover"
-          transition="opacity 0.3s"
-        />
-
-        {/* Counter badge */}
-        <Badge
-          position="absolute" bottom={4} right={4}
-          bg="blackAlpha.700" color="white"
-          borderRadius="full" px={3} py={1}
-          fontSize="xs" fontWeight={600}
-        >
+        <Image src={`${imageURL}/services/${images[active].image_url}`}
+          alt="hotel" w="100%" h="100%" objectFit="cover" transition="opacity 0.3s" />
+        <Badge position="absolute" bottom={4} right={4}
+          bg="blackAlpha.700" color="white" borderRadius="full" px={3} py={1}
+          fontSize="xs" fontWeight={600}>
           {active + 1} / {images.length}
         </Badge>
-
-        {/* Nav arrows */}
         {images.length > 1 && (
           <>
-            <Button
-              position="absolute" left={3} top="50%" transform="translateY(-50%)"
+            <Button position="absolute" left={3} top="50%" transform="translateY(-50%)"
               borderRadius="full" bg="white" color="gray.700"
               w="38px" h="38px" minW="38px" p={0}
-              boxShadow="md" _hover={{ bg: "gray.100" }}
-              onClick={prev}
-            >
+              boxShadow="md" _hover={{ bg: "gray.100" }} onClick={prev}>
               <FaChevronLeft size={13} />
             </Button>
-            <Button
-              position="absolute" right={3} top="50%" transform="translateY(-50%)"
+            <Button position="absolute" right={3} top="50%" transform="translateY(-50%)"
               borderRadius="full" bg="white" color="gray.700"
               w="38px" h="38px" minW="38px" p={0}
-              boxShadow="md" _hover={{ bg: "gray.100" }}
-              onClick={next}
-            >
+              boxShadow="md" _hover={{ bg: "gray.100" }} onClick={next}>
               <FaChevronRight size={13} />
             </Button>
           </>
         )}
       </Box>
-
-      {/* Thumbnails */}
       <Flex gap={2} overflowX="auto" pb={1}>
         {images.map((img, i) => (
-          <Box
-            key={img.id}
-            flexShrink={0}
-            w="80px" h="60px"
-            borderRadius="lg"
-            overflow="hidden"
-            cursor="pointer"
-            border="2.5px solid"
+          <Box key={img.id} flexShrink={0} w="80px" h="60px" borderRadius="lg"
+            overflow="hidden" cursor="pointer" border="2.5px solid"
             borderColor={i === active ? "blue.500" : "transparent"}
-            opacity={i === active ? 1 : 0.65}
-            transition="all 0.15s"
-            _hover={{ opacity: 1 }}
-            onClick={() => setActive(i)}
-          >
-            <Image
-              src={`${imageURL}/services/${img.image_url}`}
-              w="100%" h="100%" objectFit="cover"
-            />
+            opacity={i === active ? 1 : 0.65} transition="all 0.15s"
+            _hover={{ opacity: 1 }} onClick={() => setActive(i)}>
+            <Image src={`${imageURL}/services/${img.image_url}`}
+              w="100%" h="100%" objectFit="cover" />
           </Box>
         ))}
       </Flex>
@@ -125,7 +89,6 @@ function ImageGallery({ images }) {
   )
 }
 
-/* ── Rooms section with integrated booking search ───────────────── */
 function GuestCounter({ label, sublabel, value, min, onIncrease, onDecrease }) {
   return (
     <Flex justify="space-between" align="center" py={2.5}>
@@ -134,55 +97,37 @@ function GuestCounter({ label, sublabel, value, min, onIncrease, onDecrease }) {
         {sublabel && <Text fontSize="xs" color="gray.400">{sublabel}</Text>}
       </Box>
       <Flex align="center" gap={3}>
-        <Box
-          as="button"
-          onClick={onDecrease}
-          w="28px" h="28px"
-          border="1px solid"
+        <Box as="button" onClick={onDecrease}
+          w="28px" h="28px" border="1px solid"
           borderColor={value <= min ? "gray.200" : "blue.300"}
-          borderRadius="full"
-          display="flex" alignItems="center" justifyContent="center"
-          color={value <= min ? "gray.300" : "blue.500"}
-          bg="white"
+          borderRadius="full" display="flex" alignItems="center" justifyContent="center"
+          color={value <= min ? "gray.300" : "blue.500"} bg="white"
           cursor={value <= min ? "not-allowed" : "pointer"}
-          fontSize="lg"
-          lineHeight={1}
-          transition="all 0.15s"
-          _hover={value > min ? { bg: "blue.50" } : {}}
-        >–</Box>
+          fontSize="lg" lineHeight={1} transition="all 0.15s"
+          _hover={value > min ? { bg: "blue.50" } : {}}>–</Box>
         <Text fontSize="sm" fontWeight={700} minW="16px" textAlign="center" color="gray.800">
           {value}
         </Text>
-        <Box
-          as="button"
-          onClick={onIncrease}
-          w="28px" h="28px"
-          border="1px solid"
-          borderColor="blue.300"
-          borderRadius="full"
-          display="flex" alignItems="center" justifyContent="center"
-          color="blue.500"
-          bg="white"
-          cursor="pointer"
-          fontSize="lg"
-          lineHeight={1}
-          transition="all 0.15s"
-          _hover={{ bg: "blue.50" }}
-        >+</Box>
+        <Box as="button" onClick={onIncrease}
+          w="28px" h="28px" border="1px solid" borderColor="blue.300"
+          borderRadius="full" display="flex" alignItems="center" justifyContent="center"
+          color="blue.500" bg="white" cursor="pointer"
+          fontSize="lg" lineHeight={1} transition="all 0.15s"
+          _hover={{ bg: "blue.50" }}>+</Box>
       </Flex>
     </Flex>
   )
 }
 
+/* ── RoomGuestSelector ──────────────────────────────────────────── */
 function RoomGuestSelector({ guestRooms, setGuestRooms }) {
   const [open, setOpen] = useState(false)
   const ref = React.useRef(null)
 
-  // Close on outside click
   React.useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
-    document.addEventListener("mousedown", handler)
-    return () => document.removeEventListener("mousedown", handler)
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener("mousedown", h)
+    return () => document.removeEventListener("mousedown", h)
   }, [])
 
   const totalRooms = guestRooms.length
@@ -191,114 +136,74 @@ function RoomGuestSelector({ guestRooms, setGuestRooms }) {
 
   const updateRoom = (idx, field, val) =>
     setGuestRooms(prev => prev.map((r, i) => i === idx ? { ...r, [field]: val } : r))
-
   const addRoom = () => setGuestRooms(prev => [...prev, { adults: 1, children: 0 }])
-  const removeRoom = (idx) => setGuestRooms(prev => prev.filter((_, i) => i !== idx))
+  const removeRoom = idx => setGuestRooms(prev => prev.filter((_, i) => i !== idx))
 
   return (
     <Box position="relative" ref={ref}>
-      {/* Trigger */}
       <Box>
-        <Text fontSize="xs" color="gray.500" fontWeight={600} mb={1.5}>Chambres & voyageurs</Text>
-        <Box
-          as="button"
-          w="full"
-          h="42px"
-          display="flex"
-          alignItems="center"
-          gap={2}
-          px={3}
-          border="1px solid"
+        <Text fontSize="xs" color="gray.500" fontWeight={600} mb={1.5}>
+          Chambres & voyageurs
+        </Text>
+        <Box as="button" w="full" h="42px" display="flex" alignItems="center" gap={2}
+          px={3} border="1px solid"
           borderColor={open ? "blue.400" : "gray.200"}
-          borderRadius="lg"
-          bg="gray.50"
-          cursor="pointer"
-          textAlign="left"
+          borderRadius="lg" bg="gray.50" cursor="pointer" textAlign="left"
           boxShadow={open ? "0 0 0 2px rgba(49,130,206,0.15)" : "none"}
-          transition="all 0.15s"
-          onClick={() => setOpen(o => !o)}
-          _hover={{ borderColor: "blue.300" }}
-        >
+          transition="all 0.15s" onClick={() => setOpen(o => !o)}
+          _hover={{ borderColor: "blue.300" }}>
           <Box as={FaUserFriends} color="gray.400" flexShrink={0} />
           <Text fontSize="sm" fontWeight={500} color="gray.700" noOfLines={1}>
-            {totalRooms} Chambre{totalRooms > 1 ? "s" : ""} · {totalAdults} Adulte{totalAdults > 1 ? "s" : ""}{totalChildren > 0 ? ` · ${totalChildren} Enfant${totalChildren > 1 ? "s" : ""}` : ""}
+            {totalRooms} Chambre{totalRooms > 1 ? "s" : ""} ·{" "}
+            {totalAdults} Adulte{totalAdults > 1 ? "s" : ""}
+            {totalChildren > 0 ? ` · ${totalChildren} Enfant${totalChildren > 1 ? "s" : ""}` : ""}
           </Text>
         </Box>
       </Box>
 
-      {/* Dropdown */}
       {open && (
-        <Box
-          position="absolute"
-          top="calc(100% + 6px)"
-          left={0}
-          zIndex={1500}
-          bg="white"
-          border="1px solid"
-          borderColor="gray.200"
-          borderRadius="xl"
-          boxShadow="0 8px 32px rgba(0,0,0,0.12)"
-          w="300px"
-          p={4}
-        >
+        <Box position="absolute" top="calc(100% + 6px)" left={0}
+          zIndex={1500} bg="white" border="1px solid" borderColor="gray.200"
+          borderRadius="xl" boxShadow="0 8px 32px rgba(0,0,0,0.12)"
+          w="300px" p={4}>
           {guestRooms.map((room, idx) => (
             <Box key={idx} mb={idx < guestRooms.length - 1 ? 3 : 0}>
               <Flex justify="space-between" align="center" mb={1}>
-                <Text fontSize="sm" fontWeight={700} color="gray.800">Chambre {idx + 1}</Text>
+                <Text fontSize="sm" fontWeight={700} color="gray.800">
+                  Chambre {idx + 1}
+                </Text>
                 {guestRooms.length > 1 && (
-                  <Box
-                    as="button"
-                    onClick={() => removeRoom(idx)}
-                    color="gray.400"
-                    _hover={{ color: "red.500" }}
+                  <Box as="button" onClick={() => removeRoom(idx)}
+                    color="gray.400" _hover={{ color: "red.500" }}
                     bg="none" border="none" cursor="pointer"
-                    display="flex" alignItems="center"
-                    transition="color 0.15s"
-                  >
+                    display="flex" alignItems="center" transition="color 0.15s">
                     <Box as="svg" w="14px" h="14px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path d="M18 6L6 18M6 6l12 12" strokeWidth="2" strokeLinecap="round" />
                     </Box>
                   </Box>
                 )}
               </Flex>
-              <GuestCounter
-                label="Adulte(s)" min={1}
-                value={room.adults}
+              <GuestCounter label="Adulte(s)" min={1} value={room.adults}
                 onIncrease={() => updateRoom(idx, "adults", room.adults + 1)}
-                onDecrease={() => updateRoom(idx, "adults", Math.max(1, room.adults - 1))}
-              />
+                onDecrease={() => updateRoom(idx, "adults", Math.max(1, room.adults - 1))} />
               <Box borderTop="1px solid" borderColor="gray.50" />
-              <GuestCounter
-                label="Enfant(s)" sublabel="De 0 à 12 ans" min={0}
+              <GuestCounter label="Enfant(s)" sublabel="De 0 à 12 ans" min={0}
                 value={room.children}
                 onIncrease={() => updateRoom(idx, "children", room.children + 1)}
-                onDecrease={() => updateRoom(idx, "children", Math.max(0, room.children - 1))}
-              />
-              {idx < guestRooms.length - 1 && <Box mt={3} borderTop="1px solid" borderColor="gray.100" />}
+                onDecrease={() => updateRoom(idx, "children", Math.max(0, room.children - 1))} />
+              {idx < guestRooms.length - 1 && (
+                <Box mt={3} borderTop="1px solid" borderColor="gray.100" />
+              )}
             </Box>
           ))}
-
-          <Box
-            as="button"
-            onClick={addRoom}
-            mt={3}
-            color="blue.500"
-            fontSize="sm"
-            fontWeight={600}
-            bg="none" border="none" cursor="pointer"
-            _hover={{ textDecoration: "underline" }}
-          >
+          <Box as="button" onClick={addRoom} mt={3} color="blue.500"
+            fontSize="sm" fontWeight={600} bg="none" border="none" cursor="pointer"
+            _hover={{ textDecoration: "underline" }}>
             + Ajouter une chambre
           </Box>
-
           <Flex justify="flex-end" mt={3} pt={3} borderTop="1px solid" borderColor="gray.100">
-            <Button
-              colorScheme="blue"
-              size="sm"
-              borderRadius="lg"
-              px={6}
-              onClick={() => setOpen(false)}
-            >
+            <Button colorScheme="blue" size="sm" borderRadius="lg" px={6}
+              onClick={() => setOpen(false)}>
               Valider
             </Button>
           </Flex>
@@ -308,80 +213,328 @@ function RoomGuestSelector({ guestRooms, setGuestRooms }) {
   )
 }
 
-function RoomsSection({ id,location }) {
-  const [checkIn, setCheckIn] = useState(location.checkIn)
-  const [checkOut, setCheckOut] = useState(location.checkOut)
-  const [guestRooms, setGuestRooms] = useState(location?.rooms || [{ adults: 2, children: 0 }])
-  const [availableHotel, setAvailableHotel] = useState(null)
-  const [rooms,setRooms] = useState([])
-console.log(location)
-  const roomsArray = location.rooms.map(r => [r.adults, r.children]);
-  useEffect(()=>{
-    const room = async () => {
-      const response = await Axios.post("/service/get/hotel/room/search/" + id,{checkIn,checkOut,rooms:roomsArray})
-    console.log(response.data.hotel)
-    setAvailableHotel(response.data.hotel)
-    }
-    room();
-  },[])
+
+function RoomCard({ slotIndex, room, nights, selected, onSelect }) {
+  const [expanded, setExpanded] = useState(false)
+  const isSelected = !!selected
+
+  return (
+    <Box
+      border="1.5px solid"
+      borderColor={isSelected ? "blue.400" : "gray.200"}
+      borderRadius="2xl"
+      bg={isSelected ? "blue.50" : "white"}
+      overflow="hidden"
+      boxShadow={isSelected
+        ? "0 0 0 3px rgba(49,130,206,0.12)"
+        : "0 1px 8px rgba(0,0,0,0.05)"}
+      transition="all 0.2s">
+
+      {/* Slot header strip */}
+      <Flex px={5} py={3}
+        bg={isSelected ? "blue.600" : "gray.50"}
+        borderBottom="1px solid"
+        borderColor={isSelected ? "blue.500" : "gray.100"}
+        align="center" justify="space-between">
+        <Flex align="center" gap={2.5}>
+          <Flex w="26px" h="26px" borderRadius="lg"
+            bg={isSelected ? "whiteAlpha.200" : "blue.50"}
+            color={isSelected ? "white" : "blue.500"}
+            align="center" justify="center" flexShrink={0}>
+            <FaBed size={12} />
+          </Flex>
+          <Text fontSize="sm" fontWeight={700}
+            color={isSelected ? "white" : "gray.700"}>
+            Chambre {slotIndex + 1}
+          </Text>
+          {(room.requestedAdults > 0 || room.requestedChildren > 0) && (
+            <Flex align="center" gap={1.5}
+              bg={isSelected ? "whiteAlpha.200" : "blue.100"}
+              borderRadius="full" px={2} py={0.5}>
+              <LuUsers size={10} color={isSelected ? "white" : "#2B6CB0"} />
+              <Text fontSize="xs" fontWeight={600}
+                color={isSelected ? "white" : "blue.700"}>
+                {room.requestedAdults} adulte{room.requestedAdults > 1 ? "s" : ""}
+                {room.requestedChildren > 0
+                  ? ` + ${room.requestedChildren} enfant${room.requestedChildren > 1 ? "s" : ""}`
+                  : ""}
+              </Text>
+            </Flex>
+          )}
+        </Flex>
+        {isSelected && (
+          <Flex align="center" gap={1.5} bg="whiteAlpha.200"
+            borderRadius="full" px={2.5} py={1}>
+            <LuCheck size={12} color="white" />
+            <Text fontSize="xs" fontWeight={700} color="white">Sélectionné</Text>
+          </Flex>
+        )}
+      </Flex>
+
+      {/* Room body */}
+      <Box px={5} py={4}>
+        <Flex justify="space-between" align="flex-start" gap={4} flexWrap="wrap">
+
+          {/* Left */}
+          <Box flex={1} minW="220px">
+            <Text fontWeight={800} fontSize="md" color="gray.900" mb={2}>
+              {room.name}
+            </Text>
+            <VStack align="stretch" spacing={1.5} mb={3}>
+              <Flex align="center" gap={2}>
+                <Box color="blue.400"><FaUserFriends size={12} /></Box>
+                <Text fontSize="sm" color="gray.600">
+                  Capacité :{" "}
+                  <Text as="span" fontWeight={600}>
+                    {room.capacity} personne{room.capacity > 1 ? "s" : ""}
+                  </Text>
+                </Text>
+              </Flex>
+              {nights && (
+                <Flex align="center" gap={2}>
+                  <Box color="blue.400"><FaMoon size={12} /></Box>
+                  <Text fontSize="sm" color="gray.600">
+                    <Text as="span" fontWeight={600}>
+                      {nights} nuit{nights > 1 ? "s" : ""}
+                    </Text>
+                  </Text>
+                </Flex>
+              )}
+            </VStack>
+
+            {/* Price breakdown toggle */}
+            <Box as="button" type="button"
+              onClick={() => setExpanded(e => !e)}
+              fontSize="xs" color="blue.500" fontWeight={600}
+              cursor="pointer" _hover={{ textDecoration: "underline" }}>
+              <Flex align="center" gap={1}>
+                {expanded ? <LuChevronUp size={12} /> : <LuChevronDown size={12} />}
+                {expanded ? "Masquer" : "Voir"} le détail du prix
+              </Flex>
+            </Box>
+
+            {expanded && (
+              <Box mt={3} p={3} bg="gray.50" borderRadius="xl"
+                border="1px solid" borderColor="gray.100">
+                <VStack align="stretch" spacing={1.5}>
+                  <Flex justify="space-between">
+                    <Text fontSize="xs" color="gray.500">
+                      {room.priceByDay} TND × {nights} nuit{nights > 1 ? "s" : ""}
+                    </Text>
+                    <Text fontSize="xs" fontWeight={600} color="gray.700">
+                      {room.priceByDay * nights} TND
+                    </Text>
+                  </Flex>
+                  {room.requestedAdults > 0 && (
+                    <Flex justify="space-between">
+                      <Text fontSize="xs" color="gray.500">
+                        +{room.priceByAdult} TND × {room.requestedAdults} adulte{room.requestedAdults > 1 ? "s" : ""}
+                      </Text>
+                      <Text fontSize="xs" fontWeight={600} color="gray.700">
+                        {room.priceByAdult * room.requestedAdults} TND
+                      </Text>
+                    </Flex>
+                  )}
+                  {room.requestedChildren > 0 && (
+                    <Flex justify="space-between">
+                      <Text fontSize="xs" color="gray.500">
+                        +{room.priceByChildren} TND × {room.requestedChildren} enfant{room.requestedChildren > 1 ? "s" : ""}
+                      </Text>
+                      <Text fontSize="xs" fontWeight={600} color="gray.700">
+                        {room.priceByChildren * room.requestedChildren} TND
+                      </Text>
+                    </Flex>
+                  )}
+                  <Box borderTop="1px solid" borderColor="gray.200" pt={1.5}>
+                    <Flex justify="space-between">
+                      <Text fontSize="xs" fontWeight={700} color="gray.700">Prix / nuit total</Text>
+                      <Text fontSize="xs" fontWeight={700} color="blue.600">
+                        {room.pricePerNight} TND
+                      </Text>
+                    </Flex>
+                  </Box>
+                </VStack>
+              </Box>
+            )}
+          </Box>
+
+          {/* Right */}
+          <Box textAlign="right" flexShrink={0} minW="130px">
+            <Text fontSize="xs" color="gray.400" mb={0.5}>
+              {nights ? "Total" : "À partir de"}
+            </Text>
+            <Flex align="baseline" gap={1} justify="flex-end">
+              <Text fontSize="2xl" fontWeight={900} lineHeight="1.1"
+                color={isSelected ? "blue.600" : "gray.800"}>
+                {room.totalPrice ?? room.pricePerNight}
+              </Text>
+              <Text fontSize="xs" color="gray.500">TND</Text>
+            </Flex>
+            {nights && room.pricePerNight && (
+              <Text fontSize="9px" color="gray.400" mt={0.5}>
+                {room.pricePerNight} TND/nuit × {nights}
+              </Text>
+            )}
+            <Button mt={3} size="sm" borderRadius="xl" px={5} fontWeight={700}
+              colorScheme={isSelected ? "red" : "blue"}
+              variant={isSelected ? "outline" : "solid"}
+              onClick={() => onSelect(isSelected ? null : room)}>
+              {isSelected
+                ? <Flex align="center" gap={1.5}><LuX size={12} />Retirer</Flex>
+                : <Flex align="center" gap={1.5}><LuCheck size={12} />Choisir</Flex>}
+            </Button>
+          </Box>
+        </Flex>
+      </Box>
+    </Box>
+  )
+}
+
+/* ── Booking summary sticky bar ─────────────────────────────────── */
+function BookingSummary({ selections, nights, totalRooms }) {
+  const selectedCount = Object.values(selections).filter(Boolean).length
+  const grandTotal = Object.values(selections)
+    .filter(Boolean)
+    .reduce((s, r) => s + (r.totalPrice ?? 0), 0)
+
+  if (selectedCount === 0) return null
+
+  return (
+    <Box mt={5} bg="white" borderRadius="2xl" p={5}
+      border="1.5px solid" borderColor="blue.300"
+      boxShadow="0 4px 24px rgba(49,130,206,0.15)"
+      position="sticky" bottom={4} zIndex={10}>
+      <Flex justify="space-between" align="center" flexWrap="wrap" gap={3}>
+        <Box>
+          <Text fontSize="sm" fontWeight={700} color="gray.700" mb={0.5}>
+            Récapitulatif de votre sélection
+          </Text>
+          <Flex align="center" gap={2} flexWrap="wrap">
+            <Badge colorScheme="blue" borderRadius="full" px={2}>
+              {selectedCount}/{totalRooms} chambre{selectedCount > 1 ? "s" : ""} sélectionnée{selectedCount > 1 ? "s" : ""}
+            </Badge>
+            {nights && (
+              <Text fontSize="xs" color="gray.500">
+                · {nights} nuit{nights > 1 ? "s" : ""}
+              </Text>
+            )}
+          </Flex>
+          <Flex gap={2} mt={2} flexWrap="wrap">
+            {Object.entries(selections).map(([slotIdx, room]) =>
+              room ? (
+                <Flex key={slotIdx} align="center" gap={1.5}
+                  bg="blue.50" borderRadius="lg" px={2.5} py={1}>
+                  <FaBed size={10} color="#2B6CB0" />
+                  <Text fontSize="xs" color="blue.700" fontWeight={600}>
+                    Ch.{Number(slotIdx) + 1}: {room.totalPrice} TND
+                  </Text>
+                </Flex>
+              ) : null
+            )}
+          </Flex>
+        </Box>
+        <Flex align="center" gap={5}>
+          <Box textAlign="right">
+            <Text fontSize="xs" color="gray.400">Total général</Text>
+            <Flex align="baseline" gap={1}>
+              <Text fontSize="2xl" fontWeight={900} color="blue.600" lineHeight={1}>
+                {grandTotal}
+              </Text>
+              <Text fontSize="sm" color="gray.500">TND</Text>
+            </Flex>
+          </Box>
+          <Button colorScheme="blue" borderRadius="xl" px={7} h="46px"
+            fontWeight={700}
+            isDisabled={selectedCount < totalRooms}>
+            <Flex align="center" gap={2}>
+              <LuShoppingCart size={15} />
+              {selectedCount < totalRooms
+                ? `Sélectionnez encore ${totalRooms - selectedCount} chambre${totalRooms - selectedCount > 1 ? "s" : ""}`
+                : "Réserver maintenant"}
+            </Flex>
+          </Button>
+        </Flex>
+      </Flex>
+    </Box>
+  )
+}
+
+/* ── RoomsSection ───────────────────────────────────────────────── */
+function RoomsSection({ id, location }) {
+  const [checkIn, setCheckIn] = useState(location?.checkIn ?? "")
+  const [checkOut, setCheckOut] = useState(location?.checkOut ?? "")
+  const [guestRooms, setGuestRooms] = useState(
+    location?.rooms || [{ adults: 2, children: 0 }]
+  )
+  const [hotel, setHotel] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [selections, setSelections] = useState({})
+const formatDate = (d) => new Date(d).toISOString().split('T')[0]
 
   const nights = (() => {
     if (!checkIn || !checkOut) return null
-    const diff = (new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)
-    return diff > 0 ? diff : null
+    const d = (new Date(checkOut) - new Date(checkIn)) / 86400000
+    return d > 0 ? Math.round(d) : null
   })()
 
-  const totalAdults = guestRooms.reduce((s, r) => s + r.adults, 0)
-  const totalChildren = guestRooms.reduce((s, r) => s + r.children, 0)
+  const fetchRooms = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      setSelections({})
+      const roomsArray = guestRooms.map(r => [r.adults, r.children])
+      const res = await Axios.post(`/service/get/hotel/room/search/${id}`, {
+        checkIn:formatDate(checkIn), checkOut:formatDate(checkOut), rooms: roomsArray,
+      })
+      setHotel(res.data.hotel)
+    } catch {
+      setError("Aucune chambre disponible pour ces dates.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { fetchRooms() }, [])
+
+  const totalRooms = hotel?.rooms?.length ?? 0
+  const handleSelect = (slotIndex, room) =>
+    setSelections(prev => ({ ...prev, [slotIndex]: room }))
 
   return (
     <Box>
       <SectionTitle>Chambres disponibles</SectionTitle>
 
       {/* Search bar */}
-      <Box
-        bg="white"
-        border="1px solid"
-        borderColor="gray.100"
-        borderRadius="2xl"
-        boxShadow="0 2px 16px rgba(0,0,0,0.06)"
-        p={5}
-        mb={5}
-      >
-        <Grid
-          templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "1fr 1fr 1fr auto" }}
-          gap={4}
-          align="flex-end"
-        >
-          {/* Check-in */}
+      <Box bg="white" border="1px solid" borderColor="gray.100"
+        borderRadius="2xl" boxShadow="0 2px 16px rgba(0,0,0,0.06)"
+        p={5} mb={6}>
+        <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr auto" }}
+          gap={4} align="flex-end">
           <Box>
-            <Text fontSize="xs" color="gray.500" fontWeight={600} mb={1.5}>Arrivée</Text>
-            <DatePicker checkIn={checkIn} checkOut={checkOut} setCheckIn={setCheckIn} setCheckOut={setCheckOut} isBorder={true} />
+            <Text fontSize="xs" color="gray.500" fontWeight={600} mb={1.5}>
+              Dates de séjour
+            </Text>
+            <DatePicker checkIn={checkIn} checkOut={checkOut}
+              setCheckIn={setCheckIn} setCheckOut={setCheckOut} isBorder={true} />
           </Box>
-
-          {/* Room + guest selector */}
           <RoomGuestSelector guestRooms={guestRooms} setGuestRooms={setGuestRooms} />
-
-          {/* Search button */}
-          <Button
-            colorScheme="blue"
-            borderRadius="xl"
-            px={6}
-            h="42px"
-            fontWeight={600}
-            fontSize="sm"
-            alignSelf="flex-end"
-          >
-            Vérifier
+          <Button colorScheme="blue" borderRadius="xl" px={6} h="42px"
+            fontWeight={600} fontSize="sm" alignSelf="flex-end"
+            loading={loading} loadingText="Recherche…"
+            onClick={fetchRooms}>
+            Vérifier les disponibilités
           </Button>
         </Grid>
 
-        {/* Nights summary */}
         {nights && (
-          <Flex align="center" gap={2} mt={3} pt={3} borderTop="1px solid" borderColor="gray.100">
+          <Flex align="center" gap={2} mt={3} pt={3}
+            borderTop="1px solid" borderColor="gray.100">
             <FaMoon size={11} color="#718096" />
             <Text fontSize="xs" color="gray.500">
-              <Text as="span" fontWeight={700} color="gray.700">{nights} nuit{nights > 1 ? "s" : ""}</Text>
+              <Text as="span" fontWeight={700} color="gray.700">
+                {nights} nuit{nights > 1 ? "s" : ""}
+              </Text>
               {" "}· du {new Date(checkIn).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
               {" "}au {new Date(checkOut).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
             </Text>
@@ -389,108 +542,81 @@ console.log(location)
         )}
       </Box>
 
-      {/* Room cards */}
-      <VStack spacing={4} align="stretch">
-        {availableHotel?.rooms.map(room => (
-          <RoomCard
-            key={room.id}
-            room={room}
-            nights={nights}
-            adults={totalAdults}
-            children={totalChildren}
-          />
-        ))}
-      </VStack>
-    </Box>
-  )
-}
-function RoomCard({ room, nights, adults, children }) {
-  // Total price = (base/night × nights) + (adult supplement × adults) + (child supplement × children)
-  const totalPrice = nights
-    ? room.price_by_day * nights
-    + room.price_by_adult * adults
-    + room.price_by_children * children
-    : null
+      {/* Loading */}
+      {loading && (
+        <VStack spacing={4} align="stretch">
+          {[1, 2].map(i => (
+            <Box key={i} bg="white" borderRadius="2xl" overflow="hidden"
+              border="1px solid" borderColor="gray.100">
+              <Skeleton h="52px" />
+              <Box p={5}><SkeletonText noOfLines={4} spacing={3} /></Box>
+            </Box>
+          ))}
+        </VStack>
+      )}
 
-  return (
-    <Box
-      border="1px solid"
-      borderColor="gray.100"
-      borderRadius="xl"
-      p={5}
-      bg="white"
-      boxShadow="0 1px 8px rgba(0,0,0,0.05)"
-      transition="box-shadow 0.2s, border-color 0.2s"
-      _hover={{ boxShadow: "0 4px 20px rgba(0,0,0,0.1)", borderColor: "blue.100" }}
-    >
-      <Flex justify="space-between" align="flex-start" gap={4} flexWrap="wrap">
-        {/* Left — room info */}
-        <Box flex={1} minW="200px">
-          <Text fontWeight={700} fontSize="md" color="gray.800" mb={3}>
-            {room.name}
+      {/* Error */}
+      {!loading && error && (
+        <Flex direction="column" align="center" py={12} gap={3}
+          bg="white" borderRadius="2xl"
+          border="1px dashed" borderColor="gray.200">
+          <Text fontWeight={600} color="gray.600">{error}</Text>
+          <Text fontSize="sm" color="gray.400">
+            Modifiez les dates ou le nombre de voyageurs.
           </Text>
-          <VStack align="stretch" spacing={2}>
-            <Flex align="center" gap={2}>
-              <Box color="blue.400"><FaUserFriends size={13} /></Box>
-              <Text fontSize="sm" color="gray.600">
-                Capacité : <Text as="span" fontWeight={600}>{room.capacity} personnes</Text>
-              </Text>
-            </Flex>
-            <Flex align="center" gap={2}>
-              <Box color="blue.400"><FaCheck size={11} /></Box>
-              <Text fontSize="sm" color="gray.600">
-                <Text as="span" fontWeight={600}>{room.count}</Text> chambre{room.count > 1 ? "s" : ""} disponible{room.count > 1 ? "s" : ""}
-              </Text>
-            </Flex>
-            <Flex gap={3} mt={1} flexWrap="wrap">
-              <Text fontSize="xs" color="gray.400">+{room.price_by_adult} TND / adulte</Text>
-              <Text fontSize="xs" color="gray.300">·</Text>
-              <Text fontSize="xs" color="gray.400">+{room.price_by_children} TND / enfant</Text>
-            </Flex>
-          </VStack>
-        </Box>
+        </Flex>
+      )}
 
-        {/* Right — pricing + CTA */}
-        <Box textAlign="right" flexShrink={0}>
-          <Text fontSize="xs" color="gray.400">{nights ? `${nights} nuit${nights > 1 ? "s" : ""}` : "À partir de"}</Text>
-          <Flex align="baseline" gap={1} justify="flex-end" mt={0.5}>
-            <Text fontSize="2xl" fontWeight={900} color="blue.600" lineHeight="1.1">
-              {totalPrice ?? room.price_by_day}
+      {/* Results */}
+      {!loading && !error && hotel && (
+        <>
+          <Flex align="center" gap={3} mb={5} flexWrap="wrap">
+            <Text fontSize="sm" color="gray.500">
+              <Text as="span" fontWeight={700} color="gray.800">
+                {totalRooms} chambre{totalRooms > 1 ? "s" : ""} à sélectionner
+              </Text>
+              {" "}pour votre séjour
             </Text>
-            <Text fontSize="xs" color="gray.500">{nights ? "TND total" : "TND / nuit"}</Text>
+            {Object.values(selections).filter(Boolean).length > 0 && (
+              <Badge colorScheme="green" borderRadius="full" px={2.5} py={0.5}>
+                {Object.values(selections).filter(Boolean).length}/{totalRooms} sélectionnée{Object.values(selections).filter(Boolean).length > 1 ? "s" : ""}
+              </Badge>
+            )}
           </Flex>
-          {totalPrice && (
-            <Text fontSize="xs" color="gray.400" mt={0.5}>
-              ({room.price_by_day} TND × {nights} nuit{nights > 1 ? "s" : ""})
-            </Text>
-          )}
-          <Button colorScheme="blue" size="sm" borderRadius="lg" mt={3} px={6} fontWeight={600}>
-            Réserver
-          </Button>
-        </Box>
-      </Flex>
+
+          <VStack spacing={4} align="stretch">
+            {hotel.rooms.map((room, idx) => (
+              <RoomCard
+                key={idx}
+                slotIndex={idx}
+                room={room}
+                nights={nights ?? hotel.nights}
+                selected={selections[idx] ?? null}
+                onSelect={roomOrNull => handleSelect(idx, roomOrNull)}
+              />
+            ))}
+          </VStack>
+
+          <BookingSummary
+            selections={selections}
+            nights={nights ?? hotel.nights}
+            totalRooms={totalRooms}
+          />
+        </>
+      )}
     </Box>
   )
 }
 
-/* ── Review card ────────────────────────────────────────────────── */
+/* ── ReviewCard ─────────────────────────────────────────────────── */
 function ReviewCard({ review }) {
   return (
-    <Box
-      bg="white"
-      border="1px solid"
-      borderColor="gray.100"
-      borderRadius="xl"
-      p={4}
-      boxShadow="0 1px 6px rgba(0,0,0,0.04)"
-    >
+    <Box bg="white" border="1px solid" borderColor="gray.100"
+      borderRadius="xl" p={4} boxShadow="0 1px 6px rgba(0,0,0,0.04)">
       <Flex align="center" gap={3} mb={3}>
         <Avatar.Root size="sm" w="38px" h="38px">
-          <Avatar.Fallback
-            bg="blue.100" color="blue.700"
-            fontSize="xs" fontWeight={700}
-            name={review.author}
-          />
+          <Avatar.Fallback bg="blue.100" color="blue.700"
+            fontSize="xs" fontWeight={700} name={review.author} />
         </Avatar.Root>
         <Box flex={1}>
           <Text fontWeight={600} fontSize="sm" color="gray.800">{review.author}</Text>
@@ -498,14 +624,12 @@ function ReviewCard({ review }) {
         </Box>
         <StarRating rating={review.rating} size={12} />
       </Flex>
-      <Text fontSize="sm" color="gray.600" lineHeight="1.7">
-        {review.comment}
-      </Text>
+      <Text fontSize="sm" color="gray.600" lineHeight="1.7">{review.comment}</Text>
     </Box>
   )
 }
 
-/* ── Skeleton for detail page ───────────────────────────────────── */
+/* ── DetailSkeleton ─────────────────────────────────────────────── */
 function DetailSkeleton() {
   return (
     <Box maxW="1100px" mx="auto" px={6} py={10}>
@@ -524,45 +648,36 @@ function DetailSkeleton() {
   )
 }
 
-/* ── Section heading ────────────────────────────────────────────── */
+/* ── SectionTitle ───────────────────────────────────────────────── */
 function SectionTitle({ children }) {
   return (
-    <Text
-      fontSize="xl"
-      fontWeight={800}
-      color="gray.800"
-      mb={4}
-      pb={2}
-      borderBottom="2px solid"
-      borderColor="blue.100"
-    >
+    <Text fontSize="xl" fontWeight={800} color="gray.800"
+      mb={4} pb={2} borderBottom="2px solid" borderColor="blue.100">
       {children}
     </Text>
   )
 }
 
-/* ── Average rating compute ─────────────────────────────────────── */
 function avgRating(reviews) {
   if (!reviews?.length) return 0
   return reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
 }
 
-/* ── Main HotelDetail page ──────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════
+   Main HotelDetail
+═══════════════════════════════════════════════════════════════════ */
 export default function HotelDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
-  console.log(location.state)
 
   const [hotel, setHotel] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  
 
   const reviews = (hotel?.hotelReview ?? []).map(r => ({
     id: r.id,
     author: r.clientReview?.name ?? "Anonyme",
-    avatar: r.clientReview?.name?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() ?? "?",
     rating: r.rate,
     date: new Date(r.createdAt).toLocaleDateString("fr-FR", { month: "long", year: "numeric" }),
     comment: r.review,
@@ -573,8 +688,8 @@ export default function HotelDetail() {
     const fetchHotel = async () => {
       try {
         setLoading(true)
-        const response = await Axios.get(`/service/get/hotel/${id}`)
-        const data = response.data.hotel
+        const res = await Axios.get(`/service/get/hotel/${id}`)
+        const data = res.data.hotel
         setHotel(Array.isArray(data) ? data[0] : data)
       } catch {
         setError("Impossible de charger cet hôtel.")
@@ -585,21 +700,14 @@ export default function HotelDetail() {
     fetchHotel()
   }, [id])
 
-  if (loading) return (
-    <>
-      <Header />
-      <DetailSkeleton />
-    </>
-  )
+  if (loading) return <><Header /><DetailSkeleton /></>
 
   if (error || !hotel) return (
     <>
       <Header />
       <Flex direction="column" align="center" justify="center" py={32} gap={3}>
         <Text color="gray.500">{error ?? "Hôtel introuvable."}</Text>
-        <Button size="sm" colorScheme="blue" onClick={() => navigate(-1)}>
-          Retour
-        </Button>
+        <Button size="sm" colorScheme="blue" onClick={() => navigate(-1)}>Retour</Button>
       </Flex>
     </>
   )
@@ -608,33 +716,24 @@ export default function HotelDetail() {
 
   return (
     <>
-      <Helmet title={hotel.name}>
-      </Helmet>
       <Header />
 
       <Box maxW="1100px" mx="auto" px={{ base: 4, md: 6 }} py={8}>
 
-        {/* Back button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          color="gray.500"
-          mb={5}
-          pl={0}
+        {/* Back */}
+        <Button variant="ghost" size="sm" color="gray.500" mb={5} pl={0}
           _hover={{ color: "blue.600", bg: "transparent" }}
-          onClick={() => navigate(-1)}
-        >
+          onClick={() => navigate(-1)}>
           <Flex align="center" gap={2}>
-            <FaArrowLeft size={12} />
-            Retour aux hôtels
+            <FaArrowLeft size={12} />Retour aux hôtels
           </Flex>
         </Button>
 
-        {/* Title row */}
+        {/* Title */}
         <Flex justify="space-between" align="flex-start" mb={6} gap={4} flexWrap="wrap">
           <Box>
             <Text fontSize="3xl" fontWeight={900} color="gray.900" lineHeight="1.1" mb={2}>
-              {hotel.name ?? "Vincci Helios Beach"}
+              {hotel.name}
             </Text>
             <Flex align="center" gap={3} flexWrap="wrap">
               <Flex align="center" gap={1.5}>
@@ -651,20 +750,17 @@ export default function HotelDetail() {
           </Box>
         </Flex>
 
+        {/* Gallery */}
         <Box mb={10}>
           <ImageGallery images={hotel.imagesHotel} />
         </Box>
 
         <VStack align="stretch" spacing={10}>
 
+          {/* About */}
           <Box>
             <SectionTitle>À propos</SectionTitle>
-            <Text
-              fontSize="sm"
-              color="gray.600"
-              lineHeight="1.9"
-              whiteSpace="pre-line"
-            >
+            <Text fontSize="sm" color="gray.600" lineHeight="1.9" whiteSpace="pre-line">
               {hotel.description}
             </Text>
           </Box>
@@ -673,26 +769,13 @@ export default function HotelDetail() {
           {hotelEquipments.length > 0 && (
             <Box>
               <SectionTitle>Équipements & services</SectionTitle>
-              <Grid templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" }} gap={3}>
+              <Grid templateColumns={{ base: "1fr", sm: "repeat(2,1fr)", md: "repeat(3,1fr)" }} gap={3}>
                 {hotelEquipments.map(({ key, label, Icon, desc }) => (
-                  <Flex
-                    key={key}
-                    align="center"
-                    gap={3}
-                    p={3}
-                    bg="gray.50"
-                    borderRadius="xl"
-                    border="1px solid"
-                    borderColor="gray.100"
-                  >
-                    <Flex
-                      w="38px" h="38px"
-                      align="center" justify="center"
-                      bg="blue.50"
-                      color="blue.500"
-                      borderRadius="lg"
-                      flexShrink={0}
-                    >
+                  <Flex key={key} align="center" gap={3} p={3}
+                    bg="gray.50" borderRadius="xl"
+                    border="1px solid" borderColor="gray.100">
+                    <Flex w="38px" h="38px" align="center" justify="center"
+                      bg="blue.50" color="blue.500" borderRadius="lg" flexShrink={0}>
                       <Icon size={16} />
                     </Flex>
                     <Box>
@@ -705,17 +788,14 @@ export default function HotelDetail() {
             </Box>
           )}
 
-          {/* Rooms with integrated booking search */}
-          {hotel.rooms?.length > 0 && (
-            <RoomsSection id={hotel.id} location={location.state} />
-          )}
+          {/* Rooms — slot-based */}
+          <RoomsSection id={hotel.id} location={location.state} />
 
           {/* Reviews */}
           <Box>
-            <Flex align="center" justify="space-between" mb={4} pb={2} borderBottom="2px solid" borderColor="blue.100">
-              <Text fontSize="xl" fontWeight={800} color="gray.800">
-                Avis clients
-              </Text>
+            <Flex align="center" justify="space-between" mb={4} pb={2}
+              borderBottom="2px solid" borderColor="blue.100">
+              <Text fontSize="xl" fontWeight={800} color="gray.800">Avis clients</Text>
               <Flex align="center" gap={2}>
                 <StarRating rating={avg} size={14} />
                 <Text fontWeight={700} color="gray.700">{avg.toFixed(1)}</Text>
@@ -734,21 +814,18 @@ export default function HotelDetail() {
                       <FaStar size={10} color="#F59E0B" />
                     </Flex>
                     <Box flex={1} bg="gray.100" borderRadius="full" h="6px" overflow="hidden">
-                      <Box
-                        bg="yellow.400"
-                        h="100%"
-                        borderRadius="full"
-                        w={`${pct}%`}
-                        transition="width 0.4s"
-                      />
+                      <Box bg="yellow.400" h="100%" borderRadius="full"
+                        w={`${pct}%`} transition="width 0.4s" />
                     </Box>
-                    <Text fontSize="xs" color="gray.400" w="20px" textAlign="right">{count}</Text>
+                    <Text fontSize="xs" color="gray.400" w="20px" textAlign="right">
+                      {count}
+                    </Text>
                   </Flex>
                 )
               })}
             </Box>
 
-            <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={4}>
+            <Grid templateColumns={{ base: "1fr", md: "repeat(2,1fr)" }} gap={4}>
               {reviews.map(r => <ReviewCard key={r.id} review={r} />)}
             </Grid>
           </Box>

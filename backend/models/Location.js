@@ -11,6 +11,10 @@ const Location = sequelize.define("locations",{
         type:DataTypes.STRING(100),
         allowNull:false,
     },
+    zone:{
+        type:DataTypes.STRING(100),
+        allowNull:true,
+    },
     address:{
         type:DataTypes.STRING(100),
         allowNull:false,

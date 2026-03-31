@@ -124,7 +124,6 @@ const AddAgency = () => {
       if (values.instagram) fd.append("instagram",values.instagram)
       if (values.twitter) fd.append("twitter",values.twitter)
       if (values.logo) fd.append("service_doc",values.logo)
-      values.images.forEach(img => fd.append("service_doc", img))
 
       try {
         await AxiosToken.post("/service/agency/add", fd)

@@ -50,15 +50,23 @@ import HomeAirline from "./HomeAirline";
 import FlightDetail from "./Pages/ServiceInfo/FlightDetail";
 import HomeVoyage from "./HomeVoyage";
 import CircuitDetail from "./Pages/ServiceInfo/CircuitDetail";
+import SearchFlights from "./Pages/Search/SearchFlights";
+import SearchLocation from "./Pages/Search/SearchLocation";
+import PackagesList from "./dashboard/Partner/Service/Add/PackagesList";
+import AddPackage from "./dashboard/Partner/Service/Add/AddPackage";
 
 function App() {
   return (
     <>
   <Toaster />
     <Routes>
+      <Route path="/add/package" element={<AddPackage />} />
+      <Route path="/package" element={<PackagesList />} />
   <Route path="/setting" element={<Settings/>} />
   <Route path="/test" element={<Test/>} />
-  <Route path="/search" element={<SearchHotels/>} />
+  <Route path="/search/hotel" element={<SearchHotels/>} />
+  <Route path="/search/airline" element={<SearchFlights/>} />
+  <Route path="/search/location" element={<SearchLocation/>} />
   <Route path="/forgot-password" element={<ForgotPassword/>} />
   <Route path="/verify-otp/:hash" element={<VerifyOtp link={"/forgot-password"} type="forgot-password" />} />
   <Route path="/reset-password/:hash" element={<ResetPassword/>} />

@@ -277,7 +277,7 @@ const Home = () => {
     const numberAdult = room?.adults ?? 2
     const numberChildren = room?.children ?? 0
     navigate(
-      `/search?destination=${destination}` +
+      `/search/hotel?destination=${destination}` +
       `&checkIn=${checkIn ?? ""}` +
       `&checkOut=${checkOut ?? ""}` +
       `&numberAdult=${numberAdult}` +
@@ -383,7 +383,7 @@ const Home = () => {
                 <Text fontSize="xs" fontWeight={700} color="gray.500">
                   Destination
                 </Text>
-                <LocationCombobox />
+                <LocationCombobox onChange={setDestination} />
               </Box>
               {/* <Box px={4} py={3} borderRight="1px solid" borderColor="gray.150"
                 borderLeftRadius="2xl">

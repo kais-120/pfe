@@ -351,7 +351,6 @@ function VehicleCard({ vehicle, agencyName, agencyAddress, pickupDate, returnDat
           </Text>
         )}
 
-        {/* Price + CTA */}
         <Flex align="center" justify="space-between" gap={3}>
           <Box>
             <Text fontSize="9px" color="gray.400" textTransform="uppercase" letterSpacing="wide">
@@ -374,63 +373,81 @@ function VehicleCard({ vehicle, agencyName, agencyAddress, pickupDate, returnDat
 
           <Dialog.Root>
             <Dialog.Trigger asChild>
-              <Button
-                flex={1}
-                colorScheme="blue" borderRadius="xl"
-                fontWeight={700} size="sm" h="40px">
-                <Flex align="center" gap={2}>
-                  Réserver
-                  <FaChevronRight size={10} />
-                </Flex>
+              <Button colorScheme="blue" borderRadius="xl" fontWeight={700} size="sm" h="40px" px={5}>
+                Réserver
+                <FaChevronRight size={10} />
               </Button>
             </Dialog.Trigger>
             <Portal>
               <Dialog.Backdrop />
               <Dialog.Positioner>
-                <Dialog.Content borderRadius="2xl">
-                  <Dialog.Header>
-                    <Dialog.Title>
-                      Réserver — {vehicle.brand} {vehicle.model}
-                    </Dialog.Title>
+                <Dialog.Content borderRadius="2xl" maxW="380px">
+                  <Dialog.Header borderBottom="1px solid" borderColor="gray.100" pb={4}>
+                    <Flex align="center" gap={3}>
+                      <Flex w="36px" h="36px" borderRadius="xl" bg="blue.50"
+                        color="blue.500" align="center" justify="center" flexShrink={0}>
+                        <FaCar size={15} />
+                      </Flex>
+                      <Box>
+                        <Dialog.Title fontSize="md" fontWeight={700} color="gray.900">
+                          {vehicle.brand} {vehicle.model}
+                        </Dialog.Title>
+                        <Text fontSize="xs" color="gray.500" mt={0.5}>
+                          {Number(vehicle.price_per_day).toFixed(0)} TND / jour
+                        </Text>
+                      </Box>
+                    </Flex>
+                    <Dialog.CloseTrigger asChild>
+                      <CloseButton size="sm" position="absolute" top={3} right={3} />
+                    </Dialog.CloseTrigger>
                   </Dialog.Header>
-                  <Dialog.Body>
+                  <Dialog.Body px={5} py={5}>
                     <VStack spacing={4} align="stretch">
-                      <DateFieldBordered
-                        label="Date de début"
-                        value={localPickup}
-                        onChange={setLocalPickup}
-                        min={today}
-                      />
-                      <DateFieldBordered
-                        label="Date de fin"
-                        value={localReturn}
-                        onChange={setLocalReturn}
-                        min={localPickup || today}
-                      />
-                      {errorMsg && (
-                        <Text fontSize="sm" color="red.500">{errorMsg}</Text>
-                      )}
+                      <DateFieldBordered label="Date de début"
+                        value={localPickup} onChange={setLocalPickup} min={today} />
+                      <DateFieldBordered label="Date de fin"
+                        value={localReturn} onChange={setLocalReturn} min={localPickup || today} />
+
+                      {/* Live total in dialog */}
+                      {localPickup && localReturn && (() => {
+                        const d = Math.round((new Date(localReturn) - new Date(localPickup)) / 86400000)
+                        return d > 0 ? (
+                          <Flex align="center" justify="space-between"
+                            bg="blue.50" borderRadius="xl" px={4} py={3}
+                            border="1px solid" borderColor="blue.100">
+                            <Text fontSize="sm" color="gray.500">
+                              {Number(vehicle.price_per_day).toFixed(0)} TND × {d} jour{d > 1 ? "s" : ""}
+                            </Text>
+                            <Flex align="baseline" gap={1}>
+                              <Text fontSize="lg" fontWeight={900} color="blue.600">
+                                {(Number(vehicle.price_per_day) * d).toFixed(0)}
+                              </Text>
+                              <Text fontSize="xs" color="blue.400">TND</Text>
+                            </Flex>
+                          </Flex>
+                        ) : null
+                      })()}
+
+                      {errorMsg && <Text fontSize="sm" color="red.500">{errorMsg}</Text>}
+
                       <Button colorScheme="blue" h="46px" borderRadius="xl"
                         fontWeight={700} onClick={checkAvailability}
-                        isLoading={checking}>
-                        Vérifier la disponibilité
+                        loading={checking} loadingText="Vérification…">
+                        Voir les détails et réserver
                       </Button>
                     </VStack>
                   </Dialog.Body>
-                  <Dialog.CloseTrigger asChild>
-                    <CloseButton size="sm" />
-                  </Dialog.CloseTrigger>
                 </Dialog.Content>
               </Dialog.Positioner>
             </Portal>
           </Dialog.Root>
+
         </Flex>
       </VStack>
     </Box>
   )
 }
 
-/* ── Card skeleton ──────────────────────────────────────────────── */
 function CarCardSkeleton() {
   return (
     <Box bg="white" borderRadius="2xl" overflow="hidden"

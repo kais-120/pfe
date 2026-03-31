@@ -25,11 +25,15 @@ const { DataTypes } = require("sequelize");
     },
     arrival: {
       type: DataTypes.DATE,
-      allowNull: false,
+      allowNull: true,
     },
     duration: {
        type:DataTypes.STRING,
       allowNull: false,
+    },
+    type_flight: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
     seats_total: {
       type: DataTypes.INTEGER,

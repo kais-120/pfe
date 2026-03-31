@@ -81,28 +81,24 @@ exports.GetSearchHotels = [
 
       const hotels = await Hotel.findAll({
         where: { destination },
-        attributes: ["id", "destination"],
         include: [
-          {
-            model: Room,
-            as: "rooms"
-          }
+          { model: Room, as: "rooms" }
         ]
       })
 
+      const imagesHotel = await ImageService.findAll({
+        where: { type: "hotel" }
+      });
+
       const availableHotels = hotels
         .map(hotel => {
-
           let totalPrice = 0
-          let selectedRooms = []
 
           const isValid = rooms.every(roomRequest => {
-
-            const [adults, children] = roomRequest
+            const { adults, children } = roomRequest
             const guests = adults + children
 
             const room = hotel.rooms.find(r => r.capacity >= guests)
-
             if (!room) return false
 
             const pricePerNight =
@@ -111,38 +107,26 @@ exports.GetSearchHotels = [
               children * room.price_by_children
 
             totalPrice += pricePerNight * nights
-
-            selectedRooms.push({
-              roomId: room.id,
-              name: room.name,
-              capacity: room.capacity,
-              priceByDay: room.price_by_day,
-              priceByAdult: room.price_by_adult,
-              priceByChildren: room.price_by_children,
-              requestedAdults: adults,
-              requestedChildren: children,
-              pricePerNight
-            })
-
             return true
           })
 
           if (!isValid) return null
 
-          return {
-            ...hotel.toJSON(),
-            nights,
-            totalPrice,
-            selectedRooms
-          }
+          const hotelJSON = hotel.toJSON()
 
+          hotelJSON.imagesHotel = imagesHotel.filter(
+            img => String(img.service_id) === String(hotelJSON.id)
+          )
+
+          hotelJSON.nights = nights
+          hotelJSON.totalPrice = totalPrice
+
+          return hotelJSON
         })
         .filter(Boolean)
 
       if (availableHotels.length === 0) {
-        return res.status(404).json({
-          message: "no hotel available"
-        })
+        return res.status(404).json({ message: "no hotel available" })
       }
 
       return res.json({
@@ -209,7 +193,6 @@ exports.GetSearchRooms = [
           adults * room.price_by_adult +
           children * room.price_by_children;
 
-        totalPrice += pricePerNight * nights;
 
         availableRooms.push({
           roomId: room.id,
@@ -220,7 +203,8 @@ exports.GetSearchRooms = [
           priceByChildren: room.price_by_children,
           requestedAdults: adults,
           requestedChildren: children,
-          pricePerNight
+          pricePerNight,
+          totalPrice: pricePerNight * nights
         });
 
         return true;
@@ -237,7 +221,6 @@ exports.GetSearchRooms = [
           name: hotel.name,
           destination: hotel.destination,
           nights,
-          totalPrice,
           rooms: availableRooms
         }
       });
@@ -464,6 +447,93 @@ exports.GetLocation = async (req, res) => {
 
 }
 
+
+exports.SearchVehicle = [
+  body("pickupLocation").notEmpty().withMessage("Pickup location is required"),
+  body("pickupDate").notEmpty().withMessage("Pickup date is required"),
+  body("returnDate").notEmpty().withMessage("Return date is required"),
+
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty())
+        return res.status(422).json({ errors: errors.array() });
+
+      const { pickupLocation, pickupDate, returnDate } = req.body;
+
+      const pickupStart = new Date(`${pickupDate}T00:00:00+01:00`);
+      const returnEnd = new Date(`${returnDate}T23:59:59+01:00`);
+
+      const location = await Location.findOne({
+        where: {
+          zone: pickupLocation,
+          status: "accept"
+        }
+      });
+
+      if (!location)
+        return res.status(404).json({ message: "Location not found" });
+
+      let vehicles = await Vehicle.findAll({
+        include:[{
+          model:Location,
+          as:"locationVehicle"
+        }],
+        where: {
+          location_id: location.id,
+          status: "available"
+        }
+      });
+
+      const bookedCars = await CarRentalBookingDetails.findAll({
+        where: {
+          car_id: { [Op.in]: vehicles.map(v => v.id) },
+          deleted_at: null,
+          [Op.or]: [
+            { pickup_date: { [Op.between]: [pickupStart, returnEnd] } },
+            { return_date: { [Op.between]: [pickupStart, returnEnd] } },
+            {
+              pickup_date: { [Op.lte]: pickupStart },
+              return_date: { [Op.gte]: returnEnd }
+            }
+          ]
+        }
+      });
+
+      const bookedCarIds = bookedCars.map(b => b.car_id);
+      vehicles = vehicles.filter(v => !bookedCarIds.includes(v.id));
+
+      const images = await ImageService.findAll({
+        where: {
+          type: "vehicle",
+          service_id: { [Op.in]: vehicles.map(v => v.id) } 
+        }
+      });
+
+      const vehiclesWithImages = vehicles.map(vehicle => {
+        const vehicleJSON = vehicle.toJSON();
+
+        const imagesVehicle = images.filter(
+          img => String(img.service_id) === String(vehicle.id)
+        );
+
+        return {
+          ...vehicleJSON,
+          images: imagesVehicle
+        };
+      });
+
+      res.send({
+        message: "Available cars found",
+        vehicles: vehiclesWithImages
+      });
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+];
 exports.GetPublicLocation = async (req, res) => {
   try {
     const locationData = await Location.findAll({
@@ -708,8 +778,7 @@ exports.AddAgency = [
 
         partner_id: userId,
       });
-
-      await agence.update({ logo: file.filename });
+      await agence.update({ logo: file[0].filename });
 
       return res.status(201).send({ message: "Agence créée avec succès" });
     } catch (err) {
@@ -1055,8 +1124,124 @@ exports.GetPublicAirline = async (req, res) => {
   }
 };
 
+
+exports.GetSearchAirline = [
+  body("type")
+    .notEmpty().withMessage("type is required")
+    .isIn(["aller-simple", "aller retour"]).withMessage("type is invalid"),
+  body("from")
+    .notEmpty().withMessage("from is required"),
+  body("to")
+    .notEmpty().withMessage("to is required"),
+  body("dateFlight")
+    .notEmpty().withMessage("date flight is required"),
+  body("dateReturnFlight")
+    .if(body("type").equals("go and return"))
+    .notEmpty().withMessage("date return flight is required"),
+  body("number")
+    .notEmpty().withMessage("number is required")
+    .isInt({ min: 1 }).withMessage("number must be at least 1"),
+  body("class")
+    .notEmpty().withMessage("class is required"),
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(422).json({ errors: errors.array() });
+      }
+
+      const {
+        type,
+        from,
+        to,
+        dateFlight,
+        dateReturnFlight,
+        number,
+        class: flightClass
+      } = req.body;
+
+
+if (type === "aller retour") {
+  const startReturn = new Date(`${dateReturnFlight}T00:00:00+01:00`);
+  const endReturn = new Date(`${dateReturnFlight}T23:59:59+01:00`);
+  const start = new Date(`${dateFlight}T00:00:00+01:00`);
+    const end = new Date(`${dateFlight}T23:59:59+01:00`);
+  const flights = await Compagnie.findAll({
+    include: [
+      {
+        model: Flight,
+        as: "FlightCompagnie",
+        required: true,
+        where: {
+          departure_airport: from,   
+          arrival_airport: to,   
+          arrival: {             
+            [Op.between]: [startReturn, endReturn]
+          },
+          departure:{
+            [Op.between]: [start, end]
+          }
+        },
+        include: [
+            {
+              model: FlightClasses,
+              as: "flightClasses",
+              where: {
+                class_name: flightClass,
+                seats_available: {
+                  [Op.gte]: number
+                }
+              }
+            }
+          ]
+      }
+    ]
+  });
+  res.send({message:"flights found",flights})
+}else{
+      const start = new Date(`${dateFlight}T00:00:00+01:00`);
+      const end = new Date(`${dateFlight}T23:59:59+01:00`);
+
+      const flights = await Compagnie.findAll({
+      include: [
+        {
+          model: Flight,
+          as: "FlightCompagnie",
+          required: true,
+          where: {
+            departure_airport: from,
+            arrival_airport: to,
+            departure: {
+              [Op.between]: [start, end]
+            }
+          },
+          include: [
+            {
+              model: FlightClasses,
+              as: "flightClasses",
+              where: {
+                class_name: flightClass,
+                seats_available: {
+                  [Op.gte]: number
+                }
+              }
+            }
+          ]
+        }
+      ]
+    });
+  res.send({message:"flights found",flights})
+
+}
+    } catch (err) {
+      console.log(err);
+      return res.status(500).send({ message: "server error" });
+    }
+  }
+];
 exports.AddFlight = [
   body("flight_number").notEmpty().withMessage("Flight number is required"),
+  body("type_flight").notEmpty().withMessage("type Flight is required"),
   body("from").notEmpty().withMessage("Departure airport is required"),
   body("to").notEmpty().withMessage("Arrival airport is required")
     .custom((value, { req }) => {
@@ -1078,6 +1263,17 @@ exports.AddFlight = [
   body("duration").optional().isString(),
   body("classes").notEmpty().withMessage("Classes are required")
     .isObject().withMessage("Classes must be an object")
+    .custom((value) => {
+      const hasAtLeastOne = Object.values(value).some(
+        v => v !== "" && v !== null && Number(v) > 0
+      );
+      if (!hasAtLeastOne) {
+        throw new Error("At least one class price is required");
+      }
+      return true;
+    }),
+  body("classesChildren").notEmpty().withMessage("classes Children are required")
+    .isObject().withMessage("classes Children must be an object")
     .custom((value) => {
       const hasAtLeastOne = Object.values(value).some(
         v => v !== "" && v !== null && Number(v) > 0
@@ -1138,16 +1334,18 @@ exports.AddFlight = [
         arrival,
         duration,
         classes,
+        classesChildren,
         seatsClasses,
         seats_total,
         seats_available,
         baggage_kg,
         status,
+        type_flight
       } = req.body;
 
       if (typeof classes === "string") classes = JSON.parse(classes);
       if (typeof seatsClasses === "string") seatsClasses = JSON.parse(seatsClasses);
-      const airline = Compagnie.findOne({ partner_id });
+      const airline = await Compagnie.findOne({where: {partner_id} });
 
 
       const flight = await Flight.create({
@@ -1161,7 +1359,8 @@ exports.AddFlight = [
         seats_available,
         baggage_kg,
         status,
-        airline_id: airline.id
+        airline_id: airline.id,
+        type_flight
       }, { transaction: t });
 
 
@@ -1169,7 +1368,8 @@ exports.AddFlight = [
         .filter(cls => classes[cls] && Number(classes[cls]) > 0)
         .map(cls => ({
           class_name: cls,
-          price: Number(classes[cls]),
+          price_adult: Number(classes[cls]),
+          price_children: Number(classesChildren[cls]),
           seats_available: Number(seatsClasses[cls] || 0),
           flight_id: flight.id,
         }));
