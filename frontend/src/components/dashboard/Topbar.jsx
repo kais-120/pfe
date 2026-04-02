@@ -64,7 +64,6 @@ const Topbar = () => {
   }
 
   useEffect(() => { fetchNotifications() }, [])
-  console.log(notifications)
 
   useEffect(() => {
     if (!user) return

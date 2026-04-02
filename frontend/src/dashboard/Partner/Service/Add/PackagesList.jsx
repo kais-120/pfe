@@ -260,7 +260,6 @@ function PackageCard({ pkg, onBook }) {
   )
 }
 
-/* ── Section Header Component ─────────────────────────────────────── */
 function MonthSection({ month, year, children }) {
   return (
     <Box mb={8}>
@@ -337,7 +336,7 @@ const PackagesList = () => {
   }
 
   return (
-    <Container maxW="1400px" py={8} px={{ base: 4, md: 8 }}>
+    <Container maxW="1400px">
       {/* Back Button */}
       <Flex
         as="button"

@@ -7,18 +7,6 @@ const OfferBookingDetails = sequelize.define("offer_booking_details",{
         autoIncrement:true,
         primaryKey:true
     },
-    start_date:{
-        type:DataTypes.DATE,
-        allowNull:false,
-    },
-    end_date:{
-        type:DataTypes.DATE,
-        allowNull:false,
-    },
-    number_of_participants:{
-        type:DataTypes.INTEGER,
-        allowNull:false,
-    },
     booking_id:{
         type:DataTypes.BIGINT,
         allowNull:false,
@@ -33,6 +21,15 @@ const OfferBookingDetails = sequelize.define("offer_booking_details",{
         allowNull:false,
         references:{
             model:"offers",
+            key:"id"
+        },
+        onDelete:'CASCADE',
+    },
+    package_id:{
+        type:DataTypes.BIGINT,
+        allowNull:false,
+        references:{
+            model:"packages",
             key:"id"
         },
         onDelete:'CASCADE',

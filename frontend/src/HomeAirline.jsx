@@ -730,23 +730,6 @@ export default function HomeAirline() {
             }
           </Grid>
 
-          {!loading && !error && (
-            <Flex direction="column" align="center" py={20} gap={3}>
-              <Text fontWeight={600} color="gray.700">Aucun vol trouvé</Text>
-              <Text fontSize="sm" color="gray.400">
-                {(fromCity || toCity || statusFilter !== "all")
-                  ? "Essayez d'autres filtres."
-                  : "Aucun vol disponible pour le moment."}
-              </Text>
-              {(fromCity || toCity || statusFilter !== "all") && (
-                <Button size="sm" colorScheme="blue" variant="outline" borderRadius="xl"
-                  onClick={() => { setFromCity(""); setToCity(""); setStatusFilter("all") }}>
-                  Réinitialiser
-                </Button>
-              )}
-            </Flex>
-          )}
-
         </Box>
       </Box>
     </>

@@ -1,6 +1,6 @@
 const express = require("express");
 const AuthenticateToken = require("../middlewares/AuthenticateToken");
-const { BookingHotel, GetPartnerBookingHotel, GetClientBooking, BookingFlight, BookingLocation, BookingCircuit, BookingOffer } = require("../controllers/BookingController");
+const { BookingHotel, GetPartnerBookingHotel, GetClientBooking, BookingFlight, BookingLocation, BookingCircuit, BookingOffer, GetPartnerBookingLocation, GetPartnerBookingAgency } = require("../controllers/BookingController");
 const AuthenticatePartner = require("../middlewares/AuthenticatePartner");
 const router = express.Router();
 
@@ -10,7 +10,11 @@ router.post("/location/:id",[AuthenticateToken],BookingLocation);
 router.post("/circuit/:id",[AuthenticateToken],BookingCircuit);
 router.post("/offer/:id",[AuthenticateToken],BookingOffer);
 
-router.get("/get/partner/booking/hotel",[AuthenticateToken,AuthenticatePartner],GetPartnerBookingHotel);
-router.get("/get/client/booking",[AuthenticateToken],GetClientBooking);
+router.get("/get/partner/hotel",[AuthenticateToken,AuthenticatePartner],GetPartnerBookingHotel);
+router.get("/get/partner/voyage",[AuthenticateToken,AuthenticatePartner],GetPartnerBookingHotel);
+router.get("/get/partner/agency",[AuthenticateToken,AuthenticatePartner],GetPartnerBookingAgency);
+router.get("/get/partner/airline",[AuthenticateToken,AuthenticatePartner],GetPartnerBookingHotel);
+router.get("/get/partner/location",[AuthenticateToken,AuthenticatePartner],GetPartnerBookingLocation);
+router.get("/get/client",[AuthenticateToken],GetClientBooking);
 
 module.exports = router;

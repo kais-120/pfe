@@ -18,10 +18,11 @@ import {
   LuUsers, LuTag, LuShare2, LuClock,
 } from "react-icons/lu"
 import Header from "../../components/home/Header"
-import { Axios, imageURL } from "../../Api/Api"
+import { Axios, imageURL, AxiosToken } from "../../Api/Api"
 import { Check, Mail, X } from "lucide-react"
-import { FaXTwitter } from "react-icons/fa6";
-
+import { FaXTwitter } from "react-icons/fa6"
+import BookingDialog from "./PackagesDialog"
+import { Helmet } from "react-helmet"
 
 /* ── Helpers ────────────────────────────────────────────────────── */
 const TYPE_META = {
@@ -29,6 +30,7 @@ const TYPE_META = {
   excursion: { color: "green", label: "Excursion" },
   sejour: { color: "purple", label: "Séjour" },
   camping: { color: "orange", label: "Camping" },
+  haj: { color: "blue", label: "Haj / Umrah" },
 }
 
 /* ── Gallery ────────────────────────────────────────────────────── */
@@ -104,7 +106,6 @@ function Gallery({ images }) {
   )
 }
 
-/* ── Section title ──────────────────────────────────────────────── */
 function SectionTitle({ children }) {
   return (
     <Text fontSize="xl" fontWeight={800} color="gray.800"
@@ -133,24 +134,23 @@ function PageSkeleton() {
   )
 }
 
-/* ── Main ───────────────────────────────────────────────────────── */
 export default function OfferDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [offer, setOffer] = useState(null)
-  const [agency, setAgency] = useState(null)
+  const [offerData, setOfferData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [showMore, setShowMore] = useState(false)
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const res = await Axios.get(`/service/offer/get/${id}`)
-        setOffer(res.data.offer)
-        setAgency(res.data.offer.agencyOffer ?? null)
-      } catch {
+        const res = await AxiosToken.get(`/service/offer/get/${id}`)
+        setOfferData(res.data)
+      } catch (err) {
+        console.error("Error fetching offer:", err)
         setError("Impossible de charger cette offre.")
       } finally {
         setLoading(false)
@@ -161,7 +161,7 @@ export default function OfferDetail() {
 
   if (loading) return <><Header /><PageSkeleton /></>
 
-  if (error || !offer) return (
+  if (error || !offerData?.offer) return (
     <>
       <Header />
       <Flex direction="column" align="center" justify="center" py={32} gap={3}>
@@ -171,11 +171,18 @@ export default function OfferDetail() {
     </>
   )
 
+  const offer = offerData.offer
   const meta = TYPE_META[offer.type] ?? { color: "gray", label: offer.type }
 
   return (
     <>
+    <Helmet title={offer.title}></Helmet>
       <Header />
+      <BookingDialog
+        isOpen={bookingDialogOpen}
+        onClose={() => setBookingDialogOpen(false)}
+        packageData={offerData?.offer?.packages}
+      />
 
       <Box maxW="1100px" mx="auto" px={{ base: 4, md: 6 }} py={8}>
 
@@ -197,12 +204,6 @@ export default function OfferDetail() {
                 px={3} py={1} fontSize="sm" fontWeight={700}>
                 {meta.label}
               </Badge>
-              {offer.status === "pending" && (
-                <Badge colorScheme="yellow" borderRadius="full"
-                  px={2.5} py={0.5} fontSize="xs">
-                  En attente de validation
-                </Badge>
-              )}
             </Flex>
             <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight={900}
               color="gray.900" lineHeight="1.2" letterSpacing="-0.5px" mb={2}>
@@ -223,7 +224,7 @@ export default function OfferDetail() {
             <Text fontSize="xs" opacity={0.8} mb={0.5}>À partir de</Text>
             <Flex align="baseline" gap={1} justify="center">
               <Text fontSize="3xl" fontWeight={900} lineHeight={1}>
-                {Number(offer.price).toFixed(0)}
+                {offer.packages?.[0]?.price ? Number(offer.packages[0].price).toFixed(0) : offer.price ? Number(offer.price).toFixed(0) : "—"}
               </Text>
               <Text fontSize="sm" opacity={0.8}>TND</Text>
             </Flex>
@@ -241,11 +242,10 @@ export default function OfferDetail() {
             <Gallery images={offer.images} />
 
             {/* Quick specs strip */}
-            <Grid templateColumns={{ base: "1fr 1fr", md: "repeat(4,1fr)" }} gap={3}>
+            <Grid templateColumns={{ base: "1fr 1fr", md: "repeat(3,1fr)" }} gap={3}>
               {[
                 offer.duration && { icon: LuCalendar, label: "Durée", value: `${offer.duration} jour${offer.duration > 1 ? "s" : ""}` },
-                offer.max_persons && { icon: LuUsers, label: "Groupe max", value: `${offer.max_persons} pers.` },
-                offer.price && { icon: LuTag, label: "Prix / pers", value: `${Number(offer.price).toFixed(0)} TND` },
+                offer.packages?.length && { icon: LuTag, label: "Packages", value: `${offer.packages.length}` },
                 offer.type && { icon: LuCompass, label: "Type", value: meta.label },
               ].filter(Boolean).map(({ icon: Icon, label, value }) => (
                 <Flex key={label} align="center" gap={3} p={3}
@@ -367,16 +367,26 @@ export default function OfferDetail() {
                     Réserver cette offre
                   </Text>
                   <Text color="blue.100" fontSize="xs" mt={0.5}>
-                    Places limitées à {offer.max_persons ?? "—"} personnes
+                    {offer.packages?.length ? `${offer.packages.length} packages disponibles` : "À partir de"}
                   </Text>
                 </Box>
                 <VStack align="stretch" spacing={3} p={5}>
-                  <Flex justify="space-between" align="center">
-                    <Text fontSize="sm" color="gray.500">Prix par personne</Text>
-                    <Text fontSize="sm" fontWeight={700} color="gray.800">
-                      {Number(offer.price).toFixed(0)} TND
-                    </Text>
-                  </Flex>
+                  {offer.packages?.length > 0 && (
+                    <>
+                      <Flex justify="space-between" align="center">
+                        <Text fontSize="sm" color="gray.500">Prix min</Text>
+                        <Text fontSize="sm" fontWeight={700} color="gray.800">
+                          {Math.min(...offer.packages.map(p => p.price)).toFixed(0)} TND
+                        </Text>
+                      </Flex>
+                      <Flex justify="space-between" align="center">
+                        <Text fontSize="sm" color="gray.500">Prix max</Text>
+                        <Text fontSize="sm" fontWeight={700} color="gray.800">
+                          {Math.max(...offer.packages.map(p => p.price)).toFixed(0)} TND
+                        </Text>
+                      </Flex>
+                    </>
+                  )}
                   {offer.duration && (
                     <Flex justify="space-between" align="center">
                       <Text fontSize="sm" color="gray.500">Durée</Text>
@@ -385,17 +395,12 @@ export default function OfferDetail() {
                       </Text>
                     </Flex>
                   )}
-                  {offer.max_persons && (
-                    <Flex justify="space-between" align="center">
-                      <Text fontSize="sm" color="gray.500">Taille du groupe</Text>
-                      <Text fontSize="sm" fontWeight={700} color="gray.800">
-                        Max {offer.max_persons} pers.
-                      </Text>
-                    </Flex>
-                  )}
                   <Box borderTop="1px solid" borderColor="gray.100" pt={3}>
                     <Button w="full" h="46px" colorScheme="blue"
-                      borderRadius="xl" fontWeight={700}>
+                      borderRadius="xl" fontWeight={700}
+                      disabled={offerData?.offer?.packages.length > 0 ? false : true}
+                      onClick={() => setBookingDialogOpen(true)}
+                      isDisabled={!offer.packages?.length}>
                       <Flex align="center" gap={2}>
                         <LuCompass size={15} />
                         Réserver maintenant
@@ -409,7 +414,7 @@ export default function OfferDetail() {
               </Box>
 
               {/* Agency card */}
-              {agency && (
+              {offer.agencyOffer && (
                 <Box bg="white" borderRadius="2xl" overflow="hidden"
                   border="1px solid" borderColor="gray.100"
                   boxShadow="0 1px 8px rgba(0,0,0,0.05)">
@@ -424,18 +429,23 @@ export default function OfferDetail() {
 
                   <Box px={5} pb={5}>
                     <Flex align="flex-end" gap={3} mt={5} mb={4}>
-                      <Flex w="48px" h="48px" borderRadius="xl"
-                        bg="white" border="2.5px solid white"
-                        boxShadow="0 4px 12px rgba(0,0,0,0.12)"
-                        align="center" justify="center"
-                        color="blue.600" flexShrink={0}>
-                        <LuCompass size={20} />
-                      </Flex>
+                      {offer.agencyOffer.logo && (
+                        <Box w="48px" h="48px" borderRadius="xl"
+                          overflow="hidden"
+                          bg="white" border="2.5px solid white"
+                          boxShadow="0 4px 12px rgba(0,0,0,0.12)"
+                          flexShrink={0}>
+                          <Image
+                            src={`${imageURL}/services/${offer.agencyOffer.logo}`}
+                            w="100%" h="100%" objectFit="cover"
+                          />
+                        </Box>
+                      )}
                       <Box flex={1} pb={0.5}>
                         <Flex align="center" gap={1.5}>
                           <Text fontWeight={800} fontSize="md" color="gray.900"
                             noOfLines={1}>
-                            {agency.name}
+                            {offer.agencyOffer.name}
                           </Text>
                           <LuBadgeCheck size={14}
                             color="var(--chakra-colors-green-500)" />
@@ -443,15 +453,15 @@ export default function OfferDetail() {
                         <Flex align="center" gap={1} mt={0.5}>
                           <Box color="gray.400"><FaMapMarkerAlt size={9} /></Box>
                           <Text fontSize="xs" color="gray.400" noOfLines={1}>
-                            {agency.address}
+                            {offer.agencyOffer.address}
                           </Text>
                         </Flex>
                       </Box>
                     </Flex>
 
                     <VStack align="stretch" spacing={2} mb={4}>
-                      {agency.phone && (
-                        <Clipboard.Root value={agency.phone}>
+                      {offer.agencyOffer.phone && (
+                        <Clipboard.Root value={offer.agencyOffer.phone}>
                           <Clipboard.Trigger asChild>
                             <Flex cursor={"pointer"}
                               align="center" gap={2.5}
@@ -460,7 +470,7 @@ export default function OfferDetail() {
                               _hover={{ bg: "blue.50", borderColor: "blue.100" }}
                               transition="all 0.15s">
                               <Box color="gray.400"><FaPhone size={11} /></Box>
-                              <Text fontSize="sm" color="gray.600">{agency.phone}</Text>
+                              <Text fontSize="sm" color="gray.600">{offer.agencyOffer.phone}</Text>
                               <IconButton
                                 size="xs"
                                 variant="ghost"
@@ -468,13 +478,12 @@ export default function OfferDetail() {
                               >
                                 <Clipboard.Indicator />
                               </IconButton>
-
                             </Flex>
                           </Clipboard.Trigger>
                         </Clipboard.Root>
                       )}
-                      {agency.email && (
-                        <Clipboard.Root value={agency.email}>
+                      {offer.agencyOffer.email && (
+                        <Clipboard.Root value={offer.agencyOffer.email}>
                           <Clipboard.Trigger asChild>
                             <Flex cursor={"pointer"}
                               align="center" gap={2.5}
@@ -483,7 +492,7 @@ export default function OfferDetail() {
                               _hover={{ bg: "blue.50", borderColor: "blue.100" }}
                               transition="all 0.15s">
                               <Box color="gray.400"><Mail size={11} /></Box>
-                              <Text fontSize="sm" color="gray.600">{agency.email}</Text>
+                              <Text fontSize="sm" color="gray.600">{offer.agencyOffer.email}</Text>
                               <IconButton
                                 size="xs"
                                 variant="ghost"
@@ -491,13 +500,12 @@ export default function OfferDetail() {
                               >
                                 <Clipboard.Indicator />
                               </IconButton>
-
                             </Flex>
                           </Clipboard.Trigger>
                         </Clipboard.Root>
                       )}
-                      {agency.website && (
-                        <Flex as="a" href={agency.website} target="_blank"
+                      {offer.agencyOffer.website && (
+                        <Flex as="a" href={offer.agencyOffer.website} target="_blank"
                           align="center" gap={2.5}
                           bg="gray.50" borderRadius="lg" px={3} py={2}
                           border="1px solid" borderColor="gray.100"
@@ -505,19 +513,19 @@ export default function OfferDetail() {
                           transition="all 0.15s">
                           <Box color="gray.400"><FaGlobe size={11} /></Box>
                           <Text fontSize="sm" color="blue.500" noOfLines={1}>
-                            {agency.website}
+                            {offer.agencyOffer.website}
                           </Text>
                         </Flex>
                       )}
                     </VStack>
 
                     {/* Social links */}
-                    {(agency.facebook || agency.instagram || agency.twitter) && (
+                    {(offer.agencyOffer.facebook || offer.agencyOffer.instagram || offer.agencyOffer.twitter) && (
                       <Flex gap={2}>
-                        {agency.facebook && (
+                        {offer.agencyOffer.facebook && (
                           <Flex as="a"
-                            href={agency.facebook.startsWith("http")
-                              ? agency.facebook : `https://${agency.facebook}`}
+                            href={offer.agencyOffer.facebook.startsWith("http")
+                              ? offer.agencyOffer.facebook : `https://${offer.agencyOffer.facebook}`}
                             target="_blank"
                             flex={1} align="center" justify="center" gap={1.5}
                             h="34px" borderRadius="lg"
@@ -527,9 +535,9 @@ export default function OfferDetail() {
                             <FaFacebook size={12} />Facebook
                           </Flex>
                         )}
-                        {agency.instagram && (
+                        {offer.agencyOffer.instagram && (
                           <Flex as="a"
-                            href={`https://instagram.com/${agency.instagram.replace("@", "")}`}
+                            href={`https://instagram.com/${offer.agencyOffer.instagram.replace("@", "")}`}
                             target="_blank"
                             flex={1} align="center" justify="center" gap={1.5}
                             h="34px" borderRadius="lg"
@@ -539,9 +547,9 @@ export default function OfferDetail() {
                             <FaInstagram size={12} />Instagram
                           </Flex>
                         )}
-                        {agency.twitter && (
+                        {offer.agencyOffer.twitter && (
                           <Flex as="a"
-                            href={`https://x.com/${agency.twitter.replace("@", "")}`}
+                            href={`https://x.com/${offer.agencyOffer.twitter.replace("@", "")}`}
                             target="_blank"
                             flex={1} align="center" justify="center" gap={1.5}
                             h="34px" borderRadius="lg"
@@ -562,6 +570,9 @@ export default function OfferDetail() {
 
         </Grid>
       </Box>
+
+      {/* Booking Dialog */}
+      
     </>
   )
 }

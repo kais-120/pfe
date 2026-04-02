@@ -55,6 +55,10 @@ const Package = sequelize.define("packages", {
       type: DataTypes.FLOAT,
       allowNull: false,
     },
+    number_place: {
+      type: DataTypes.FLOAT,
+      allowNull: true,
+    },
 
     installment: {
       type: DataTypes.STRING,
@@ -64,9 +68,18 @@ const Package = sequelize.define("packages", {
       type: DataTypes.STRING,
     },
     deleted_at:{
-      type: DataTypes.STRING,
+      type: DataTypes.DATE,
+    },
+    offer_id:{
+      type:DataTypes.BIGINT,
+      allowNull:false,
+      references:{
+        model:"offers",
+        key:"id"
+      }
     }
-  },
-  pa
-)
+  },{
+  paranoid:true,
+  deletedAt:"deleted_at"
+})
 module.exports = Package;

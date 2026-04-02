@@ -1,5 +1,5 @@
 const { body, validationResult } = require("express-validator");
-const { Room, Booking, Hotel, User, Flight, Compagnie, FlightBookingDetails, FlightClasses, Vehicle, Location, CarRentalBookingDetails, Circuit, Voyage, CircuitBookingDetails, Offer, Agence, OfferBookingDetails } = require("../models");
+const { Room, Booking, Hotel, User, Flight, Compagnie, FlightBookingDetails, FlightClasses, Vehicle, Location, CarRentalBookingDetails, Circuit, Voyage, CircuitBookingDetails, Offer, Agence, OfferBookingDetails, Package, Destination } = require("../models");
 const HotelBookingDetails = require("../models/HotelBookingDetails");
 const Notification = require("../models/Notification");
 const { getIO } = require("../initSocket");
@@ -197,10 +197,8 @@ exports.BookingCircuit = [
 ]
 
 exports.BookingOffer = [
-    body("start_date").notEmpty().withMessage("start date is required")
-        .isDate().withMessage("pickup date should be date"),
-    body("number_of_participants").notEmpty().withMessage("number of participants is required")
-        .isNumeric().withMessage("number of participants should be numeric"),
+    body("package_id").notEmpty().withMessage("package is required")
+        .isNumeric().withMessage("package should be numeric"),
     body("price").notEmpty().withMessage("price is required")
         .isNumeric().withMessage("price should be numeric")
     , async (req, res) => {
@@ -210,7 +208,7 @@ exports.BookingOffer = [
         }
         try {
             const io = getIO()
-            const { start_date, number_of_participants,price } = req.body;
+            const { package_id,price } = req.body;
             const { id } = req.params;
             const offer = await Offer.findByPk(id,{
                 include:[{
@@ -223,12 +221,17 @@ exports.BookingOffer = [
             if(!offer){
                 return res.status(404).send({ message: "offer not found" })
             }
-            const end_date = new Date(start_date)
-            end_date.setDate(end_date.getDate() + offer.duration)
-
+            const package = await Package.findByPk(package_id);
+            if(!package){
+                return res.status(404).send({ message: "package not found" })
+            }
+            if(package.number_place === 0){
+                return res.status(400).send({ message: "the not place" })
+            }
             const client_id = req.userId;
             const booking = await Booking.create({ total_price:price, type: "agence de voyage", client_id });
-            await OfferBookingDetails.create({booking_id:booking.id,start_date,end_date,number_of_participants,offer_id:id})
+            await OfferBookingDetails.create({booking_id:booking.id,offer_id:id,package_id})
+            await package.update({number_place : package.number_place - 1})
             
             await Notification.create({ title: "Nouvelle réservation", message: "un client faire un réservation", type: "booking", user_id: offer.agencyOffer.partner_id })
             io.to(`partner-${offer.agencyOffer.partner_id}`).emit("newNotification");
@@ -281,6 +284,100 @@ exports.GetPartnerBookingHotel = async (req, res) => {
         return res.status(500).send({ message: "error server" })
     }
 }
+
+exports.GetPartnerBookingLocation = async (req, res) => {
+    try {
+        const partner_id = req.userId;
+        const bookings = await Booking.findAll({
+            order: [["createdAt", "DESC"]],
+            include: [
+                {
+                    model: CarRentalBookingDetails,
+                    as: "carDetails",
+                    required: true,
+                    include: [
+                        {
+                            model: Vehicle,
+                            as: "vehicleBooking",
+                            required: true,
+                            include: [
+                                {
+                                    model: Location,
+                                    as: "locationVehicle",
+                                    where: { partner_id },
+                                    required: true,
+                                    attributes: []
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    model: User,
+                    as: "userBooking"
+                }
+            ]
+        });
+        return res.send({ booking: bookings })
+
+    } catch (err) {
+        console.log(err)
+        return res.status(500).send({ message: "error server" })
+    }
+}
+
+exports.GetPartnerBookingAgency = async (req, res) => {
+    try {
+        const partner_id = req.userId;
+        const bookings = await Booking.findAll({
+            order: [["createdAt", "DESC"]],
+            include: [
+                {
+                    model: OfferBookingDetails,
+                    as: "offerBooking",
+                    required: true,
+                    include: [
+                        {
+                            model:Package,
+                            as:"bookingPackageOffer",
+                            include:[
+                                {
+                                    model:Destination,
+                                    as:"destination"
+                                }
+                            ]
+                        },
+                        {
+                            model: Offer,
+                            as: "bookingDetailsOffer",
+                            required: true,
+                            include: [
+                                {
+                                    model: Agence,
+                                    as: "agencyOffer",
+                                    where: { partner_id },
+                                    required: true,
+                                    attributes: []
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    model: User,
+                    as: "userBooking"
+                }
+            ]
+        });
+        return res.send({ booking: bookings })
+
+    } catch (err) {
+        console.log(err)
+        return res.status(500).send({ message: "error server" })
+    }
+}
+
+
 exports.GetClientBooking = async (req, res) => {
     try {
         const client_id = req.userId;

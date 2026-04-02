@@ -24,11 +24,11 @@ const CarRentalBookingDetails = sequelize.define("car_rental_booking_details",{
         },
         onDelete:'CASCADE',
     },
-    car_id:{
+    vehicle_id:{
         type:DataTypes.BIGINT,
-        allowNull:false,
+        allowNull:true,
         references:{
-            model:"locations",
+            model:"vehicles",
             key:"id"
         },
         onDelete:'CASCADE',

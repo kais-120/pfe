@@ -11,8 +11,8 @@ const NAV_LINKS = [
   { name: "Hôtels",path: "/",icon: FaHotel},
   { name: "Vols",path: "/airline",icon: FaPlane},
   { name: "Location de voiture", path: "/location",icon: FaCar},
-  { name: "Agences",path: "/agency",  icon: FaGlobe},
-  { name: "Offres",path: "/voyage",icon: FaTags},
+  { name: "Voyages/Omra",path: "/agency",  icon: FaGlobe},
+  { name: "Circuits",path: "/voyage",icon: FaTags},
 ]
 
 const getDashboardLink = (role) => {

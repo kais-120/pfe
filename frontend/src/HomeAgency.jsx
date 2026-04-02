@@ -14,6 +14,7 @@ import {
 } from "react-icons/lu"
 import Header from "./components/home/Header"
 import { Axios, imageURL } from "./Api/Api"
+import { Helmet } from "react-helmet"
 
 const TYPE_META = {
   circuit: { color: "blue", label: "Circuit" },
@@ -164,7 +165,11 @@ function OfferCard({ offer, agency }) {
             bg="blue.50" color="blue.500"
             align="center" justify="center"
             border="1px solid" borderColor="blue.100">
-            <LuCompass size={15} />
+              {agency.logo ? 
+              <Image src={`${imageURL}/services/${agency.logo}`} alt="logo"/>  
+              :
+              <LuCompass size={15} />
+            }
           </Flex>
           <Box flex={1} minW={0}>
             <Flex align="center" gap={1.5}>
@@ -221,7 +226,7 @@ function OfferCard({ offer, agency }) {
             <Text fontSize="xs" color="gray.400">À partir de</Text>
             <Flex align="baseline" gap={1}>
               <Text fontSize="xl" fontWeight={900} color="blue.600" lineHeight="1.2">
-                {Number(offer.price).toFixed(0)}
+                {  offer?.packages?.length > 0 ? Math.min(...offer?.packages?.map(p => p.price)).toFixed(0) : "100"}
               </Text>
               <Text fontSize="xs" color="gray.500">TND / pers.</Text>
             </Flex>
@@ -238,7 +243,6 @@ function OfferCard({ offer, agency }) {
   )
 }
 
-/* ── Card skeleton ──────────────────────────────────────────────── */
 function CardSkeleton() {
   return (
     <Box bg="white" borderRadius="2xl" overflow="hidden"
@@ -301,9 +305,8 @@ export default function HomeAgency() {
 
   return (
     <>
+    <Helmet title="Voyage et Omra"></Helmet>
       <Header />
-
-      {/* ── Hero ── */}
       <Box
         bg="linear-gradient(160deg, #0D1B3E 0%, #1A3260 50%, #0D1B3E 100%)"
         py={14} px={4}>

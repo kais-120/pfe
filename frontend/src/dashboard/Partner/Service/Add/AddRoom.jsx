@@ -13,12 +13,12 @@ import {
 } from "react-icons/lu";
 
 const validationSchema = Yup.object({
-  name:              Yup.string().required("Le nom de chambre est requis"),
-  capacity:          Yup.number().required("La capacité est requise").positive("Doit être positif"),
-  price_by_day:      Yup.number().required("Le prix par jour est requis").positive("Doit être positif"),
-  price_by_adult:    Yup.number().required("Le prix par adulte est requis").positive("Doit être positif"),
+  name: Yup.string().required("Le nom de chambre est requis"),
+  capacity: Yup.number().required("La capacité est requise").positive("Doit être positif"),
+  price_by_day: Yup.number().required("Le prix par jour est requis").positive("Doit être positif"),
+  price_by_adult: Yup.number().required("Le prix par adulte est requis").positive("Doit être positif"),
   price_by_children: Yup.number().required("Le prix par enfant est requis").min(0, "Doit être ≥ 0"),
-  count:             Yup.number().required("Le nombre de chambres est requis").positive("Doit être positif"),
+  count: Yup.number().required("Le nombre de chambres est requis").positive("Doit être positif"),
 });
 
 /* ── Reusable field wrapper ─────────────────────────────────────── */
@@ -167,8 +167,8 @@ const AddRoom = () => {
               <Box gridColumn={{ sm: "1 / -1" }}>
                 <FormField formik={formik} name="name" label="Nom de la chambre" icon={LuBed} />
               </Box>
-              <FormField formik={formik} name="capacity"   label="Capacité"           type="number" icon={LuUsers} suffix="pers." />
-              <FormField formik={formik} name="count"      label="Nombre de chambres" type="number" icon={LuHash}  suffix="unités" />
+              <FormField formik={formik} name="capacity" label="Capacité" type="number" icon={LuUsers} suffix="pers." />
+              <FormField formik={formik} name="count" label="Nombre de chambres" type="number" icon={LuHash} suffix="unités" />
             </Grid>
           </Box>
 
@@ -189,9 +189,9 @@ const AddRoom = () => {
             </Flex>
 
             <Grid templateColumns={{ base: "1fr", sm: "1fr 1fr 1fr" }} gap={4}>
-              <FormField formik={formik} name="price_by_day"      label="Prix / nuit"   type="number" icon={LuBanknote} suffix="TND" />
-              <FormField formik={formik} name="price_by_adult"    label="Prix / adulte" type="number" icon={LuUsers}    suffix="TND" />
-              <FormField formik={formik} name="price_by_children" label="Prix / enfant" type="number" icon={LuBaby}     suffix="TND" />
+              <FormField formik={formik} name="price_by_day" label="Prix / nuit" type="number" icon={LuBanknote} suffix="TND" />
+              <FormField formik={formik} name="price_by_adult" label="Prix / adulte" type="number" icon={LuUsers} suffix="TND" />
+              <FormField formik={formik} name="price_by_children" label="Prix / enfant" type="number" icon={LuBaby} suffix="TND" />
             </Grid>
 
             {/* Price preview */}

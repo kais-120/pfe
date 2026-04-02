@@ -25,20 +25,12 @@ const Offer = sequelize.define(
       allowNull: false,
     },
 
-    price: {
-      type: DataTypes.DECIMAL(10, 2),
-      allowNull: false,
-    },
 
     duration: {
       type: DataTypes.INTEGER,
       allowNull: true,
     },
 
-    max_persons: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-    },
 
     description: {
       type: DataTypes.TEXT,

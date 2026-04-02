@@ -54,6 +54,7 @@ import SearchFlights from "./Pages/Search/SearchFlights";
 import SearchLocation from "./Pages/Search/SearchLocation";
 import PackagesList from "./dashboard/Partner/Service/Add/PackagesList";
 import AddPackage from "./dashboard/Partner/Service/Add/AddPackage";
+import PackagesDialog from "./Pages/ServiceInfo/PackagesDialog";
 
 function App() {
   return (
@@ -61,7 +62,7 @@ function App() {
   <Toaster />
     <Routes>
       <Route path="/add/package" element={<AddPackage />} />
-      <Route path="/package" element={<PackagesList />} />
+      <Route path="/package" element={<PackagesDialog />} />
   <Route path="/setting" element={<Settings/>} />
   <Route path="/test" element={<Test/>} />
   <Route path="/search/hotel" element={<SearchHotels/>} />

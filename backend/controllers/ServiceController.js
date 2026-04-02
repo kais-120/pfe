@@ -8,6 +8,9 @@ const Flight = require("../models/Flight");
 const FlightClasses = require("../models/FlightClasses");
 const { Op } = require("sequelize");
 const { default: axios } = require("axios");
+const Package = require("../models/Package");
+const Destination = require("../models/Destination");
+const sequelize = require("../configs/db");
 
 exports.GetPublicHotel = async (req, res) => {
   try {
@@ -186,7 +189,7 @@ exports.GetSearchRooms = [
 
         const room = hotel.rooms.find(r => r.capacity >= guests && !availableRooms.includes(r.id));
 
-        if (!room) return false; 
+        if (!room) return false;
 
         const pricePerNight =
           room.price_by_day +
@@ -475,9 +478,9 @@ exports.SearchVehicle = [
         return res.status(404).json({ message: "Location not found" });
 
       let vehicles = await Vehicle.findAll({
-        include:[{
-          model:Location,
-          as:"locationVehicle"
+        include: [{
+          model: Location,
+          as: "locationVehicle"
         }],
         where: {
           location_id: location.id,
@@ -506,7 +509,7 @@ exports.SearchVehicle = [
       const images = await ImageService.findAll({
         where: {
           type: "vehicle",
-          service_id: { [Op.in]: vehicles.map(v => v.id) } 
+          service_id: { [Op.in]: vehicles.map(v => v.id) }
         }
       });
 
@@ -797,6 +800,18 @@ exports.GetPublicAgency = async (req, res) => {
           model: Offer,
           as: "offers",
           required: true,
+          include: [
+            {
+              model: Package,
+              as: "packages",
+              include: [
+                {
+                  model: Destination,
+                  as: "destination"
+                }
+              ]
+            }
+          ]
         }
       ]
     });
@@ -843,6 +858,16 @@ exports.GetOfferById = async (req, res) => {
         {
           model: Agence,
           as: "agencyOffer"
+        },
+        {
+          model: Package,
+          as: "packages",
+          include: [
+            {
+              model: Destination,
+              as: "destination"
+            }
+          ]
         }
       ]
     });
@@ -917,22 +942,15 @@ exports.AddOffer = [
   body("title").notEmpty().withMessage("title is required"),
   body("type").notEmpty().withMessage("type is required"),
   body("destination").notEmpty().withMessage("destination is required"),
-  body("price").isNumeric().withMessage("price must be a number"),
-
   body("duration").isInt({ min: 1 }).withMessage("duration is required"),
-  body("max_persons").isInt({ min: 1 }).withMessage("max_persons is required"),
-
   body("description").notEmpty().withMessage("description is required"),
-
   body("included").notEmpty().withMessage("included is required"),
   body("not_included").notEmpty().withMessage("not_included is required"),
 
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res
-        .status(422)
-        .send({ errors: errors.array().map((e) => e.msg) });
+      return res.status(422).send({ errors: errors.array().map((e) => e.msg) });
     }
 
     try {
@@ -946,31 +964,40 @@ exports.AddOffer = [
         description,
       } = req.body;
 
-      let included;
-      let not_included;
+      // ───── Parse JSON fields ─────
+      let included = [];
+      let not_included = [];
+      let packages = [];
 
       try {
-        included = JSON.parse(req.body.included);
+        included = JSON.parse(req.body.included || "[]");
         if (!Array.isArray(included)) throw new Error();
       } catch {
-        return res.status(400).send({ message: "included must be a JSON array" });
+        return res.status(400).json({ message: "included must be array" });
       }
 
       try {
-        not_included = JSON.parse(req.body.not_included);
+        not_included = JSON.parse(req.body.not_included || "[]");
         if (!Array.isArray(not_included)) throw new Error();
       } catch {
-        return res
-          .status(400)
-          .send({ message: "not_included must be a JSON array" });
+        return res.status(400).json({ message: "not_included must be array" });
       }
-      const userId = req.userId;
+
+      try {
+        packages = JSON.parse(req.body.packages || "[]");
+        if (!Array.isArray(packages)) throw new Error();
+      } catch {
+        return res.status(400).json({ message: "packages must be array" });
+      }
+
+      // ───── Get agency ─────
       const agency = await Agence.findOne({
-        where: { partner_id: userId },
+        where: { partner_id: req.userId },
       });
-      if (!agency) {
-        return res.status(404).json({ message: "agency not found" });
-      }
+
+      if (!agency) return res.status(404).json({ message: "agency not found" });
+
+      // ───── Create Offer ─────
       const offer = await Offer.create({
         title,
         type,
@@ -981,23 +1008,60 @@ exports.AddOffer = [
         description,
         included,
         not_included,
-        agency_id: agency.id
+        agency_id: agency.id,
       });
-      const files = req.files.service_doc;
-      for (const element of files) {
+      console.log(offer.id)
+
+      // ───── Create Packages + Destinations ─────
+      for (const pkg of packages) {
+        const createdPackage = await Package.create({
+          title: pkg.title,
+          month: pkg.month,
+          year: Number(pkg.year),
+          type: pkg.type,
+          departureDate: pkg.departureDate,
+          departureTime: pkg.departureTime,
+          departureAirport: pkg.departureAirport,
+          returnDate: pkg.returnDate,
+          returnTime: pkg.returnTime,
+          returnAirport: pkg.returnAirport,
+          price: pkg.price,
+          number_place: pkg.seats,
+          installment: pkg.installment,
+          offer_id: offer.id,
+        });
+
+        if (pkg.destinations && pkg.destinations.length > 0) {
+          const destinationsData = pkg.destinations.map((d) => ({
+            name: d.name,
+            rating: d.rating || 3,
+            nights: d.nights || 1,
+            package_id: createdPackage.id,
+          }));
+
+          await Destination.bulkCreate(destinationsData);
+        }
+      }
+
+      // ───── Upload images ─────
+      const files = req.files?.service_doc || [];
+
+      for (const file of files) {
         await ImageService.create({
-          image_url: element.filename,
+          image_url: file.filename,
           type: "offer",
-          service_id: offer.id
+          service_id: offer.id,
         });
       }
+
       return res.status(201).json({
-        message: "Offer created successfully",
+        message: "Offer created with packages successfully",
         offer,
       });
+
     } catch (err) {
-      console.log(err);
-      return res.status(500).send({ message: "server error" });
+      console.error(err);
+      return res.status(500).json({ message: "server error" });
     }
   },
 ];
@@ -1161,78 +1225,78 @@ exports.GetSearchAirline = [
       } = req.body;
 
 
-if (type === "aller retour") {
-  const startReturn = new Date(`${dateReturnFlight}T00:00:00+01:00`);
-  const endReturn = new Date(`${dateReturnFlight}T23:59:59+01:00`);
-  const start = new Date(`${dateFlight}T00:00:00+01:00`);
-    const end = new Date(`${dateFlight}T23:59:59+01:00`);
-  const flights = await Compagnie.findAll({
-    include: [
-      {
-        model: Flight,
-        as: "FlightCompagnie",
-        required: true,
-        where: {
-          departure_airport: from,   
-          arrival_airport: to,   
-          arrival: {             
-            [Op.between]: [startReturn, endReturn]
-          },
-          departure:{
-            [Op.between]: [start, end]
-          }
-        },
-        include: [
-            {
-              model: FlightClasses,
-              as: "flightClasses",
-              where: {
-                class_name: flightClass,
-                seats_available: {
-                  [Op.gte]: number
-                }
-              }
-            }
-          ]
-      }
-    ]
-  });
-  res.send({message:"flights found",flights})
-}else{
-      const start = new Date(`${dateFlight}T00:00:00+01:00`);
-      const end = new Date(`${dateFlight}T23:59:59+01:00`);
-
-      const flights = await Compagnie.findAll({
-      include: [
-        {
-          model: Flight,
-          as: "FlightCompagnie",
-          required: true,
-          where: {
-            departure_airport: from,
-            arrival_airport: to,
-            departure: {
-              [Op.between]: [start, end]
-            }
-          },
+      if (type === "aller retour") {
+        const startReturn = new Date(`${dateReturnFlight}T00:00:00+01:00`);
+        const endReturn = new Date(`${dateReturnFlight}T23:59:59+01:00`);
+        const start = new Date(`${dateFlight}T00:00:00+01:00`);
+        const end = new Date(`${dateFlight}T23:59:59+01:00`);
+        const flights = await Compagnie.findAll({
           include: [
             {
-              model: FlightClasses,
-              as: "flightClasses",
+              model: Flight,
+              as: "FlightCompagnie",
+              required: true,
               where: {
-                class_name: flightClass,
-                seats_available: {
-                  [Op.gte]: number
+                departure_airport: from,
+                arrival_airport: to,
+                arrival: {
+                  [Op.between]: [startReturn, endReturn]
+                },
+                departure: {
+                  [Op.between]: [start, end]
                 }
-              }
+              },
+              include: [
+                {
+                  model: FlightClasses,
+                  as: "flightClasses",
+                  where: {
+                    class_name: flightClass,
+                    seats_available: {
+                      [Op.gte]: number
+                    }
+                  }
+                }
+              ]
             }
           ]
-        }
-      ]
-    });
-  res.send({message:"flights found",flights})
+        });
+        res.send({ message: "flights found", flights })
+      } else {
+        const start = new Date(`${dateFlight}T00:00:00+01:00`);
+        const end = new Date(`${dateFlight}T23:59:59+01:00`);
 
-}
+        const flights = await Compagnie.findAll({
+          include: [
+            {
+              model: Flight,
+              as: "FlightCompagnie",
+              required: true,
+              where: {
+                departure_airport: from,
+                arrival_airport: to,
+                departure: {
+                  [Op.between]: [start, end]
+                }
+              },
+              include: [
+                {
+                  model: FlightClasses,
+                  as: "flightClasses",
+                  where: {
+                    class_name: flightClass,
+                    seats_available: {
+                      [Op.gte]: number
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        });
+        res.send({ message: "flights found", flights })
+
+      }
     } catch (err) {
       console.log(err);
       return res.status(500).send({ message: "server error" });
@@ -1345,7 +1409,7 @@ exports.AddFlight = [
 
       if (typeof classes === "string") classes = JSON.parse(classes);
       if (typeof seatsClasses === "string") seatsClasses = JSON.parse(seatsClasses);
-      const airline = await Compagnie.findOne({where: {partner_id} });
+      const airline = await Compagnie.findOne({ where: { partner_id } });
 
 
       const flight = await Flight.create({

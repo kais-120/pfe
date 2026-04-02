@@ -1,20 +1,69 @@
 import {
     Container, Input, Button,
     VStack, Grid, Flex, Text, Box,
-    Select, HStack, Textarea,
-    IconButton, Badge,
+    HStack, Textarea,
+    IconButton,
     Portal,
     createListCollection,
+    Select,
+    DatePicker,
+    parseDate,
 } from "@chakra-ui/react"
 import {
-    LuChevronLeft, LuChevronRight, LuPlus, LuX,
-    LuMapPin, LuCalendar, LuPlaneTakeoff, LuCheck,
-    LuGlobe, LuBanknote,
+    LuPlus, LuX,
+    LuPlaneTakeoff,
+    LuCalendar,
 } from "react-icons/lu"
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import React, { useState } from "react"
+import { useFormik } from "formik"
+import * as Yup from "yup"
 
-/* ── Constants ─────────────────────────────────────────────────────── */
+// ── Validation Schema ────────────────────────────────────────────────
+const validationSchema = Yup.object({
+    title: Yup.string().trim().required("Le titre est requis"),
+    month: Yup.string().required("Le mois est requis"),
+    year: Yup.string().required("L'année est requise"),
+    type: Yup.string().required("Le type de voyage est requis"),
+
+    departureDate: Yup.string().required("La date de départ est requise"),
+    returnDate: Yup.string()
+        .required("La date de retour est requise")
+        .test(
+            "after-departure",
+            "La date de retour doit être après le départ",
+            function (value) {
+                const { departureDate } = this.parent
+                if (!departureDate || !value) return true
+                return new Date(value) > new Date(departureDate)
+            }
+        ),
+    departureTime: Yup.string(),
+    returnTime: Yup.string(),
+    departureAirport: Yup.string(),
+    returnAirport: Yup.string(),
+    destinations: Yup.array().of(
+        Yup.object({
+            name: Yup.string().trim().required("Le nom de l'hôtel est requis"),
+            nights: Yup.number()
+                .typeError("Doit être un nombre")
+                .min(1, "Minimum 1 nuit")
+                .required("Le nombre de nuits est requis"),
+            rating: Yup.number().min(1).max(5),
+        })
+    ),
+
+    price: Yup.number()
+        .typeError("Le prix doit être un nombre")
+        .min(1, "Le prix doit être supérieur à 0")
+        .required("Le prix est requis"),
+    seats: Yup.number()
+        .typeError("Le nombre de places doit être un nombre")
+        .min(1, "Minimum 1 place")
+        .required("Le nombre de places est requis"),
+    installment: Yup.string(),
+})
+
+// ── Constants ────────────────────────────────────────────────────────
 const MONTHS = [
     "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
     "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
@@ -32,51 +81,7 @@ const BLUE = "blue.500"
 const BLUE_DARK = "blue.700"
 const BLUE_GLOW = "blue.200"
 
-function StepBar({ current }) {
-    const steps = ["Informations", "Vols & Hôtels", "Prix & Options"]
-    return (
-        <Flex align="center" mb={10}>
-            {steps.map((label, i) => {
-                const n = i + 1
-                const done = n < current
-                const active = n === current
-                return (
-                    <Flex key={n} align="center" flex={n < steps.length ? 1 : "none"}>
-                        <VStack gap={1} align="center" flexShrink={0}>
-                            <Flex
-                                w="30px" h="30px" borderRadius="full"
-                                align="center" justify="center"
-                                fontSize="12px" fontWeight={700}
-                                bg={done || active ? BLUE : "gray.100"}
-                                color={done || active ? "white" : "gray.400"}
-                                boxShadow={active ? `0 0 0 4px ${BLUE_GLOW}` : "none"}
-                                transition="all 0.3s"
-                            >
-                                {done ? <LuCheck size={13} /> : n}
-                            </Flex>
-                            <Text
-                                fontSize="11px" fontWeight={600}
-                                color={active ? BLUE : done ? "gray.600" : "gray.400"}
-                                whiteSpace="nowrap"
-                            >
-                                {label}
-                            </Text>
-                        </VStack>
-                        {n < steps.length && (
-                            <Box
-                                flex={1} h="2px" mx={3} mt="-14px"
-                                bg={done ? BLUE : "gray.200"}
-                                transition="background 0.3s"
-                            />
-                        )}
-                    </Flex>
-                )
-            })}
-        </Flex>
-    )
-}
-
-/* ── Section Card ──────────────────────────────────────────────────── */
+// ── Section Card ─────────────────────────────────────────────────────
 function SectionCard({ title, children }) {
     return (
         <Box
@@ -93,26 +98,34 @@ function SectionCard({ title, children }) {
     )
 }
 
-function Field({ label, required, children }) {
+// ── Field wrapper with label + error ─────────────────────────────────
+function Field({ label, required, error, children }) {
     return (
         <VStack align="stretch" gap={1.5}>
-            <Text fontSize="11px" fontWeight={700} color="gray.600" textTransform="uppercase" letterSpacing="0.06em">
-                {label}{required && <Text as="span" color={"red.500"} ml={0.5}>*</Text>}
+            <Text
+                fontSize="11px" fontWeight={700} color="gray.600"
+                textTransform="uppercase" letterSpacing="0.06em"
+            >
+                {label}
+                {required && <Text as="span" color="red.500" ml={0.5}>*</Text>}
             </Text>
             {children}
+            {error && (
+                <Text fontSize="11px" color="red.500" mt={0.5}>
+                    {error}
+                </Text>
+            )}
         </VStack>
     )
 }
 
-/* ── Star Rating ───────────────────────────────────────────────────── */
+// ── Star Rating ───────────────────────────────────────────────────────
 function StarRating({ value, onChange }) {
     return (
         <HStack gap={1}>
             {[1, 2, 3, 4, 5].map((s) => (
                 <Text
-                    key={s}
-                    fontSize="20px"
-                    cursor="pointer"
+                    key={s} fontSize="20px" cursor="pointer"
                     color={s <= value ? "#F59E0B" : "gray.200"}
                     onClick={() => onChange(s)}
                     transition="transform 0.1s"
@@ -126,147 +139,204 @@ function StarRating({ value, onChange }) {
     )
 }
 
-function DestinationRow({ dest, index, onChange, onRemove }) {
-    return (
-        <Box
-            bg="gray.50" borderRadius="xl" p={4}
-            border="1px solid" borderColor="gray.100"
+// ── Destination Row ───────────────────────────────────────────────────
+const DestinationRow = React.memo(function DestinationRow({
+  dest,
+  index,
+  onChange,
+  onRemove,
+  errors,
+  touched,
+}) {
+  const nameError = touched?.name && errors?.name
+  const nightsError = touched?.nights && errors?.nights
+
+  return (
+    <Box
+      bg="gray.50"
+      borderRadius="xl"
+      p={4}
+      border="1px solid"
+      borderColor={nameError || nightsError ? "red.200" : "gray.100"}
+    >
+      <Grid
+        templateColumns={{ base: "1fr", md: "1fr auto auto auto" }}
+        gap={4}
+        alignItems="end"
+      >
+        {/* Name */}
+        <Field label="Hôtel / Destination" error={nameError}>
+          <Input
+            name={`destinations[${index}].name`}
+            value={dest.name}
+            onChange={(e) => onChange(index, "name", e.target.value)}
+            placeholder="ex: Swissotel Makkah 5*"
+            borderRadius="lg"
+            border="1.5px solid"
+            borderColor={nameError ? "red.300" : "gray.200"}
+            fontSize="sm"
+          />
+        </Field>
+
+        {/* Stars */}
+        <Field label="Étoiles">
+          <StarRating
+            value={dest.rating}
+            onChange={(val) => onChange(index, "rating", val)}
+          />
+        </Field>
+
+        {/* Nights */}
+        <Field label="Nuits" error={nightsError}>
+          <Input
+            name={`destinations[${index}].nights`}
+            value={dest.nights}
+            type="number"
+            min={1}
+            onChange={(e) => onChange(index, "nights", e.target.value)}
+            w="80px"
+            borderRadius="lg"
+            border="1.5px solid"
+            borderColor={nightsError ? "red.300" : "gray.200"}
+            fontSize="sm"
+            textAlign="center"
+          />
+        </Field>
+
+        {/* Delete */}
+        <IconButton
+          aria-label="Supprimer"
+          variant="outline"
+          size="sm"
+          borderRadius="lg"
+          borderColor="gray.200"
+          color="gray.400"
+          alignSelf="flex-end"
+          _hover={{ borderColor: "red.400", color: "red.500", bg: "red.50" }}
+          onClick={() => onRemove(index)}
         >
-            <Grid templateColumns={{ base: "1fr", md: "1fr auto auto auto" }} gap={4} alignItems="end">
-                <Field label="Hôtel / Destination">
-                    <Input
-                        value={dest.name}
-                        onChange={(e) => onChange(index, "name", e.target.value)}
-                        placeholder="ex: Swissotel Makkah 5*"
-                        borderRadius="lg" border="1.5px solid" borderColor="gray.200"
-                        fontSize="sm" _focus={{ borderColor: "blue.400", boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" }}
-                    />
-                </Field>
-                <Field label="Étoiles">
-                    <StarRating
-                        value={dest.rating}
-                        onChange={(val) => onChange(index, "rating", val)}
-                    />
-                </Field>
-                <Field label="Nuits">
-                    <Input
-                        value={dest.nights} min={1}
-                        onChange={(val) => onChange(index, "nights", +val)}
-                        w="80px"
-                         borderRadius="lg" border="1.5px solid" borderColor="gray.200"
-                        fontSize="sm" textAlign="center"
-                    _focus={{ borderColor: "blue.400", boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" }}
-                    />
-                       
-                    
-                </Field>
-                <IconButton
-                    aria-label="Remove"
-                    variant="outline"
-                    size="sm"
-                    borderRadius="lg"
-                    borderColor="gray.200"
-                    color="gray.400"
-                    alignSelf="flex-end"
-                    _hover={{ borderColor: "red.400", color: "red.500", bg: "red.50" }}
-                    onClick={() => onRemove(index)}
-                ><LuX size={14} /></IconButton>
-            </Grid>
-        </Box>
-    )
-}
+          <LuX size={14} />
+        </IconButton>
+      </Grid>
+    </Box>
+  )
+})
 
-/* ── Nav Buttons ───────────────────────────────────────────────────── */
-function NavButtons({ onBack, onNext, nextLabel = "Suivant", backLabel = "Retour" }) {
-    return (
-        <Flex justify="flex-end" gap={3} mt={2}>
-            {onBack && (
-                <Button
-                    variant="outline" borderRadius="xl" fontWeight={600} fontSize="sm"
-                    borderColor="gray.200" color="gray.600"
-                    _hover={{ borderColor: "gray.400", color: "gray.900" }}
-                    onClick={onBack}
-                    leftIcon={<LuChevronLeft size={14} />}
-                >
-                    {backLabel}
-                </Button>
-            )}
-            <Button
-                bg={BLUE} color="white" borderRadius="xl" fontWeight={700} fontSize="sm"
-                px={6}
-                _hover={{ bg: BLUE_DARK, transform: "translateY(-2px)", boxShadow: `0 4px 12px ${BLUE_GLOW}` }}
-                transition="all 0.2s"
-                onClick={onNext}
-                rightIcon={<LuChevronRight size={14} />}
-            >
-                {nextLabel}
-            </Button>
-        </Flex>
-    )
-}
 
-function Step1({ form, setForm, onNext }) {
+// ── Shared input style ────────────────────────────────────────────────
+const inputStyle = (hasError) => ({
+    borderRadius: "lg",
+    border: "1.5px solid",
+    borderColor: hasError ? "red.300" : "gray.200",
+    fontSize: "sm",
+    _focus: { borderColor: "blue.400", boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" },
+})
+
+// ── Main Component ────────────────────────────────────────────────────
+const AddPackage = ({ ontTab, onChange }) => {
+    const formik = useFormik({
+        initialValues: {
+            title: "",
+            month: "",
+            year: "2026",
+            type: "haj",
+            departureDate: "",
+            departureTime: "11:40",
+            departureAirport: "",
+            returnDate: "",
+            returnTime: "06:25",
+            returnAirport: "",
+            destinations: [],
+            price: "",
+            seats: "",
+            installment: "6X",
+        },
+        validationSchema,
+        onSubmit: async (values) => {
+            try {
+                console.log("Package published:", values)
+                onChange((prev) => [
+                    ...prev,
+                    { ...values, id: prev.length + 1 }
+                ])
+                ontTab("list")
+            } catch {
+                console.error("error")
+            }
+        },
+    })
+
+    const { values, errors, touched, handleChange, handleBlur, setFieldValue, setFieldTouched, handleSubmit, isSubmitting } = formik
 
     const monthsCollection = createListCollection({
         items: [
             { label: "Sélectionner un mois", value: "" },
-            ...MONTHS.map((m) => ({
-                label: m,
-                value: m,
-            })),
+            ...MONTHS.map((m) => ({ label: m, value: m })),
         ],
     })
+
     const yearsCollection = createListCollection({
-        items: [2026, 2027, 2028].map((y) => ({
-            label: y.toString(),
-            value: y.toString(),
-        })),
+        items: [2026, 2027, 2028].map((y) => ({ label: y.toString(), value: y.toString() })),
     })
+
+    const monthsMap = {
+        Janvier: 0, Février: 1, Mars: 2, Avril: 3, Mai: 4, Juin: 5,
+        Juillet: 6, Août: 7, Septembre: 8, Octobre: 9, Novembre: 10, Décembre: 11,
+    }
+    const year = Number(values.year)
+    const monthIndex = monthsMap[values.month]
+    const minDate = monthIndex !== undefined ? parseDate(new Date(year, monthIndex, 1)) : undefined
+    const maxDate = monthIndex !== undefined ? parseDate(new Date(year, monthIndex + 1, 0)) : undefined
+
+    const updateDest = (i, key, val) => {
+        if (key === "__blur_name") { setFieldTouched(`destinations[${i}].name`, true); return }
+        if (key === "__blur_nights") { setFieldTouched(`destinations[${i}].nights`, true); return }
+        const updated = values.destinations.map((d, idx) => idx === i ? { ...d, [key]: val } : d)
+        setFieldValue("destinations", updated)
+    }
+
+    const addDest = () => {
+        setFieldValue("destinations", [...values.destinations, { name: "", rating: 3, nights: 3 }])
+    }
+
+    const removeDest = (i) => {
+        setFieldValue("destinations", values.destinations.filter((_, idx) => idx !== i))
+    }
+
     return (
-        <>
+        <Container maxW="860px" py={8} px={{ base: 4, md: 8 }}>
+
+            {/* ── Section 1: Informations générales ── */}
             <SectionCard title="Informations générales">
                 <VStack align="stretch" gap={4}>
-                    <Field label="Titre du package" required>
+                    <Field label="Titre du package" required error={touched.title && errors.title}>
                         <Input
-                            value={form.title}
-                            onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))}
+                            name="title"
+                            value={values.title}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
                             placeholder="ex: Umrah Premium - Medine & Makkah"
-                            borderRadius="lg" border="1.5px solid" borderColor="gray.200"
-                            fontSize="sm"
-                            _focus={{ borderColor: "blue.400", boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" }}
+                            {...inputStyle(touched.title && errors.title)}
                         />
                     </Field>
 
                     <Grid templateColumns={{ base: "1fr", sm: "1fr 1fr" }} gap={4}>
-                        <Field label="Mois" required>
+                        <Field label="Mois" required error={touched.month && errors.month}>
                             <Select.Root
                                 collection={monthsCollection}
-                                value={[form.month]}
-                                onValueChange={(e) =>
-                                    setForm((f) => ({ ...f, month: e.value[0] }))
-                                }
+                                value={[values.month]}
+                                onValueChange={(e) => {
+                                    setFieldValue("month", e.value[0])
+
+                                }}
                             >
                                 <Select.HiddenSelect />
-
                                 <Select.Control>
-                                    <Select.Trigger
-                                        borderRadius="lg"
-                                        border="1.5px solid"
-                                        borderColor="gray.200"
-                                        fontSize="sm"
-                                        _focus={{
-                                            borderColor: "blue.400",
-                                            boxShadow: "0 0 0 3px rgba(49,130,206,0.12)",
-                                        }}
-                                    >
+                                    <Select.Trigger {...inputStyle(touched.month && errors.month)}>
                                         <Select.ValueText placeholder="Sélectionner un mois" />
                                     </Select.Trigger>
-
-                                    <Select.IndicatorGroup>
-                                        <Select.Indicator />
-                                    </Select.IndicatorGroup>
+                                    <Select.IndicatorGroup><Select.Indicator /></Select.IndicatorGroup>
                                 </Select.Control>
-
                                 <Portal>
                                     <Select.Positioner>
                                         <Select.Content>
@@ -281,35 +351,22 @@ function Step1({ form, setForm, onNext }) {
                                 </Portal>
                             </Select.Root>
                         </Field>
-                        <Field label="Année" required>
+
+                        <Field label="Année" required error={touched.year && errors.year}>
                             <Select.Root
                                 collection={yearsCollection}
-                                value={[form.year]}
-                                onValueChange={(e) =>
-                                    setForm((f) => ({ ...f, year: e.value[0] }))
-                                }
+                                value={[values.year]}
+                                onValueChange={(e) => {
+                                    setFieldValue("year", e.value[0])
+                                }}
                             >
                                 <Select.HiddenSelect />
-
                                 <Select.Control>
-                                    <Select.Trigger
-                                        borderRadius="lg"
-                                        border="1.5px solid"
-                                        borderColor="gray.200"
-                                        fontSize="sm"
-                                        _focus={{
-                                            borderColor: "blue.400",
-                                            boxShadow: "0 0 0 3px rgba(49,130,206,0.12)",
-                                        }}
-                                    >
+                                    <Select.Trigger {...inputStyle(touched.year && errors.year)}>
                                         <Select.ValueText placeholder="Sélectionner une année" />
                                     </Select.Trigger>
-
-                                    <Select.IndicatorGroup>
-                                        <Select.Indicator />
-                                    </Select.IndicatorGroup>
+                                    <Select.IndicatorGroup><Select.Indicator /></Select.IndicatorGroup>
                                 </Select.Control>
-
                                 <Portal>
                                     <Select.Positioner>
                                         <Select.Content>
@@ -326,7 +383,7 @@ function Step1({ form, setForm, onNext }) {
                         </Field>
                     </Grid>
 
-                    <Field label="Type de voyage" required>
+                    <Field label="Type de voyage" required error={touched.type && errors.type}>
                         <HStack gap={3} flexWrap="wrap">
                             {TRIP_TYPES.map((t) => (
                                 <Button
@@ -334,18 +391,18 @@ function Step1({ form, setForm, onNext }) {
                                     size="sm"
                                     borderRadius="xl"
                                     border="1.5px solid"
-                                    borderColor={form.type === t.value ? BLUE : "gray.200"}
-                                    bg={form.type === t.value ? BLUE : "white"}
-                                    color={form.type === t.value ? "white" : "gray.600"}
+                                    borderColor={values.type === t.value ? BLUE : "gray.200"}
+                                    bg={values.type === t.value ? BLUE : "white"}
+                                    color={values.type === t.value ? "white" : "gray.600"}
                                     fontWeight={600}
                                     fontSize="13px"
                                     px={4}
-                                    _hover={{
-                                        borderColor: BLUE,
-                                        color: form.type === t.value ? "white" : BLUE,
-                                    }}
+                                    _hover={{ borderColor: BLUE, color: values.type === t.value ? "white" : BLUE }}
                                     transition="all 0.15s"
-                                    onClick={() => setForm(f => ({ ...f, type: t.value }))}
+                                    onClick={() => {
+                                        setFieldValue("type", t.value)
+                                        setFieldTouched("type", true)
+                                    }}
                                 >
                                     {t.label}
                                 </Button>
@@ -355,116 +412,124 @@ function Step1({ form, setForm, onNext }) {
                 </VStack>
             </SectionCard>
 
-            <NavButtons onNext={onNext} backLabel={null} />
-        </>
-    )
-}
-
-function Step2({ form, setForm, onNext, onBack }) {
-    const updateDest = (i, key, val) => {
-        const updated = form.destinations.map((d, idx) => idx === i ? { ...d, [key]: val } : d)
-        setForm(f => ({ ...f, destinations: updated }))
-    }
-
-    const addDest = () => {
-        setForm(f => ({
-            ...f,
-            destinations: [...f.destinations, { name: "", rating: 3, nights: 3 }],
-        }))
-    }
-
-    const removeDest = (i) => {
-        setForm(f => ({
-            ...f,
-            destinations: f.destinations.filter((_, idx) => idx !== i),
-        }))
-    }
-
-    return (
-        <>
-            {/* Flight Info */}
+            {/* ── Section 2: Informations de vol ── */}
             <SectionCard title="Informations de vol">
                 <VStack align="stretch" gap={4}>
-                    <Grid templateColumns={{ base: "1fr", md: "1fr 40px 1fr" }} gap={4} alignItems="end">
+                    <Grid templateColumns={{ base: "1fr", md: "1fr 40px 1fr" }} gap={4} alignItems="start">
                         {/* Departure */}
                         <VStack align="stretch" gap={4}>
-                            <Field label="Date de départ" required>
-                                <Input
-                                    type="date" value={form.departureDate}
-                                    onChange={(e) => setForm(f => ({ ...f, departureDate: e.target.value }))}
-                                    borderRadius="lg" border="1.5px solid" borderColor="gray.200"
-                                    fontSize="sm"
-                                    _focus={{ borderColor: "blue.400", boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" }}
-                                />
+                            <Field label="Date de départ" required error={touched.departureDate && errors.departureDate}>
+                                <DatePicker.Root
+                                    locale="fr-FR"
+                                    min={minDate}
+                                    disabled={!values.month}
+                                    max={maxDate}
+                                    value={values.departureDate ? [parseDate(values.departureDate)] : [minDate]}
+                                    onValueChange={(details) => {
+                                        const date = details.value?.[0]
+                                        if (date) {
+                                            const jsDate = new Date(date.year, date.month - 1, date.day)
+                                            setFieldValue("departureDate", jsDate)
+                                        } else {
+                                            setFieldValue("departureDate", "")
+                                        }
+                                    }}
+                                >
+                                    <DatePicker.Control>
+                                        <DatePicker.Input />
+                                        <DatePicker.IndicatorGroup>
+                                            <DatePicker.Trigger><LuCalendar /></DatePicker.Trigger>
+                                        </DatePicker.IndicatorGroup>
+                                    </DatePicker.Control>
+                                    <Portal>
+                                        <DatePicker.Positioner>
+                                            <DatePicker.Content>
+                                                <DatePicker.View view="day"><DatePicker.Header /><DatePicker.DayTable /></DatePicker.View>
+                                                <DatePicker.View view="month"><DatePicker.Header /><DatePicker.MonthTable /></DatePicker.View>
+                                                <DatePicker.View view="year"><DatePicker.Header /><DatePicker.YearTable /></DatePicker.View>
+                                            </DatePicker.Content>
+                                        </DatePicker.Positioner>
+                                    </Portal>
+                                </DatePicker.Root>
                             </Field>
                             <Field label="Heure de départ">
-                                <Input
-                                    type="time" value={form.departureTime}
-                                    onChange={(e) => setForm(f => ({ ...f, departureTime: e.target.value }))}
-                                    borderRadius="lg" border="1.5px solid" borderColor="gray.200"
-                                    fontSize="sm"
-                                    _focus={{ borderColor: "blue.400", boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" }}
-                                />
+                                <Input type="time" name="departureTime" value={values.departureTime} onChange={handleChange} {...inputStyle(false)} />
                             </Field>
                             <Field label="Aéroport départ">
-                                <Input
-                                    value={form.departureAirport}
-                                    onChange={(e) => setForm(f => ({ ...f, departureAirport: e.target.value }))}
-                                    placeholder="ex: TUN-JED"
-                                    borderRadius="lg" border="1.5px solid" borderColor="gray.200"
-                                    fontSize="sm"
-                                    _focus={{ borderColor: "blue.400", boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" }}
-                                />
+                                <Input name="departureAirport" value={values.departureAirport} onChange={handleChange} placeholder="ex: TUN-JED" {...inputStyle(false)} />
                             </Field>
                         </VStack>
 
-                        {/* Arrow */}
-                        <Flex align="center" justify="center" pb={4} display={{ base: "none", md: "flex" }}>
+                        {/* Arrow divider */}
+                        <Flex align="center" justify="center" pt={8} display={{ base: "none", md: "flex" }}>
                             <LuPlaneTakeoff size={18} color="#CBD5E0" />
                         </Flex>
 
                         {/* Return */}
                         <VStack align="stretch" gap={4}>
-                            <Field label="Date de retour" required>
-                                <Input
-                                    type="date" value={form.returnDate}
-                                    onChange={(e) => setForm(f => ({ ...f, returnDate: e.target.value }))}
-                                    borderRadius="lg" border="1.5px solid" borderColor="gray.200"
-                                    fontSize="sm"
-                                    _focus={{ borderColor: "blue.400", boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" }}
-                                />
+                            <Field label="Date de retour" required error={touched.returnDate && errors.returnDate}>
+                                <DatePicker.Root
+                                    locale="fr-FR"
+                                    defaultMonth={minDate}
+                                    min={minDate}
+                                    disabled={!values.month}
+                                    value={
+                                        values.returnDate
+                                            ? [parseDate(values.returnDate)]
+                                            : minDate
+                                                ? [parseDate(new Date(minDate.year, minDate.month - 1, minDate.day + 1))]
+                                                : []
+                                    }
+                                    onValueChange={(details) => {
+                                        const date = details.value?.[0]
+                                        if (date) {
+                                            const jsDate = new Date(date.year, date.month - 1, date.day)
+                                            setFieldValue("returnDate", jsDate)
+                                        } else {
+                                            setFieldValue("returnDate", "")
+                                        }
+                                    }}
+                                >
+                                    <DatePicker.Control>
+                                        <DatePicker.Input />
+                                        <DatePicker.IndicatorGroup>
+                                            <DatePicker.Trigger><LuCalendar /></DatePicker.Trigger>
+                                        </DatePicker.IndicatorGroup>
+                                    </DatePicker.Control>
+                                    <Portal>
+                                        <DatePicker.Positioner>
+                                            <DatePicker.Content>
+                                                <DatePicker.View view="day"><DatePicker.Header /><DatePicker.DayTable /></DatePicker.View>
+                                                <DatePicker.View view="month"><DatePicker.Header /><DatePicker.MonthTable /></DatePicker.View>
+                                                <DatePicker.View view="year"><DatePicker.Header /><DatePicker.YearTable /></DatePicker.View>
+                                            </DatePicker.Content>
+                                        </DatePicker.Positioner>
+                                    </Portal>
+                                </DatePicker.Root>
                             </Field>
                             <Field label="Heure de retour">
-                                <Input
-                                    type="time" value={form.returnTime}
-                                    onChange={(e) => setForm(f => ({ ...f, returnTime: e.target.value }))}
-                                    borderRadius="lg" border="1.5px solid" borderColor="gray.200"
-                                    fontSize="sm"
-                                    _focus={{ borderColor: "blue.400", boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" }}
-                                />
+                                <Input type="time" name="returnTime" value={values.returnTime} onChange={handleChange} {...inputStyle(false)} />
                             </Field>
                             <Field label="Aéroport retour">
-                                <Input
-                                    value={form.returnAirport}
-                                    onChange={(e) => setForm(f => ({ ...f, returnAirport: e.target.value }))}
-                                    placeholder="ex: JED-TUN"
-                                    borderRadius="lg" border="1.5px solid" borderColor="gray.200"
-                                    fontSize="sm"
-                                    _focus={{ borderColor: "blue.400", boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" }}
-                                />
+                                <Input value={values.returnAirport} name="returnAirport" onChange={handleChange} placeholder="ex: JED-TUN" {...inputStyle(false)} />
                             </Field>
                         </VStack>
                     </Grid>
                 </VStack>
             </SectionCard>
 
-            {/* Destinations */}
+            {/* ── Section 3: Destinations & Hôtels ── */}
             <SectionCard title="Destinations & Hôtels">
                 <VStack align="stretch" gap={3} mb={3}>
-                    {form.destinations.map((dest, i) => (
+                    {values.destinations.map((dest, i) => (
                         <DestinationRow
-                            key={i} dest={dest} index={i}
-                            onChange={updateDest} onRemove={removeDest}
+                            key={i}
+                            dest={dest}
+                            index={i}
+                            onChange={updateDest}
+                            onRemove={removeDest}
+                            errors={errors.destinations?.[i]}
+                            touched={touched.destinations?.[i]}
                         />
                     ))}
                 </VStack>
@@ -484,37 +549,31 @@ function Step2({ form, setForm, onNext, onBack }) {
                 </Button>
             </SectionCard>
 
-            <NavButtons onBack={onBack} onNext={onNext} />
-        </>
-    )
-}
-
-function Step3({ form, setForm, onBack, onSubmit }) {
-    return (
-        <>
+            {/* ── Section 4: Prix & Paiement ── */}
             <SectionCard title="Prix & Paiement">
                 <VStack align="stretch" gap={4}>
                     <Grid templateColumns={{ base: "1fr", sm: "1fr 1fr" }} gap={4}>
-                        <Field label="Prix total (TND)" required>
+                        <Field label="Prix total (TND)" required error={touched.price && errors.price}>
                             <Input
-                                value={form.price} min={0}
-                                onChange={(val) => setForm(f => ({ ...f, price: val }))}
-                                 borderRadius="lg" border="1.5px solid" borderColor="gray.200"
-                            fontSize="sm" textAlign="center"
-                            _focus={{ borderColor: "blue.400", boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" }}
+                                type="number"
+                                name="price"
+                                value={values.price}
+                                onChange={handleChange}
+                                onBlur={() => setFieldTouched("price", true)}
+                                placeholder="ex: 3500"
+                                {...inputStyle(touched.price && errors.price)}
                             />
-                               
-                            
                         </Field>
-                        <Field label="Nombre de places">
+                        <Field label="Nombre de places" error={touched.seats && errors.seats}>
                             <Input
-                                value={form.seats} min={1}
-                                onChange={(val) => setForm(f => ({ ...f, seats: val }))}
-                                 borderRadius="lg" border="1.5px solid" borderColor="gray.200"
-                                fontSize="sm" textAlign="center"
-                                _focus={{ borderColor: "blue.400", boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" }}
+                                type="number"
+                                name="seats"
+                                value={values.seats}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                                placeholder="ex: 30"
+                                {...inputStyle(touched.seats && errors.seats)}
                             />
-                               
                         </Field>
                     </Grid>
 
@@ -526,15 +585,15 @@ function Step3({ form, setForm, onBack, onSubmit }) {
                                     size="sm"
                                     borderRadius="full"
                                     border="1.5px solid"
-                                    borderColor={form.installment === inst ? BLUE : "gray.200"}
-                                    bg={form.installment === inst ? BLUE : "white"}
-                                    color={form.installment === inst ? "white" : "gray.600"}
+                                    borderColor={values.installment === inst ? BLUE : "gray.200"}
+                                    bg={values.installment === inst ? BLUE : "white"}
+                                    color={values.installment === inst ? "white" : "gray.600"}
                                     fontWeight={700}
                                     fontSize="13px"
                                     px={4}
-                                    _hover={{ borderColor: BLUE, color: form.installment === inst ? "white" : BLUE }}
+                                    _hover={{ borderColor: BLUE, color: values.installment === inst ? "white" : BLUE }}
                                     transition="all 0.15s"
-                                    onClick={() => setForm(f => ({ ...f, installment: inst }))}
+                                    onClick={() => setFieldValue("installment", inst)}
                                 >
                                     {inst}
                                 </Button>
@@ -544,127 +603,21 @@ function Step3({ form, setForm, onBack, onSubmit }) {
                 </VStack>
             </SectionCard>
 
-            <SectionCard title="Notes & Description">
-                <VStack align="stretch" gap={4}>
-                    <Field label="Description du package">
-                        <Textarea
-                            value={form.description}
-                            onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
-                            placeholder="Décrivez les inclusions, services, conditions…"
-                            borderRadius="lg" border="1.5px solid" borderColor="gray.200"
-                            fontSize="sm" minH="100px" resize="vertical"
-                            _focus={{ borderColor: "blue.400", boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" }}
-                        />
-                    </Field>
-                    <Field label="Notes internes">
-                        <Textarea
-                            value={form.notes}
-                            onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))}
-                            placeholder="Notes visibles uniquement par l'équipe…"
-                            borderRadius="lg" border="1.5px solid" borderColor="gray.200"
-                            fontSize="sm" minH="70px" resize="vertical"
-                            _focus={{ borderColor: "blue.400", boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" }}
-                        />
-                    </Field>
-                </VStack>
-            </SectionCard>
-
-            <NavButtons onBack={onBack} onNext={onSubmit} nextLabel="Publier le package" />
-        </>
-    )
-}
-
-const AddPackage = () => {
-    const navigate = useNavigate()
-    const [step, setStep] = useState(1)
-    const [form, setForm] = useState({
-        title: "",
-        month: "",
-        year: "2026",
-        type: "haj",
-        departureDate: "",
-        departureTime: "11:40",
-        departureAirport: "TUN-JED",
-        returnDate: "",
-        returnTime: "06:25",
-        returnAirport: "JED-TUN",
-        destinations: [
-            { name: "Medine, Shaza Regency Plaza 3", rating: 3, nights: 4 },
-            { name: "Makkah, Swissotel Makkah 5", rating: 5, nights: 6 },
-        ],
-        price: "",
-        seats: "",
-        installment: "6X",
-        description: "",
-        notes: "",
-    })
-
-    const handleSubmit = () => {
-        console.log("Package submitted:", form)
-        navigate(-1)
-    }
-
-    return (
-        <Container maxW="860px" py={8} px={{ base: 4, md: 8 }}>
-            {/* Back */}
-            <Flex
-                as="button"
-                type="button"
-                align="center"
-                gap={1.5}
-                color="gray.400"
-                fontSize="sm"
-                fontWeight={500}
-                mb={8}
-                _hover={{ color: "blue.500" }}
-                transition="color 0.15s"
-                onClick={() => navigate(-1)}
-            >
-                <LuChevronLeft size={14} />
-                Retour
+            {/* ── Submit Button ── */}
+            <Flex justify="flex-end" mt={2}>
+                <Button
+                    bg={BLUE} color="white" borderRadius="xl" fontWeight={700} fontSize="sm"
+                    px={8} py={5}
+                    _hover={{ bg: BLUE_DARK, transform: "translateY(-2px)", boxShadow: `0 4px 12px ${BLUE_GLOW}` }}
+                    transition="all 0.2s"
+                    onClick={handleSubmit}
+                    isLoading={isSubmitting}
+                    loadingText="Ajouter..."
+                >
+                    Ajouter le package
+                </Button>
             </Flex>
 
-            {/* Header */}
-            <Box mb={8}>
-                <Text
-                    fontSize="xs" fontWeight={700} color={BLUE}
-                    textTransform="uppercase" letterSpacing="0.1em" mb={2}
-                >
-                    Packages
-                </Text>
-                <Text
-                    fontSize={{ base: "2xl", md: "3xl" }}
-                    fontWeight={900} color="gray.900"
-                    letterSpacing="-0.02em" mb={2}
-                >
-                    Ajouter un nouveau package
-                </Text>
-                <Text fontSize="sm" color="gray.500">
-                    Remplissez les informations pour créer un nouveau voyage
-                </Text>
-            </Box>
-
-            {/* Progress */}
-            <StepBar current={step} />
-
-            {/* Steps */}
-            {step === 1 && (
-                <Step1 form={form} setForm={setForm} onNext={() => setStep(2)} />
-            )}
-            {step === 2 && (
-                <Step2
-                    form={form} setForm={setForm}
-                    onNext={() => setStep(3)}
-                    onBack={() => setStep(1)}
-                />
-            )}
-            {step === 3 && (
-                <Step3
-                    form={form} setForm={setForm}
-                    onBack={() => setStep(2)}
-                    onSubmit={handleSubmit}
-                />
-            )}
         </Container>
     )
 }
