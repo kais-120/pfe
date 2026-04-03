@@ -3,6 +3,7 @@ const { Room, Booking, Hotel, User, Flight, Compagnie, FlightBookingDetails, Fli
 const HotelBookingDetails = require("../models/HotelBookingDetails");
 const Notification = require("../models/Notification");
 const { getIO } = require("../initSocket");
+const Activity = require("../models/Activity");
 
 exports.BookingHotel = [
     body("check_in_date").notEmpty().withMessage("check in date is required")
@@ -50,6 +51,7 @@ exports.BookingHotel = [
             await booking.update({ total_price });
             await Notification.create({ title: "Nouvelle réservation", message: "un client faire un réservation", type: "booking", user_id: partner_id })
             io.to(`partner-${partner_id}`).emit("newNotification");
+            await Activity.create({type:"booking",titre:`Réservation #RES-${booking.id} en cours`})
             return res.send({ message: "booking create" })
 
         } catch (err) {
@@ -99,6 +101,7 @@ exports.BookingFlight = [
             await flightClassesSeat.update({seats_available:flightClassesSeat.seats_available - passenger_count})
             await Notification.create({title:"Nouvelle réservation",message:"un client faire un réservation",type:"booking",user_id:flight.compagnieFlight.partner_id})
             io.to(`partner-${flight.compagnieFlight.partner_id}`).emit("newNotification");
+            await Activity.create({type:"booking",titre:`Réservation #RES-${booking.id} en cours`})
             return res.send({ message: "booking create" })
 
         } catch (err) {
@@ -143,6 +146,7 @@ exports.BookingLocation = [
             
             await Notification.create({ title: "Nouvelle réservation", message: "un client faire un réservation", type: "booking", user_id: vehicle.locationVehicle.partner_id })
             io.to(`partner-${vehicle.locationVehicle.partner_id}`).emit("newNotification");
+            await Activity.create({type:"booking",titre:`Réservation #RES-${booking.id} en cours`})
             return res.send({ message: "booking create" })
 
         } catch (err) {
@@ -187,6 +191,7 @@ exports.BookingCircuit = [
             
             await Notification.create({ title: "Nouvelle réservation", message: "un client faire un réservation", type: "booking", user_id: circuit.voyagesCircuit.partner_id })
             io.to(`partner-${circuit.voyagesCircuit.partner_id}`).emit("newNotification");
+            await Activity.create({type:"booking",titre:`Réservation #RES-${booking.id} en cours`})
             return res.send({ message: "booking create" })
 
         } catch (err) {
@@ -235,6 +240,7 @@ exports.BookingOffer = [
             
             await Notification.create({ title: "Nouvelle réservation", message: "un client faire un réservation", type: "booking", user_id: offer.agencyOffer.partner_id })
             io.to(`partner-${offer.agencyOffer.partner_id}`).emit("newNotification");
+            await Activity.create({type:"booking",titre:`Réservation #RES-${booking.id} en cours`})
             return res.send({ message: "booking create" })
 
         } catch (err) {

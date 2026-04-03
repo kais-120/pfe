@@ -11,6 +11,7 @@ const { default: axios } = require("axios");
 const Package = require("../models/Package");
 const Destination = require("../models/Destination");
 const sequelize = require("../configs/db");
+const Activity = require("../models/Activity");
 
 exports.GetPublicHotel = async (req, res) => {
   try {
@@ -348,6 +349,7 @@ exports.AddHotel = [
           service_id: hotel.id
         });
       }
+      await Activity.create({type:"service",titre:`Nouvel hôtel a créé`})
       return res.json({ message: "hotel created" });
     } catch (err) {
       return res.status(500).send({ message: "error server" })
@@ -397,6 +399,7 @@ exports.AddLocation = [
       const partner_id = req.userId;
       const { name, address } = req.body;
       await Location.create({ name, address, partner_id });
+      await Activity.create({type:"service",titre:`Nouvel location a créé`})
       return res.json({ message: "location created" });
     } catch (err) {
       return res.status(500).send({ message: "error server" })
@@ -782,6 +785,7 @@ exports.AddAgency = [
         partner_id: userId,
       });
       await agence.update({ logo: file[0].filename });
+      await Activity.create({type:"service",titre:`Nouvel agence a créé`})
 
       return res.status(201).send({ message: "Agence créée avec succès" });
     } catch (err) {
@@ -1102,7 +1106,7 @@ exports.AddAirline = [
         services: amenities,
         partner_id
       });
-
+      await Activity.create({type:"service",titre:`Nouvel compagnie a créé`})
       return res.status(201).send({ message: "airline created" });
     } catch (err) {
       console.error(err);
@@ -1484,7 +1488,7 @@ exports.AddVoyage = [
         equipments,
         partner_id
       });
-
+      await Activity.create({type:"service",titre:`Nouvel voyage a créé`})
       res.status(201).send({ message: "voyage created" });
     } catch (err) {
       console.log(err)

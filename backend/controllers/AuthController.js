@@ -6,6 +6,7 @@ const { otpSend, forgetPassword } = require("../util/sendEmail");
 const { OtpRegisterCreate, ForgotPasswordEmail } = require("./OtpController");
 const { PartnerFile, Otp } = require("../models");
 const { Op } = require("sequelize");
+const Activity = require("../models/Activity");
 
 
 exports.Register =[
@@ -49,6 +50,7 @@ exports.Register =[
         const fullName = `${firstName} ${lastName}`
         const otp = await OtpRegisterCreate(user.id);
         otpSend(email,fullName,otp.code.toString())
+        Activity.create({type:"auth",titre:"Nouvel client inscrit"})
         return res.status(201).json({message:"account created",token:otp.hash});
     }catch(err){
         console.log(err)
@@ -138,6 +140,7 @@ exports.PartnerRegister =[
         await PartnerFile.create({sector,partner_id:user.id})
         const otp = await OtpRegisterCreate(user.id);
         otpSend(email,name,otp.code.toString())
+        Activity.create({type:"auth",titre:"Nouvel partenaire inscrit"})
         return res.status(201).json({message:"account created",token:otp.hash});
     }catch(err){
         console.log(err)

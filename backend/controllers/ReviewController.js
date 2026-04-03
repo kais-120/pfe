@@ -1,5 +1,6 @@
 const { body, validationResult } = require("express-validator");
-const { Reviews } = require("../models");
+const { Reviews, Hotel } = require("../models");
+const Activity = require("../models/Activity");
 
 exports.AddReview = [
     body("review").notEmpty().withMessage("review required"),
@@ -19,6 +20,10 @@ exports.AddReview = [
             const { id } = req.params;
             const client_id = req.userId;
             await Reviews.create({client_id,type_service,service_id:id,rate,review})
+            if(type_service === "hotels"){
+                const hotel = await Hotel.findByPk(id);
+                await Activity.create({type:"review",titre:`Avis ${rate}★ posté sur ${hotel.name}`})
+            }
             return res.status(201).json({message: "review created"})
         }catch{
         return res.status(500).json({message: "server error"})

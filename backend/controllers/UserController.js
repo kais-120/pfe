@@ -9,6 +9,7 @@ const { Op } = require("sequelize");
 const Notification = require("../models/Notification");
 const { getIO } = require("../initSocket");
 const { ForgotPasswordEmail, EmailChangeOtp } = require("./OtpController");
+const Activity = require("../models/Activity");
 
 
 exports.AddAgent = [
@@ -132,6 +133,8 @@ exports.UpdateFiles = [
             io.to("admin").emit("newNotification")
 
         }
+        const partner = await User.findByPk(partner_id)
+        await Activity.create({type:"partner",titre:`Dossier partenaire soumis — ${partner.name}`})
         return res.send({message:"file updated1"})
     }catch(err){
         console.log(err)

@@ -8,6 +8,7 @@ import { AxiosToken } from "../../Api/Api"
 import { useNavigate } from "react-router-dom"
 import { Plus, Trash2 } from "lucide-react"
 import { LuChevronLeft, LuChevronRight, LuSearch, LuUsers, LuShieldAlert } from "react-icons/lu"
+import { Helmet } from "react-helmet"
 
 const PAGE_SIZE = 8
 
@@ -69,6 +70,8 @@ const Users = () => {
     name?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() ?? "?"
 
   return (
+    <>
+    <Helmet title="Utilisateurs"></Helmet>
     <Box>
       {/* Page title */}
       <Box mb={6}>
@@ -368,6 +371,7 @@ const Users = () => {
 
       </Box>
     </Box>
+    </>
   )
 }
 
