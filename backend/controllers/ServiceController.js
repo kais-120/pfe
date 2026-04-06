@@ -1,5 +1,5 @@
 const { body, validationResult } = require("express-validator");
-const { Hotel, User, Booking, HotelBookingDetails, Reviews, Agence, Offer, Compagnie, Voyage, Circuit, CarRentalBookingDetails } = require("../models");
+const { Hotel, User, Booking, HotelBookingDetails, Reviews, Agence, Offer, Compagnie, Voyage, Circuit, CarRentalBookingDetails, PartnerFile } = require("../models");
 const Room = require("../models/Room");
 const ImageService = require("../models/ImageServices");
 const Location = require("../models/Location");
@@ -53,6 +53,53 @@ exports.GetPublicHotel = async (req, res) => {
       imagesHotel,
     };
     return res.json({ message: "hotel found", hotel });
+  } catch (err) {
+    console.log(err)
+    return res.status(500).send({ message: "error server" })
+  }
+
+}
+
+exports.DeleteService = async (req, res) => {
+  try {
+    const { id,type } = req.params;
+    if(type === "hotels"){
+      const hotel = await Hotel.findByPk(id);
+      if(!hotel){
+        return res.status(404).json({ message: "hotel not found" });
+      }
+      hotel.destroy();
+    }
+    else if(type === "compagnies"){
+      const airline = await Compagnie.findByPk(id);
+      if(!airline){
+        return res.status(404).json({ message: "airline not found" });
+      }
+      airline.destroy();
+    }
+    else if(type === "locations"){
+      const location = await Location.findByPk(id);
+      if(!location){
+        return res.status(404).json({ message: "location not found" });
+      }
+      location.destroy();
+    }
+    else if(type === "agences"){
+      const agency = await Agence.findByPk(id);
+      if(!agency){
+        return res.status(404).json({ message: "agency not found" });
+      }
+      agency.destroy();
+    }
+    else{
+      const voyage = await Voyage.findByPk(id);
+      if(!voyage){
+        return res.status(404).json({ message: "voyage not found" });
+      }
+      voyage.destroy();
+    }
+
+    return res.json({ message: "service found"});
   } catch (err) {
     console.log(err)
     return res.status(500).send({ message: "error server" })
@@ -275,16 +322,90 @@ exports.GetAllHotel = async (req, res) => {
 }
 exports.GetAllServices = async (req, res) => {
   try {
-    const hotel = await Hotel.findAll({
-      include: [
-        {
-          model: User,
-          as: "partnerHotel",
-          attributes: { exclude: ["password"] }
-        }
-      ]
+    const [
+      hotels,
+      agences,
+      compagnies,
+      locations,
+      voyages
+    ] = await Promise.all([
+      Hotel.findAll({
+        include:[
+          {
+            model:User,
+            as:"partnerHotel",
+            include:[{
+              model:PartnerFile,
+              as:"partnerInfo",
+              attributes:["cin"]
+            }]
+          }
+        ]
+      }),
+      Agence.findAll({
+        include:[
+          {
+            model:User,
+            as:"partnerAgence",
+            include:[{
+              model:PartnerFile,
+              as:"partnerInfo",
+              attributes:["cin"]
+            }]
+          }
+        ]
+      }),
+      Compagnie.findAll({
+        include:[
+          {
+            model:User,
+            as:"partnerCompagnie",
+            include:[{
+              model:PartnerFile,
+              as:"partnerInfo",
+              attributes:["cin"]
+            }]
+          }
+        ]
+      }),
+      Location.findAll({
+        include:[
+          {
+            model:User,
+            as:"partnerLocation",
+            include:[{
+              model:PartnerFile,
+              as:"partnerInfo",
+              attributes:["cin"]
+            }]
+          }
+        ]
+      }),
+      Voyage.findAll({
+        include:[
+          {
+            model:User,
+            as:"partnerVoyage",
+            include:[{
+              model:PartnerFile,
+              as:"partnerInfo",
+              attributes:["cin"]
+            }]
+          }
+        ]
+      })
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        hotels,
+        agences,
+        compagnies,
+        locations,
+        voyages
+      }
     });
-    return res.json({ message: "hotel found", hotel });
   } catch (err) {
     console.log(err)
     return res.status(500).send({ message: "error server" })

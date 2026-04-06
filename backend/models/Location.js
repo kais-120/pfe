@@ -38,6 +38,9 @@ const Location = sequelize.define("locations",{
         allowNull:true
     }
 },{
-        tableName:"locations"
+        tableName:"locations",
+        paranoid:true,
+        deletedAt:"deleted_at"
+
 });
 module.exports = Location;

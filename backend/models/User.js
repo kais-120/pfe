@@ -36,5 +36,8 @@ const User = sequelize.define("users",{
         allowNull:true
     }
 
+},{
+    paranoid:true,
+    deletedAt:"deleted_at"
 })
 module.exports = User;

@@ -40,8 +40,13 @@ const Hotel = sequelize.define("hotels",{
             key:"id"
         },
         onDelete:'CASCADE',
+    },
+    deleted_at : {
+        type:DataTypes.DATE
     }
 },{
-        tableName:"hotels"
+        tableName:"hotels",
+        paranoid:true,
+        deletedAt:"deleted_at"
 });
 module.exports = Hotel;

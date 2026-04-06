@@ -26,8 +26,8 @@ exports.Register =[
         try{
         const {firstName,lastName,email,password,phone} = req.body;
         const name = firstName + " " +lastName;
-       const existEmail = await User.findOne({ where: { email } });
-            const existPhone = await User.findOne({ where: { phone } });
+       const existEmail = await User.findOne({ where: { email:email.toLowerCase() } });
+     const existPhone = await User.findOne({ where: { phone } });
 
             let errors = {};
 
@@ -46,10 +46,10 @@ exports.Register =[
             });
             }
         const hashed = await bcrypt.hash(password,10)
-        const user = await User.create({name,email,password:hashed,phone});
+        const user = await User.create({name,email:email.toLowerCase(),password:hashed,phone});
         const fullName = `${firstName} ${lastName}`
         const otp = await OtpRegisterCreate(user.id);
-        otpSend(email,fullName,otp.code.toString())
+        otpSend(email.toLowerCase(),fullName,otp.code.toString())
         Activity.create({type:"auth",titre:"Nouvel client inscrit"})
         return res.status(201).json({message:"account created",token:otp.hash});
     }catch(err){
@@ -68,7 +68,8 @@ exports.Login = [
         }
         try{
         const {email,password} = req.body;
-        const user = await User.findOne({where: {email} });
+        const user = await User.findOne({where: {email:email.toLowerCase()} });
+        console.log(email)
         if (!user) return res.status(400).json({ message: "Invalid credentials" });
         const isMatch = await bcrypt.compare(password,user.password);
         if(!isMatch) return res.status(400).json({ message: "Invalid credentials" });
@@ -76,6 +77,7 @@ exports.Login = [
         return res.status(200).json({ message: "valid credentials" , token : token , role : user.role });
        
     }catch(err){
+        console.log(err)
         return res.status(500).json({message:err});
     }
 }
@@ -127,19 +129,30 @@ exports.PartnerRegister =[
         }
         try{
         const {name,email,password,phone,sector} = req.body;
-        const existEmail = await User.findOne({where:{email}});
-        const existPhone = await User.findOne({where:{phone}});
-        if(existEmail){
-            return res.status(422).json({message:"email is already used"});
-        }
-        if(existPhone){
-            return res.status(422).json({message:"phone is already used"});
-        }
+         const existEmail = await User.findOne({ where: { email:email.toLowerCase() } });
+        const existPhone = await User.findOne({ where: { phone } });
+
+                let errors = {};
+
+                if (existEmail) {
+                errors.email = "email is already used";
+                }
+
+                if (existPhone) {
+                errors.phone = "phone is already used";
+                }
+
+            if (Object.keys(errors).length > 0) {
+            return res.status(422).json({
+                message: "Validation error",
+                errors
+            });
+            }
         const hashed = await bcrypt.hash(password,10)
-        const user = await User.create({name,email,password:hashed,role:"partner",phone});
+        const user = await User.create({name,email:email.toLowerCase(),password:hashed,role:"partner",phone});
         await PartnerFile.create({sector,partner_id:user.id})
         const otp = await OtpRegisterCreate(user.id);
-        otpSend(email,name,otp.code.toString())
+        otpSend(email.toLowerCase(),name,otp.code.toString())
         Activity.create({type:"auth",titre:"Nouvel partenaire inscrit"})
         return res.status(201).json({message:"account created",token:otp.hash});
     }catch(err){
@@ -157,12 +170,12 @@ exports.ForgotPassword = [
         }
         try{
             const {email} = req.body;
-            const user = await User.findOne({where: {email}});
+            const user = await User.findOne({where: {email:toLowerCase()}});
             if(!user){
                 return res.status(404).send({ message: "user not found" });
             }
             const otp = await ForgotPasswordEmail(user.id);
-            forgetPassword(email,user.name,otp.code.toString());
+            forgetPassword(email.toLowerCase(),user.name,otp.code.toString());
             return res.send({message:"code send to email",token:otp.hash});
         }catch(err){
             return res.status(500).send({ message: "server error" });

@@ -34,16 +34,16 @@ const step3Schema = Yup.object({
 })
 
 const STEPS = [
-  { label: "Identité",   icon: LuCreditCard,  desc: "CIN recto & verso"             },
-  { label: "Entreprise", icon: LuBuilding2,   desc: "Matricule & registre commerce"  },
-  { label: "Bancaire",   icon: LuBanknote,    desc: "RIP & autorisation ONTT"        },
+  { label: "Identité", icon: LuCreditCard, desc: "CIN recto & verso" },
+  { label: "Entreprise", icon: LuBuilding2, desc: "Matricule & registre commerce" },
+  { label: "Bancaire", icon: LuBanknote, desc: "RIP & autorisation ONTT" },
 ]
 
 /* ── Styled text input ──────────────────────────────────────────── */
-function StyledInput({ formik, name, label, placeholder, icon: Icon }) {
+function StyledInput({ formik, name, label, placeholder, icon: Icon,isError,errorMessage }) {
   const isInvalid = !!formik.errors[name]
   return (
-    <Field.Root invalid={isInvalid} w="full">
+    <Field.Root invalid={isInvalid || isError} w="full">
       <Field.Label>
         <Text fontSize="xs" fontWeight={700} color="gray.600"
           textTransform="uppercase" letterSpacing="wider">
@@ -53,18 +53,19 @@ function StyledInput({ formik, name, label, placeholder, icon: Icon }) {
       <Flex
         w="full" align="center"
         border="1.5px solid"
-        borderColor={isInvalid ? "red.400" : "gray.200"}
+        borderColor={(isInvalid || isError) ? "red.400" : "gray.200"}
         borderRadius="xl" bg="white" px={3}
         transition="all 0.15s"
         _focusWithin={{
-          borderColor: isInvalid ? "red.400" : "blue.400",
-          boxShadow: isInvalid
+          borderColor: (isInvalid || isError) ? "red.400" : "blue.400",
+          boxShadow: (isInvalid || isError)
             ? "0 0 0 3px rgba(245,101,101,0.12)"
             : "0 0 0 3px rgba(49,130,206,0.12)",
         }}
       >
         {Icon && <Box color="gray.400" mr={2} flexShrink={0}><Icon size={14} /></Box>}
         <Input
+        outline={"none"}
           name={name} value={formik.values[name]}
           onChange={formik.handleChange} onBlur={formik.handleBlur}
           placeholder={placeholder}
@@ -74,19 +75,23 @@ function StyledInput({ formik, name, label, placeholder, icon: Icon }) {
           _placeholder={{ color: "gray.300" }}
         />
       </Flex>
-      {isInvalid && (
+      {isInvalid ? (
         <Field.ErrorText fontSize="xs" color="red.500" mt={1}>
           {formik.errors[name]}
         </Field.ErrorText>
-      )}
+      ) : isError && (
+        <Field.ErrorText fontSize="xs" color="red.500" mt={1}>
+          {errorMessage}
+        </Field.ErrorText>
+      )
+    }
     </Field.Root>
   )
 }
 
-/* ── File upload field ──────────────────────────────────────────── */
 function FileField({ formik, name, label, hint }) {
   const isInvalid = !!formik.errors[name]
-  const hasFile   = !!formik.values[name]
+  const hasFile = !!formik.values[name]
 
   return (
     <Field.Root invalid={isInvalid} w="full">
@@ -149,8 +154,14 @@ function FileField({ formik, name, label, hint }) {
 
 /* ── Main component ─────────────────────────────────────────────── */
 const Hotel = () => {
-  const [step,    setStep]    = useState(0)
+  const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [cinError, setCinError] = useState(false)
+  const [cinErrorMessage, setCinErrorMessage] = useState("")
+  const [matriculeFiscaleError, setMatriculeFiscale] = useState(false)
+  const [matriculeFiscaleErrorMessage, setMatriculeFiscaleErrorMessage] = useState("")
+  const [ripError, setRipError] = useState(false)
+  const [ripErrorMessage, setRipErrorMessage] = useState("")
   const navigate = useNavigate()
 
   const getStepSchema = (s = step) => {
@@ -169,6 +180,8 @@ const Hotel = () => {
     validateOnChange: false,
     validateOnBlur: false,
     onSubmit: async (values) => {
+      setRipError(false),
+      setRipErrorMessage("")
       setLoading(true)
       try {
         const formData = new FormData()
@@ -177,12 +190,16 @@ const Hotel = () => {
         formData.append("partner_doc", values.matriculeFiscaleImage)
         formData.append("partner_doc", values.registreCommerceImage)
         formData.append("partner_doc", values.autorisationONTTImage)
-        formData.append("cin",               values.cin)
-        formData.append("rip",               values.rip)
+        formData.append("cin", values.cin)
+        formData.append("rip", values.rip)
         formData.append("matricule_fiscale", values.matriculeFiscale)
         await AxiosToken.post("/user/update/files", formData)
         setStep(3)
-      } catch {
+      } catch(err) {
+        if(err.status === 422){
+          setRipError(true),
+          setRipErrorMessage("rip déjà utilisé")
+        }
         console.error("Upload failed")
       } finally {
         setLoading(false)
@@ -191,15 +208,39 @@ const Hotel = () => {
   })
 
   const validateAndNext = async () => {
+    setCinError(false);
+    setCinErrorMessage("");
+    setMatriculeFiscale(false);
+    setMatriculeFiscaleErrorMessage("");
+    setRipError(false);
+    setRipErrorMessage("");
     const schema = getStepSchema()
     try {
       await schema.validate(formik.values, { abortEarly: false })
       formik.setErrors({})
+
+      await AxiosToken.post("/user/validate-step",{step,matricule_fiscale:formik.values.matriculeFiscale,rip:formik.values.rip,cin:formik.values.cin});
+
       setStep(s => s + 1)
     } catch (err) {
+      if(err.response.data){
+        if(err.response.data.errors.cin){
+          setCinError(true)
+          setCinErrorMessage(err.response.data.errors.cin)
+        }
+        if(err.response.data.errors.matricule_fiscale){
+          setMatriculeFiscale(true)
+          setMatriculeFiscaleErrorMessage(err.response.data.errors.matricule_fiscale)
+        }
+        else{
+          setRipError(true),
+          setMatriculeFiscaleErrorMessage(err.response.data.errors.rip)
+        }
+      }else{
       const errors = {}
       err.inner.forEach(e => { errors[e.path] = e.message })
       formik.setErrors(errors)
+      }
     }
   }
 
@@ -261,9 +302,9 @@ const Hotel = () => {
         {/* Step indicators */}
         <Flex gap={3} mb={8}>
           {STEPS.map((s, i) => {
-            const done    = i < step
+            const done = i < step
             const current = i === step
-            const Icon    = s.icon
+            const Icon = s.icon
             return (
               <Box
                 key={i} flex={1}
@@ -314,7 +355,7 @@ const Hotel = () => {
               boxShadow="0 1px 8px rgba(0,0,0,0.05)"
             >
               <Flex align="center" gap={2} mb={6}>
-                <Flex w="30px" h="30px" borderRadius="lg" bg="blue.50"color="blue.500" align="center" justify="center">
+                <Flex w="30px" h="30px" borderRadius="lg" bg="blue.50" color="blue.500" align="center" justify="center">
                   <LuCreditCard size={14} />
                 </Flex>
                 <Text fontSize="sm" fontWeight={700} color="gray.700">
@@ -326,8 +367,9 @@ const Hotel = () => {
                 <StyledInput
                   formik={formik} name="cin" label="Numéro CIN"
                   placeholder="Ex: 12345678" icon={LuCreditCard}
+                  isError={cinError} errorMessage={cinErrorMessage}
                 />
-                <Text fontSize="xs" color="gray.400" bg="blue.50"borderRadius="lg" px={3} py={2}>
+                <Text fontSize="xs" color="gray.400" bg="blue.50" borderRadius="lg" px={3} py={2}>
                   Uploadez une photo nette du recto et du verso de votre CIN.
                 </Text>
                 <Grid templateColumns="1fr 1fr" gap={4}>
@@ -359,6 +401,7 @@ const Hotel = () => {
                 <StyledInput
                   formik={formik} name="matriculeFiscale" label="Matricule fiscal"
                   placeholder="Ex: 1234567A/A/M/000" icon={LuBuilding2}
+                  isError={matriculeFiscaleError} errorMessage={matriculeFiscaleErrorMessage}
                 />
                 <Grid templateColumns="1fr 1fr" gap={4}>
                   <FileField
@@ -395,6 +438,7 @@ const Hotel = () => {
                 <StyledInput
                   formik={formik} name="rip" label="RIP bancaire (20 chiffres)"
                   placeholder="Ex: 01234567890123456789" icon={LuBanknote}
+                  isError={ripError} errorMessage={ripErrorMessage}
                 />
                 <FileField
                   formik={formik} name="autorisationONTTImage"

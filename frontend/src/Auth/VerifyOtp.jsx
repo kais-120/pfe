@@ -97,7 +97,12 @@ const VerifyOtp = ({link,type}) => {
       setError("")
       await Axios.put("/auth/verify/otp", { code,hash,type })
       setSuccess(true)
-      setTimeout(() => navigate(`/reset-password/${hash}`), 1500)
+      if(type === "forgot-password"){
+        setTimeout(() => navigate(`/reset-password/${hash}`), 1500)
+      }
+      else{
+        setTimeout(() => navigate(`/login`), 1500)
+      }
     } catch {
       setError("Code incorrect ou expiré. Vérifiez et réessayez.")
       setOtp(Array(OTP_LENGTH).fill(""))

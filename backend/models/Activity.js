@@ -9,11 +9,11 @@ const Activity = sequelize.define("activities", {
         },
     type:{ 
         type: DataTypes.STRING(50), 
-        allowNull: false 
+        allowNull: true 
     },
-    title: { 
+    titre: { 
         type: DataTypes.STRING(255), 
-        allowNull: false 
+        allowNull: true 
     },
 });
 module.exports = Activity;

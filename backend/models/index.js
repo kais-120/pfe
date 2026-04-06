@@ -16,6 +16,7 @@ const OfferBookingDetails = require("./OfferBookingDetails");
 const Otp = require("./Otp");
 const Package = require("./Package");
 const PartnerFile = require("./PartnerFiles");
+const Payment = require("./Payment");
 const RefuseReason = require("./RefuseReason");
 const Reviews = require("./Reviews");
 const Room = require("./Room");
@@ -38,25 +39,25 @@ User.hasMany(Agence, {
 });
 Agence.belongsTo(User, {
     foreignKey: "partner_id",
-    as: "agence"
+    as: "partnerAgence"
 })
 
 User.hasMany(Compagnie, {
     foreignKey:"partner_id",
-    as:"partnerCompagnie"
+    as:"compagniePartner"
 });
 Compagnie.belongsTo(User, {
     foreignKey: "partner_id",
-    as: "compagnie"
+    as: "partnerCompagnie"
 })
 
 User.hasMany(Location, {
     foreignKey:"partner_id",
-    as:"partnerLocation"
+    as:"locationPartner"
 });
 Location.belongsTo(User, {
     foreignKey: "partner_id",
-    as: "location"
+    as: "partnerLocation"
 })
 
 User.hasMany(Hotel, {
@@ -69,11 +70,11 @@ Hotel.belongsTo(User, {
 })
 User.hasMany(Voyage, {
     foreignKey:"partner_id",
-    as:"partnerVoyage"
+    as:"VoyagePartner"
 });
 Voyage.belongsTo(User, {
     foreignKey: "partner_id",
-    as: "voyage"
+    as: "partnerVoyage"
 })
 
 User.hasMany(PartnerFile, {
@@ -238,21 +239,23 @@ Booking.hasMany(FlightBookingDetails, {
   foreignKey: "booking_id",
   as: "flightBooking"
 })
-
-FlightBookingDetails.belongsTo(Flight, {
+FlightBookingDetails.belongsTo(Booking, {
   foreignKey: "booking_id",
-  as: "flightDetails"
+  as: "bookingsBooking"
 })
+
+
+
 
 Flight.hasMany(FlightBookingDetails, {
   foreignKey: "flight_id",
   as: "flightDetails"
 })
-
-FlightBookingDetails.belongsTo(Booking, {
+FlightBookingDetails.belongsTo(Flight, {
   foreignKey: "flight_id",
-  as: "bookingsBooking"
+  as: "detailsFlight"
 })
+
 
 
 Booking.hasMany(CircuitBookingDetails, {
@@ -333,10 +336,18 @@ Package.belongsTo(Offer, {
     as:"offerPackage"
 })
 
+Booking.hasMany(Payment,{
+    foreignKey:"booking_id",
+    as:"payment"
+})
+Payment.belongsTo(Booking,{
+    foreignKey:"booking_id",
+    as:"bookingPayment"
+})
 
 
 module.exports = {  User, Otp,Agence,PartnerFile,Hotel,Compagnie,Voyage,
                     RefuseReason,Room,Booking,HotelBookingDetails,
                     Reviews,Location,Vehicle,Offer,Flight,FlightClasses,Circuit,
                     CarRentalBookingDetails,FlightBookingDetails,CircuitBookingDetails,
-                    OfferBookingDetails,Package,Destination};
+                    OfferBookingDetails,Package,Destination,Payment};

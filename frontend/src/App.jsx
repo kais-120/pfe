@@ -55,6 +55,8 @@ import SearchLocation from "./Pages/Search/SearchLocation";
 import PackagesList from "./dashboard/Partner/Service/Add/PackagesList";
 import AddPackage from "./dashboard/Partner/Service/Add/AddPackage";
 import PackagesDialog from "./Pages/ServiceInfo/PackagesDialog";
+import Services from "./dashboard/Admin/Services";
+import Dashboard from "./dashboard/Admin/Dashboard";
 
 function App() {
   return (
@@ -124,10 +126,13 @@ function App() {
   </Route>
   <Route element={<RoleReq allow={["admin","agent"]} />}>
     <Route path="/dashboard" element={<HomeDashboard/>}>
+      <Route index element={<Dashboard />} />
       <Route path="users" element={<Users />} />
       <Route path="users/create" element={<AddAgent />} />
       <Route path="document/partner" element={<PartnerDocument />} />
       <Route path="document/partner/:id" element={<PartnerDocumentInfo />} />
+      <Route path="service" element={<Services />} />
+
     </Route>
     </Route>
 </Routes>

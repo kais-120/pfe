@@ -19,20 +19,20 @@ import { LucideAlertCircle } from "lucide-react"
 import logo from "../assets/image.png"
 
 const validationSchema = yup.object().shape({
-  name:            yup.string().min(3, "Minimum 3 caractères").required("Le nom est requis"),
-  phone:           yup.string().length(8, "Doit contenir 8 chiffres").required("Le téléphone est requis").matches(/^\d+$/, "Chiffres uniquement"),
-  email:           yup.string().email("Email invalide").required("L'email est requis"),
-  password:        yup.string().min(6, "Minimum 6 caractères").required("Le mot de passe est requis"),
+  name: yup.string().min(3, "Minimum 3 caractères").required("Le nom est requis"),
+  phone: yup.string().length(8, "Doit contenir 8 chiffres").required("Le téléphone est requis").matches(/^\d+$/, "Chiffres uniquement"),
+  email: yup.string().email("Email invalide").required("L'email est requis"),
+  password: yup.string().min(6, "Minimum 6 caractères").required("Le mot de passe est requis"),
   confirmPassword: yup.string().required("Confirmation requise").oneOf([yup.ref("password"), null], "Les mots de passe ne correspondent pas"),
-  sector:          yup.string().required("Le secteur est requis"),
+  sector: yup.string().required("Le secteur est requis"),
 })
 
 const SECTORS = [
-  { value: "agence de voyage",      label: "Agence de voyage",      Icon: FaGlobe   },
-  { value: "location de voitures",  label: "Location de voitures",  Icon: FaCar     },
-  { value: "hôtel",                 label: "Hôtel",                 Icon: FaHotel   },
-  { value: "compagnies aériennes",  label: "Compagnies aériennes",  Icon: FaPlane   },
-  { value: "voyages circuits",      label: "Voyages circuits",      Icon: FaRoute   },
+  { value: "agence de voyage", label: "Agence de voyage", Icon: FaGlobe },
+  { value: "location de voitures", label: "Location de voitures", Icon: FaCar },
+  { value: "hôtel", label: "Hôtel", Icon: FaHotel },
+  { value: "compagnies aériennes", label: "Compagnies aériennes", Icon: FaPlane },
+  { value: "voyages circuits", label: "Voyages circuits", Icon: FaRoute },
 ]
 
 const sectorCollection = createListCollection({
@@ -93,7 +93,9 @@ function FormField({ formik, name, label, type = "text", placeholder, icon: Icon
 
 const PartnerSignUp = () => {
   const [emailError, setEmailError] = useState(false)
-  const [loading,    setLoading]    = useState(false)
+  const [phoneError, setPhoneError] = useState(false)
+  const [emailPhoneError, setEmailPhoneError] = useState(false)
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
   const formik = useFormik({
@@ -105,11 +107,25 @@ const PartnerSignUp = () => {
     onSubmit: async (values) => {
       try {
         setEmailError(false)
+        setEmailPhoneError(false)
+        setPhoneError(false)
         setLoading(true)
         const response = await Axios.post("/auth/partner/register", values)
         navigate(`/verify/${response.data.token}`)
-      } catch {
-        setEmailError(true)
+      } catch(err) {
+        if (err.status === 422) {
+          if (Object.keys(err.response.data.errors).length === 2) {
+            setEmailPhoneError(true)
+          }
+          else {
+            if (Object.keys(err.response.data.errors)[0] === "email") {
+              setEmailError(true)
+            } else {
+              setPhoneError(true)
+            }
+
+          }
+        }
         setLoading(false)
       }
     }
@@ -144,7 +160,7 @@ const PartnerSignUp = () => {
           <Box position="relative" zIndex={1}>
             {/* Logo */}
             <Flex justify={"center"} align="center" gap={2.5} mb={16}>
-                <img src={logo} alt="logo" />
+              <img src={logo} alt="logo" />
             </Flex>
 
             <Text fontSize="3xl" fontWeight={900} color="white"
@@ -212,6 +228,28 @@ const PartnerSignUp = () => {
                 </Text>
               </Flex>
             )}
+            {emailPhoneError && (
+              <Flex align="center" gap={2.5} bg="red.50"
+                border="1px solid" borderColor="red.200"
+                borderRadius="xl" px={4} py={3} mb={5}
+              >
+                <Box color="red.500" flexShrink={0}><LucideAlertCircle size={15} /></Box>
+                <Text fontSize="sm" color="red.600" fontWeight={500}>
+                  Les email et Numéro de téléphone est déjà utilisé. Essayez avec des autres.
+                </Text>
+              </Flex>
+            )}
+            {phoneError && (
+              <Flex align="center" gap={2.5} bg="red.50"
+                border="1px solid" borderColor="red.200"
+                borderRadius="xl" px={4} py={3} mb={5}
+              >
+                <Box color="red.500" flexShrink={0}><LucideAlertCircle size={15} /></Box>
+                <Text fontSize="sm" color="red.600" fontWeight={500}>
+                  Cet Numéro de telephone est déjà utilisé. Essayez avec un autre Numéro.
+                </Text>
+              </Flex>
+            )}
 
             <form onSubmit={formik.handleSubmit}>
               <Box
@@ -221,7 +259,7 @@ const PartnerSignUp = () => {
               >
                 <VStack gap={4} align="stretch">
 
-                  <FormField formik={formik} name="name"  label="Nom complet"
+                  <FormField formik={formik} name="name" label="Nom complet"
                     placeholder="Votre nom" icon={LuUser} />
 
                   <Grid templateColumns="1fr 1fr" gap={4}>

@@ -16,12 +16,15 @@ const Reviews = sequelize.define("Reviews",{
         },
         onDelete:'CASCADE'
     },
-    type_service:{
-        type:DataTypes.ENUM("hotels","voyages","locations","agences","compagnies")
-    },
-    service_id:{
+    
+    hotel_id:{
         type:DataTypes.BIGINT,
         allowNull:false,
+        references:{
+            model:"hotels",
+            key:"id"
+        },
+        allowNull:true
     },
     rate:{
         type:DataTypes.INTEGER,
