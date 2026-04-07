@@ -9,25 +9,12 @@ import {
 } from "react-icons/lu"
 import { Helmet } from "react-helmet"
 import { Chart, registerables } from "chart.js"
-import { AxiosToken } from "./Api/Api"
+import { AxiosToken } from "../../Api/Api"
+import { useProfile } from "../../Context/useProfile"
 Chart.register(...registerables)
 
 
 
-const RECENT_REVIEWS = [
-  { client: "Ahmed Ben Ali", room: "Chambre Double Standard", rating: 5, comment: "Excellent séjour, personnel très accueillant.", time: "il y a 1h" },
-  { client: "Sara Chaabi", room: "Suite Deluxe", rating: 4, comment: "Très bonne chambre, vue magnifique.", time: "il y a 4h" },
-  { client: "Karim Dridi", room: "Chambre Standard", rating: 5, comment: "Propreté irréprochable, je recommande.", time: "hier" },
-  { client: "Nour Bettaieb", room: "Suite Prestige", rating: 3, comment: "Bien mais le petit-déjeuner était décevant.", time: "hier" },
-]
-
-const ROOMS = [
-  { name: "Chambre Standard", active: true, bookings: 85, price: "180 TND/nuit" },
-  { name: "Chambre Double", active: true, bookings: 62, price: "240 TND/nuit" },
-  { name: "Suite Deluxe", active: true, bookings: 48, price: "380 TND/nuit" },
-  { name: "Suite Prestige", active: true, bookings: 53, price: "500 TND/nuit" },
-  { name: "Chambre Familiale", active: false, bookings: 0, price: "320 TND/nuit" },
-]
 
 const STATUS_STYLE = {
   "confirmée": { bg: "#ECFDF5", text: "#065F46", dot: "#10B981" },
@@ -249,11 +236,14 @@ function Stars({ rating }) {
   )
 }
 
-const Test = () => {
+const DashboardPartner = () => {
   const [status, setStatus] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [rooms, setRooms] = useState([]);
+
+  const {user} = useProfile()
+  console.log(user)
 
   useEffect(() => {
     const dataFetch = async () => {
@@ -466,7 +456,7 @@ const Test = () => {
               {reviews.map((r, i) => (
                 <Box key={i} px={5} py={4}
                   borderRight={{ md: i % 2 === 0 ? "1px solid" : "none" }}
-                  borderBottom={i < RECENT_REVIEWS.length - 2 ? "1px solid" : { base: i < RECENT_REVIEWS.length - 1 ? "1px solid" : "none", md: "none" }}
+                  borderBottom={i < reviews.length - 2 ? "1px solid" : { base: i < reviews.length - 1 ? "1px solid" : "none", md: "none" }}
                   borderColor="gray.50">
                   <Flex justify="space-between" align="flex-start" mb={1.5}>
                     <Flex align="center" gap={2}>
@@ -605,4 +595,4 @@ const Test = () => {
   )
 }
 
-export default Test
+export default DashboardPartner

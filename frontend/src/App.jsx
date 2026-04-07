@@ -57,6 +57,7 @@ import AddPackage from "./dashboard/Partner/Service/Add/AddPackage";
 import PackagesDialog from "./Pages/ServiceInfo/PackagesDialog";
 import Services from "./dashboard/Admin/Services";
 import Dashboard from "./dashboard/Admin/Dashboard";
+import DashboardPartner from "./dashboard/Partner/DashboardPartner";
 
 function App() {
   return (
@@ -94,6 +95,7 @@ function App() {
   <Route element={<PartnerFileReq />}>
     <Route path="/partner/dashboard" element={<HomeDashboard/>}>
 
+      <Route index element={<DashboardPartner />} />
       <Route path="qr-scanner" element={<QrScannerPage />} />
       <Route path="service" element={<Service />} />
 

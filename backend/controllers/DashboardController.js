@@ -1,5 +1,5 @@
 // controllers/statsController.js
-const { Op, QueryTypes } = require("sequelize");
+const { Op, QueryTypes, fn, col, literal } = require("sequelize");
 const { User, Booking, Hotel, Agence, Voyage, Compagnie, Location, PartnerFile, HotelBookingDetails, FlightBookingDetails, CarRentalBookingDetails, CircuitBookingDetails, OfferBookingDetails, Room, Vehicle, Flight, Circuit, Offer, Reviews } = require("../models");
 const Payment = require("../models/Payment");
 const Activity = require("../models/Activity");
@@ -323,6 +323,137 @@ exports.getBooking = async (req, res) => {
   }
 };
 
+function getIncludeByPartner(sector, id) {
+  let include = [];
+  if (sector === "location de voitures") {
+    include = [
+      {
+        model: CarRentalBookingDetails,
+        as: "carDetails",
+        required: true,
+        include: [
+          {
+            model: Vehicle,
+            as: "vehicleBooking",
+            required: true,
+            include: [
+              {
+                model: Location,
+                as: "locationVehicle",
+                where: { id },
+                required: true,
+              }
+            ]
+          }
+        ]
+      },
+    ]
+  }
+
+  else if (sector === "agence de voyage") {
+
+    include = [
+      {
+        model: OfferBookingDetails,
+        as: "offerBooking",
+        required: true,
+        include: [
+          {
+            model: Offer,
+            as: "bookingDetailsOffer",
+            required: true,
+            include: [
+              {
+                model: Agence,
+                as: "agencyOffer",
+                where: { id },
+                required: true,
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+
+  else if (sector === "hôtel") {
+    include = [
+      {
+        model: HotelBookingDetails,
+        as: "bookingHotelDetails",
+        required: true,
+        include: [
+          {
+            model: Room,
+            as: "RoomHotelBooking",
+            required: true,
+            include: [
+              {
+                model: Hotel,
+                as: "hotelRoom",
+                where: { id },
+                required: true,
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+
+  else if (sector === "compagnies aériennes") {
+    include = [
+      {
+        model: FlightBookingDetails,
+        as: "flightBooking",
+        required: true,
+        include: [
+          {
+            model: Flight,
+            as: "detailsFlight",
+            required: true,
+            include: [
+              {
+                model: Compagnie,
+                as: "compagnieFlight",
+                where: { id },
+                required: true,
+              }
+            ]
+          }
+        ]
+      },
+    ]
+  }
+
+  else {
+
+    include = [
+      {
+        model: CircuitBookingDetails,
+        as: "circuitBooking",
+        required: true,
+        include: [
+          {
+            model: Circuit,
+            as: "circuitDetails",
+            required: true,
+            include: [
+              {
+                model: Voyage,
+                as: "voyagesCircuit",
+                where: { id },
+                required: true,
+              }
+            ]
+          }
+        ]
+      },
+    ]
+  }
+  return include;
+}
+
 exports.GetPartnerDashboardStats = async (req, res) => {
   try {
     const now = new Date();
@@ -617,15 +748,15 @@ exports.GetPartnerDashboardStats = async (req, res) => {
       ? ((bookingsThisMonth - bookingsLastMonth) / bookingsLastMonth) * 100
       : 100;
 
-      function cleanInclude(include) {
-  return include.map(item => ({
-    ...item,
-    attributes: [],
-    required: true,
-    include: item.include ? cleanInclude(item.include) : []
-  }));
-}
-const cleanedInclude = cleanInclude(includeConfig);
+    function cleanInclude(include) {
+      return include.map(item => ({
+        ...item,
+        attributes: [],
+        required: true,
+        include: item.include ? cleanInclude(item.include) : []
+      }));
+    }
+    const cleanedInclude = cleanInclude(includeConfig);
 
     const totalRevenue = await Payment.sum("amount", {
       include: [
@@ -633,8 +764,8 @@ const cleanedInclude = cleanInclude(includeConfig);
           model: Booking,
           as: "bookingPayment",
           attributes: [],
-            required: true,
-            include:cleanedInclude 
+          required: true,
+          include: cleanedInclude
         }
       ]
     }) || 0;
@@ -677,48 +808,84 @@ const cleanedInclude = cleanInclude(includeConfig);
       ? ((revenueThisMonth - revenueLastMonth) / revenueLastMonth) * 100
       : 100;
 
-      let totalReview = 0
 
-      if(partner.partnerInfo[0].sector === "hôtel"){
-        totalReview = await Reviews.count({include:{
-          model:Hotel,
-          as:"reviewHotel",
-          where:{partner_id}
-        }})
-        const reviewThisMonth = await Reviews.count({
-      where: { createdAt: { [Op.gte]: startOfMonth } },
-      include:[
-        {
-          model:Hotel,
-          as:"reviewHotel",
-          where:{partner_id}
+    if (partner.partnerInfo[0].sector === "hôtel") {
+      const totalReview = await Reviews.count({
+        include: {
+          model: Hotel,
+          as: "reviewHotel",
+          where: { partner_id }
         }
-      ]
-      
-    });
+      })
+      const sumNote = await Reviews.sum("rate", {
+        include: [
+          {
+            model: Hotel,
+            as: "reviewHotel",
+            attributes: [],
+            where: { partner_id }
+          }
+        ]
+      }) || 0
+      const reviewThisMonth = await Reviews.count({
+        where: { createdAt: { [Op.gte]: startOfMonth } },
+        include: [
+          {
+            model: Hotel,
+            as: "reviewHotel",
+            where: { partner_id }
+          }
+        ]
 
-    const reviewLastMonth = await Reviews.count({
-      where: {
-        createdAt: {
-          [Op.gte]: startOfPrevMonth,
-          [Op.lt]: endOfPrevMonth,
+      });
+
+      const reviewLastMonth = await Reviews.count({
+        where: {
+          createdAt: {
+            [Op.gte]: startOfPrevMonth,
+            [Op.lt]: endOfPrevMonth,
+          },
         },
-      },
-      include: [
-        {
-          model:Hotel,
-          as:"reviewHotel",
-          where:{partner_id}
-        }
-      ]
-    });
+        include: [
+          {
+            model: Hotel,
+            as: "reviewHotel",
+            where: { partner_id }
+          }
+        ]
+      });
 
-    const reviewsDelta = reviewLastMonth
-      ? ((reviewThisMonth - reviewLastMonth) / reviewLastMonth) * 100
-      : 100;
-      }
-console.log(totalReview)
-    res.json({
+      const reviewsDelta = reviewLastMonth
+        ? ((reviewThisMonth - reviewLastMonth) / reviewLastMonth) * 100
+        : 100;
+
+      return res.json({
+        message: "data status",
+        data: [
+          {
+            label: "booking",
+            value: totalBookings.toLocaleString(),
+            delta: +bookingsDelta.toFixed(1),
+          },
+          {
+            label: "review",
+            value: totalReview.toLocaleString(),
+            delta: +reviewsDelta.toFixed(1),
+          },
+          {
+            label: "note",
+            value: sumNote.toLocaleString(),
+          },
+          {
+            label: "payment",
+            value: totalRevenue.toLocaleString(),
+            delta: +revenueDelta.toFixed(1),
+          },
+        ],
+      });
+
+    }
+    return res.json({
       message: "data status",
       data: [
         {
@@ -735,6 +902,304 @@ console.log(totalReview)
     });
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.getRevenueChart = async (req, res) => {
+  try {
+    const partner_id = req.userId;
+    const partner = await User.findByPk(partner_id,
+      {
+        attributes: [],
+        include: [
+          {
+            model: PartnerFile,
+            as: "partnerInfo",
+            attributes: ["sector"]
+          }
+        ]
+      }
+    );
+    const includeConfig = getIncludeByPartner(partner.partnerInfo[0].sector, partner_id);
+
+    const cleanInclude = (include) => {
+      return include.map(item => ({
+        ...item,
+        attributes: [],
+        required: true,
+        include: item.include ? cleanInclude(item.include) : []
+      }));
+    };
+
+    const includes = [
+      {
+        model: Booking,
+        as: "bookingPayment",
+        attributes: [],
+        required: true,
+        include: cleanInclude(includeConfig)
+      }
+    ];
+
+    const monthlyData = await Payment.findAll({
+      attributes: [
+        [fn("TO_CHAR", col("payments.createdAt"), "Mon"), "month"],
+        [fn("SUM", col("amount")), "total"]
+      ],
+      raw: true,
+      where: {
+        createdAt: {
+          [Op.gte]: new Date(new Date().setMonth(new Date().getMonth() - 5))
+        }
+      },
+      include: includes,
+      group: [literal(`TO_CHAR("payments"."createdAt", 'Mon')`)],
+      order: [literal(`MIN("payments"."createdAt") ASC`)]
+    });
+
+    const labels = monthlyData.map(d => d.get("month"));
+    const monthly = monthlyData.map(d => parseFloat(d.get("total")));
+    const weekly = monthly.map(v => Math.round(v / 4));
+    const daily = monthly.map(v => Math.round(v / 30));
+
+    return res.json({
+      labels,
+      daily,
+      weekly,
+      monthly
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.getBookingsChart = async (req, res) => {
+  try {
+    const partner_id = req.userId;
+    const partner = await User.findByPk(partner_id,
+      {
+        attributes: [],
+        include: [
+          {
+            model: PartnerFile,
+            as: "partnerInfo",
+            attributes: ["sector"]
+          }
+        ]
+      }
+    );
+    const includeConfig = getIncludeByPartner(partner.partnerInfo[0].sector, partner_id);
+
+    const cleanInclude = (include) => {
+      return include.map(item => ({
+        ...item,
+        attributes: [],
+        required: true,
+        include: item.include ? cleanInclude(item.include) : []
+      }));
+    };
+
+    const includes = cleanInclude(includeConfig);
+
+    const bookingsData = await Booking.findAll({
+      attributes: [
+        [fn("TO_CHAR", col("booking.createdAt"), "Mon"), "month"],
+        [fn("COUNT", col("booking.id")), "total"]
+      ],
+      where: {
+        createdAt: {
+          [Op.gte]: new Date(new Date().setMonth(new Date().getMonth() - 5))
+        }
+      },
+      include: includes,
+      group: [literal(`TO_CHAR("booking"."createdAt", 'Mon')`)],
+      order: [literal(`MIN("booking"."createdAt") ASC`)],
+      raw: true,
+    });
+
+    const MONTHS = Array.from({ length: 6 }, (_, i) => {
+      const date = new Date();
+      date.setMonth(date.getMonth() - (5 - i));
+      return date.toLocaleString("fr-FR", { month: "short" });
+    });
+
+    const dataMap = Object.fromEntries(
+      bookingsData.map(d => [d.month, parseInt(d.total)])
+    );
+
+    const labels = MONTHS;
+    const values = MONTHS.map(m => dataMap[m] || 0);
+
+    return res.json({
+      labels,
+      values
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.getLastBookings = async (req, res) => {
+  try {
+    const partner_id = req.userId;
+    const partner = await User.findByPk(partner_id,
+      {
+        attributes: [],
+        include: [
+          {
+            model: PartnerFile,
+            as: "partnerInfo",
+            attributes: ["sector"]
+          }
+        ]
+      }
+    );
+    const includeConfig = getIncludeByPartner(partner.partnerInfo[0].sector, partner_id);
+
+    const cleanInclude = (include) => {
+      return include.map(item => ({
+        ...item,
+        required: true,
+        include: item.include ? cleanInclude(item.include) : []
+      }));
+    };
+
+    const includes = cleanInclude(includeConfig);
+
+    const bookings = await Booking.findAll({
+      include: [
+        {
+          model: User,
+          as: "userBooking",
+          attributes: ["name"]
+        }
+        , ...includes],
+    });
+
+    return res.json({
+      message: "booking data",
+      bookings: bookings.slice(0, 6)
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.getLastReviews = async (req, res) => {
+  try {
+    const partner_id = req.userId;
+    const totalReview = await Reviews.count({
+      include: [
+        {
+          model: Hotel,
+          as: "reviewHotel",
+          attributes: [],
+          where: { partner_id }
+        }
+      ]
+    })
+    const sumRate = await Reviews.sum("rate", {
+      include: [
+        {
+          model: Hotel,
+          as: "reviewHotel",
+          attributes: [],
+          where: { partner_id }
+        }
+      ]
+    }) || 0;
+    const reviewScore = totalReview === 0 ? 0 : sumRate / totalReview;
+    const reviews = await Reviews.findAll({
+      limit: 4,
+      include: [{
+        model: User,
+        as: "clientReview",
+        attributes: ["name"]
+      },
+      {
+        model: Hotel,
+        as: "reviewHotel",
+        attributes: [],
+        where: { partner_id }
+      }
+      ]
+    })
+    return res.json({
+      message: "review data",
+      reviews,
+      totalReview,
+      reviewScore
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+exports.getRooms = async (req, res) => {
+  try {
+    const partner_id = req.userId;
+    const rooms = await Hotel.findAll({
+      where: { partner_id },
+      attributes: [],
+      include: [
+        {
+          model: Room,
+          as: "rooms",
+        }
+      ]
+    })
+    const today = new Date();
+   const bookingsCount = await HotelBookingDetails.findAll({
+  attributes: [
+    "room_id",
+    [fn("COUNT", col("room_id")), "totalBooked"]
+  ],
+  where: {
+    check_out_date: {
+      [Op.gte]: today
+    }
+  },
+  group: ["room_id"],
+  raw: true
+});
+    const bookingMap = {};
+bookingsCount.forEach(b => {
+  bookingMap[b.room_id] = parseInt(b.totalBooked);
+});
+const result = rooms.flatMap(hotel =>
+  hotel.rooms.map(room => {
+    const booked = bookingMap[room.id] || 0;
+    const total = room.count;
+
+    const occupation = total === 0 ? 0 : Math.round((booked / total) * 100);
+
+    return {
+      room_id: room.id,
+      name: room.name,
+      price: room.price_by_day,
+      status: room.status,
+      total,
+      booked,
+      occupation: occupation
+    };
+  })
+);
+
+    return res.json({
+      message: "review data",
+      rooms:result 
+    });
+
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };

@@ -30,6 +30,10 @@ const Room = sequelize.define("room", {
   count: {
     type: DataTypes.INTEGER,
   },
+  status: {
+    type: DataTypes.ENUM(["active","inactive"]),
+    defaultValue:"active"
+  },
   hotel_id:{
         type:DataTypes.BIGINT,
         references:{
