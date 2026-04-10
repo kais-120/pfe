@@ -6,6 +6,7 @@ import { LuChevronDown, LuSettings, LuLogOut, LuBell, LuCheck, LuFileText, LuInf
 import Cookies from 'universal-cookie';
 import { io } from 'socket.io-client';
 import { Banknote, CalendarCheck } from 'lucide-react';
+import { useProfile } from '../../Context/useProfile';
 
 const NOTIF_META = {
   document: { Icon: LuFileText,color: "blue", bg: "blue.50"   },
@@ -23,12 +24,13 @@ const formatTime = (date) => {
 }
 
 const Topbar = () => {
-  const [user,setUser] = useState(null)
   const [notifications, setNotifications] = useState([])
   const [notifOpen,setNotifOpen] = useState(false)
   const notifRef = useRef(null)
   const navigate = useNavigate()
-  const cookie   = new Cookies()
+  const cookie  = new Cookies()
+
+  const {user} = useProfile();
 
   const unreadCount = notifications.filter(n => !n.is_read).length
 
@@ -41,18 +43,7 @@ const Topbar = () => {
     return () => document.removeEventListener("mousedown", handler)
   }, [])
 
-  useEffect(() => {
-    async function loadUser() {
-      try {
-        const res = await AxiosToken.get("/auth/profile")
-        setUser(res.data.data)
-      } catch {
-        navigate("/")
-        window.location.reload();
-      }
-    }
-    loadUser()
-  }, [navigate])
+
 
   const fetchNotifications = async () => {
     try {
@@ -90,7 +81,11 @@ const Topbar = () => {
     } catch { console.error("err") }
   }
 
-  const handleLogout = () => { cookie.remove("auth"); window.location = "/login" }
+  const handleLogout = () => {
+    cookie.remove("auth");
+    navigate("/login");
+    window.location.reload(); 
+  }
   const initials = user?.name?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
 
   return (

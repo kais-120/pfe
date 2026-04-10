@@ -70,12 +70,9 @@ const AddLocation = () => {
     },
     validationSchema,
     onSubmit: async (values) => {
-      const formData = new FormData()
-      formData.append("name",    values.name)
-      formData.append("address", values.address)
-
+    
       try {
-        await AxiosToken.post("/service/location/add", formData)
+        await AxiosToken.post("/service/location/add", values)
         toaster.create({
           description: "Agence de location créée avec succès.",
           type: "success", closable: true,
@@ -90,8 +87,6 @@ const AddLocation = () => {
     }
   })
 
-
-  
 
   return (
     <Container py={2}>
@@ -120,7 +115,6 @@ const AddLocation = () => {
       <form onSubmit={formik.handleSubmit}>
         <VStack gap={4} align="stretch">
 
-          {/* ── Card 1 : Informations ── */}
           <Box bg="white" borderRadius="2xl" p={6}
             border="1px solid" borderColor="gray.100"
             boxShadow="0 1px 8px rgba(0,0,0,0.05)">
@@ -138,6 +132,7 @@ const AddLocation = () => {
             <VStack gap={4} align="stretch">
               <FormField formik={formik} name="name" label="Nom de l'agence" icon={LuCar}>
                 <Input
+                  outline={"none"}
                   name="name"
                   value={formik.values.name}
                   onChange={formik.handleChange}
@@ -152,6 +147,7 @@ const AddLocation = () => {
 
               <FormField formik={formik} name="address" label="Adresse" icon={LuMapPin}>
                 <Input
+                outline={"none"}
                   name="address"
                   value={formik.values.address}
                   onChange={formik.handleChange}

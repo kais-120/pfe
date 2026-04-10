@@ -425,7 +425,6 @@ exports.GetHotel = async (req, res) => {
         {
           model: Reviews,
           as: "hotelReview",
-          where: { type_service: "hotels" },
           include: [
             {
               model: User,
@@ -453,6 +452,9 @@ exports.AddHotel = [
   body("description").notEmpty().withMessage("description is required"),
   body("address").notEmpty().withMessage("address by day is required"),
   body("equipments").notEmpty().withMessage("equipments by day is required"),
+  body("destination").notEmpty().withMessage("destination by day is required"),
+  body("start").notEmpty().withMessage("start is required")
+  .isNumeric().withMessage("start should be numeric"),
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -460,8 +462,8 @@ exports.AddHotel = [
     }
     try {
       const partner_id = req.userId;
-      const { name, description, address, equipments } = req.body;
-      const hotel = await Hotel.create({ name, description, address, equipments, partner_id });
+      const { name, description, address, equipments,destination,start } = req.body;
+      const hotel = await Hotel.create({ name, description, address, equipments, destination ,start,partner_id });
       const files = req.files.service_doc;
       for (const element of files) {
         await ImageService.create({
@@ -510,7 +512,7 @@ exports.AddRoom = [
 
 exports.AddLocation = [
   body("name").notEmpty().withMessage("name is required"),
-  body("address").notEmpty().withMessage("address by day is required"),
+  body("address").notEmpty().withMessage("address is required"),
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -519,6 +521,7 @@ exports.AddLocation = [
     try {
       const partner_id = req.userId;
       const { name, address } = req.body;
+      console.log(name)
       await Location.create({ name, address, partner_id });
       await Activity.create({type:"service",titre:`Nouvel location a créé`})
       return res.json({ message: "location created" });
@@ -537,7 +540,7 @@ exports.GetLocation = async (req, res) => {
       include: [
         {
           model: Vehicle,
-          as: "vehicle",
+          as: "vehicles",
           required: false,
         },
       ]
@@ -552,7 +555,7 @@ exports.GetLocation = async (req, res) => {
     });
 
     const locationJSON = locationData.toJSON();
-    const vehiclesWithImages = locationJSON.vehicle.map((vehicle) => {
+    const vehiclesWithImages = locationJSON.vehicles.map((vehicle) => {
       const imagesVehicle = images.filter(
         (img) => String(img.service_id) === String(vehicle.id)
       );
@@ -1089,7 +1092,6 @@ exports.AddOffer = [
         description,
       } = req.body;
 
-      // ───── Parse JSON fields ─────
       let included = [];
       let not_included = [];
       let packages = [];
@@ -1135,9 +1137,7 @@ exports.AddOffer = [
         not_included,
         agency_id: agency.id,
       });
-      console.log(offer.id)
 
-      // ───── Create Packages + Destinations ─────
       for (const pkg of packages) {
         const createdPackage = await Package.create({
           title: pkg.title,
@@ -1197,7 +1197,7 @@ exports.AddAirline = [
 
   body("hub")
     .notEmpty().withMessage("hub is required")
-    .isLength({ min: 3, max: 10 }).withMessage("Hub invalid"),
+    .isLength({ min: 3}).withMessage("Hub invalid"),
 
   body("description")
     .notEmpty().withMessage("description is required"),
@@ -1492,15 +1492,6 @@ exports.AddFlight = [
     }),
   body("seats_total").notEmpty().withMessage("Total seats is required")
     .isInt({ min: 1 }),
-
-  body("seats_available").notEmpty().withMessage("Available seats is required")
-    .isInt({ min: 0 })
-    .custom((value, { req }) => {
-      if (parseInt(value) > parseInt(req.body.seats_total)) {
-        throw new Error("Available seats cannot exceed total seats");
-      }
-      return true;
-    }),
   body("baggage_kg").optional()
     .isInt({ min: 0 }),
   body("status").optional()
@@ -1526,7 +1517,6 @@ exports.AddFlight = [
         classesChildren,
         seatsClasses,
         seats_total,
-        seats_available,
         baggage_kg,
         status,
         type_flight
@@ -1536,7 +1526,10 @@ exports.AddFlight = [
       if (typeof seatsClasses === "string") seatsClasses = JSON.parse(seatsClasses);
       const airline = await Compagnie.findOne({ where: { partner_id } });
 
-
+      const seats_available = classRows.reduce(
+        (sum, cls) => sum + cls.seats_available,
+        0
+      );
       const flight = await Flight.create({
         flight_number,
         departure_airport: from,
@@ -1618,7 +1611,7 @@ exports.AddVoyage = [
 
   }
 ];
-exports.GetVoyage = async (req, res) => {
+exports. GetVoyage = async (req, res) => {
   try {
     const partner_id = req.userId;
     const voyageData = await Voyage.findOne({
@@ -1749,20 +1742,56 @@ exports.AddCircuit = [
   body("description").isLength({ min: 10 }).withMessage("Description must be at least 10 chars"),
   body("category").isIn(["voyage", "camping", "désert", "aventure", "plage", "montagne", "culturel"]).withMessage("Invalid category"),
   body("difficulty").isIn(["facile", "modéré", "difficile", "très difficile"]).withMessage("Invalid difficulty"),
-  body("price_per_person").isFloat({ gt: 0 }).withMessage("Price must be > 0"),
-  body("duration_days").isInt({ gt: 0 }).withMessage("Duration must be > 0"),
-  body("max_people").isInt({ gt: 0 }).withMessage("Max people must be > 0"),
   body("inclusions").optional({ checkFalsy: true }).isArray(),
   body("available_dates").optional({ checkFalsy: true }).isArray(),
   async (req, res) => {
     try {
-      const { title, location, description, category, difficulty, price_per_person, duration_days, max_people, inclusions, available_dates } = req.body;
+      const { title, location, description, category, difficulty, inclusions, available_dates } = req.body;
       const partner_id = req.userId;
-      const voyage = Voyage.findOne({ where: { partner_id } });
+      let packages = [];
+       try {
+        packages = JSON.parse(req.body.packages || "[]");
+        if (!Array.isArray(packages)) throw new Error();
+      } catch {
+        return res.status(400).json({ message: "packages must be array" });
+      }
+
+      const voyage = await Voyage.findOne({ where: { partner_id } });
       if (!voyage) {
         res.status(404).send({ message: "voyage not found" });
       }
-      const circuit = await Circuit.create({ title, location, description, category, difficulty, price_per_person, duration_days, max_people, inclusions, available_dates, voyage_id: voyage.id });
+      const circuit = await Circuit.create({ title, location, description, category, difficulty, inclusions, available_dates, voyage_id: voyage.id });
+      
+      for (const pkg of packages) {
+        const createdPackage = await Package.create({
+          title: pkg.title,
+          month: pkg.month,
+          year: Number(pkg.year),
+          type: pkg.type,
+          departureDate: pkg.departureDate,
+          departureTime: pkg.departureTime,
+          departureAirport: pkg.departureAirport,
+          returnDate: pkg.returnDate,
+          returnTime: pkg.returnTime,
+          returnAirport: pkg.returnAirport,
+          price: pkg.price,
+          number_place: pkg.seats,
+          installment: pkg.installment,
+          circuit_id: circuit.id,
+        });
+
+        if (pkg.destinations && pkg.destinations.length > 0) {
+          const destinationsData = pkg.destinations.map((d) => ({
+            name: d.name,
+            rating: d.rating || 3,
+            nights: d.nights || 1,
+            package_id: createdPackage.id,
+          }));
+
+          await Destination.bulkCreate(destinationsData);
+        }
+      }
+      
       const files = req.files.service_doc;
       for (const element of files) {
         await ImageService.create({

@@ -1,6 +1,6 @@
 // controllers/statsController.js
 const { Op, QueryTypes, fn, col, literal } = require("sequelize");
-const { User, Booking, Hotel, Agence, Voyage, Compagnie, Location, PartnerFile, HotelBookingDetails, FlightBookingDetails, CarRentalBookingDetails, CircuitBookingDetails, OfferBookingDetails, Room, Vehicle, Flight, Circuit, Offer, Reviews } = require("../models");
+const { User, Booking, Hotel, Agence, Voyage, Compagnie, Location, PartnerFile, HotelBookingDetails, FlightBookingDetails, CarRentalBookingDetails, CircuitBookingDetails, OfferBookingDetails, Room, Vehicle, Flight, Circuit, Offer, Reviews, Package } = require("../models");
 const Payment = require("../models/Payment");
 const Activity = require("../models/Activity");
 const sequelize = require("../configs/db");
@@ -340,7 +340,7 @@ function getIncludeByPartner(sector, id) {
               {
                 model: Location,
                 as: "locationVehicle",
-                where: { id },
+                where: {partner_id : id },
                 required: true,
               }
             ]
@@ -366,7 +366,7 @@ function getIncludeByPartner(sector, id) {
               {
                 model: Agence,
                 as: "agencyOffer",
-                where: { id },
+                where: {partner_id : id },
                 required: true,
               }
             ]
@@ -391,7 +391,7 @@ function getIncludeByPartner(sector, id) {
               {
                 model: Hotel,
                 as: "hotelRoom",
-                where: { id },
+                where: { partner_id : id },
                 required: true,
               }
             ]
@@ -416,7 +416,7 @@ function getIncludeByPartner(sector, id) {
               {
                 model: Compagnie,
                 as: "compagnieFlight",
-                where: { id },
+                where: { partner_id : id },
                 required: true,
               }
             ]
@@ -442,7 +442,12 @@ function getIncludeByPartner(sector, id) {
               {
                 model: Voyage,
                 as: "voyagesCircuit",
-                where: { id },
+                where: {partner_id : id },
+                required: true,
+              },
+               {
+                model: Package,
+                as: "packagesCircuit",
                 required: true,
               }
             ]
@@ -979,22 +984,25 @@ exports.getRevenueChart = async (req, res) => {
 exports.getBookingsChart = async (req, res) => {
   try {
     const partner_id = req.userId;
-    const partner = await User.findByPk(partner_id,
-      {
-        attributes: [],
-        include: [
-          {
-            model: PartnerFile,
-            as: "partnerInfo",
-            attributes: ["sector"]
-          }
-        ]
-      }
+
+    const partner = await User.findByPk(partner_id, {
+      attributes: [],
+      include: [
+        {
+          model: PartnerFile,
+          as: "partnerInfo",
+          attributes: ["sector"]
+        }
+      ]
+    });
+
+    const includeConfig = getIncludeByPartner(
+      partner.partnerInfo[0].sector,
+      partner_id
     );
-    const includeConfig = getIncludeByPartner(partner.partnerInfo[0].sector, partner_id);
 
     const cleanInclude = (include) => {
-      return include.map(item => ({
+      return include.map((item) => ({
         ...item,
         attributes: [],
         required: true,
@@ -1006,32 +1014,39 @@ exports.getBookingsChart = async (req, res) => {
 
     const bookingsData = await Booking.findAll({
       attributes: [
-        [fn("TO_CHAR", col("booking.createdAt"), "Mon"), "month"],
-        [fn("COUNT", col("booking.id")), "total"]
+        [fn("TO_CHAR", col("booking.createdAt"), "MM"), "month"],
+        [fn("COUNT", literal('DISTINCT "booking"."id"')), "total"]
       ],
       where: {
         createdAt: {
-          [Op.gte]: new Date(new Date().setMonth(new Date().getMonth() - 5))
+          [Op.gte]: new Date(
+            new Date().setMonth(new Date().getMonth() - 5)
+          )
         }
       },
       include: includes,
-      group: [literal(`TO_CHAR("booking"."createdAt", 'Mon')`)],
+      group: [literal(`TO_CHAR("booking"."createdAt", 'MM')`)],
       order: [literal(`MIN("booking"."createdAt") ASC`)],
-      raw: true,
+      raw: true
     });
 
     const MONTHS = Array.from({ length: 6 }, (_, i) => {
       const date = new Date();
       date.setMonth(date.getMonth() - (5 - i));
-      return date.toLocaleString("fr-FR", { month: "short" });
+      return String(date.getMonth() + 1).padStart(2, "0"); // "04"
     });
 
     const dataMap = Object.fromEntries(
-      bookingsData.map(d => [d.month, parseInt(d.total)])
+      bookingsData.map((d) => [d.month, parseInt(d.total)])
     );
 
-    const labels = MONTHS;
-    const values = MONTHS.map(m => dataMap[m] || 0);
+    const values = MONTHS.map((m) => dataMap[m] || 0);
+
+    const labels = MONTHS.map((m, i) => {
+      const date = new Date();
+      date.setMonth(date.getMonth() - (5 - i));
+      return date.toLocaleString("fr-FR", { month: "short" });
+    });
 
     return res.json({
       labels,
@@ -1078,8 +1093,9 @@ exports.getLastBookings = async (req, res) => {
           as: "userBooking",
           attributes: ["name"]
         }
-        , ...includes],
+        , ...includeConfig],
     });
+    
 
     return res.json({
       message: "booking data",
@@ -1146,6 +1162,21 @@ exports.getLastReviews = async (req, res) => {
 exports.getRooms = async (req, res) => {
   try {
     const partner_id = req.userId;
+     const partner = await User.findByPk(partner_id,
+      {
+        attributes: [],
+        include: [
+          {
+            model: PartnerFile,
+            as: "partnerInfo",
+            attributes: ["sector"]
+          }
+        ]
+      }
+    );
+    if(partner.partnerInfo[0].sector !== "hôtel"){
+      return res.status(403).json({message:"partner not allow"})
+    }
     const rooms = await Hotel.findAll({
       where: { partner_id },
       attributes: [],
@@ -1196,6 +1227,335 @@ const result = rooms.flatMap(hotel =>
     return res.json({
       message: "review data",
       rooms:result 
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.getVehicle = async (req, res) => {
+  try {
+    const partner_id = req.userId;
+     const partner = await User.findByPk(partner_id,
+      {
+        attributes: [],
+        include: [
+          {
+            model: PartnerFile,
+            as: "partnerInfo",
+            attributes: ["sector"]
+          }
+        ]
+      }
+    );
+    if(partner.partnerInfo[0].sector !== "location de voitures"){
+      return res.status(403).json({message:"partner not allow"})
+    }
+    const vehicles = await Location.findAll({
+      where: { partner_id },
+      attributes: [],
+      include: [
+        {
+          model: Vehicle,
+          as: "vehicles",
+        }
+      ]
+    })
+    const today = new Date();
+   const locationCount = await CarRentalBookingDetails.findAll({
+  attributes: [
+    "vehicle_id",
+    [fn("COUNT", col("vehicle_id")), "totalBooked"]
+  ],
+  where: {
+    return_date: {
+      [Op.gte]: today
+    }
+  },
+  group: ["vehicle_id"],
+  raw: true
+});
+    const bookingMap = {};
+locationCount.forEach(b => {
+  bookingMap[b.vehicle_id] = parseInt(b.totalBooked);
+});
+const result = vehicles.flatMap(location =>
+  location.vehicles.map(vehicle => {
+    const booked = bookingMap[vehicle.id] || 0;
+
+    return {
+      vehicle_id: vehicle.id,
+      brand: vehicle.brand,
+      model: vehicle.model,
+      year: vehicle.year,
+      price: vehicle.price_by_day,
+      status: vehicle.status,
+      booked:booked === 0 ? false : true,
+    };
+  })
+);
+
+    return res.json({
+      message: "review data",
+      vehicles:result 
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.getFlight = async (req, res) => {
+  try {
+    const partner_id = req.userId;
+     const partner = await User.findByPk(partner_id,
+      {
+        attributes: [],
+        include: [
+          {
+            model: PartnerFile,
+            as: "partnerInfo",
+            attributes: ["sector"]
+          }
+        ]
+      }
+    );
+    if(partner.partnerInfo[0].sector !== "compagnies aériennes"){
+      return res.status(403).json({message:"partner not allow"})
+    }
+    const flights = await Compagnie.findAll({
+      where: { partner_id },
+      attributes: [],
+      include: [
+        {
+          model: Flight,
+          as: "FlightCompagnie",
+        }
+      ]
+    })
+    const today = new Date();
+const bookingsCount = await FlightBookingDetails.findAll({
+  attributes: [
+    "flight_id",
+    [fn("COUNT", col("flight_booking_details.flight_id")), "totalBooked"]
+  ],
+  include: [
+    {
+      model: Flight,
+      as: "detailsFlight",
+      attributes: [],
+      where: {
+        departure: {
+          [Op.gte]: today
+        }
+      }
+    }
+  ],
+  group: ["flight_booking_details.flight_id"],
+  raw: true
+});
+    const bookingMap = {};
+bookingsCount.forEach(b => {
+  bookingMap[b.flight_id] = parseInt(b.totalBooked);
+});
+const result = flights.flatMap(compagnie =>
+  compagnie.FlightCompagnie.map(flight => {
+    const booked = bookingMap[flight.id] || 0;
+    const total = flight.seats_available;
+    console.log(flight)
+
+    const occupation = total === 0 ? 0 : Math.round((booked / total) * 100);
+
+    return {
+      flight_id: flight.id,
+      flight_number: flight.flight_number,
+      status: flight.status,
+      departure_airport:flight.departure_airport,
+      arrival_airport:flight.arrival_airport,
+      type_flight:flight.type_flight,
+      total,
+      booked,
+      occupation: occupation
+    };
+  })
+);
+
+    return res.json({
+      message: "flight data",
+      flight:result 
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.getOffer = async (req, res) => {
+  try {
+    const partner_id = req.userId;
+
+    const partner = await User.findByPk(partner_id, {
+      attributes: [],
+      include: [
+        {
+          model: PartnerFile,
+          as: "partnerInfo",
+          attributes: ["sector"]
+        }
+      ]
+    });
+
+    if (partner.partnerInfo[0].sector !== "agence de voyage") {
+      return res.status(403).json({ message: "partner not allow" });
+    }
+
+    const agences = await Agence.findAll({
+      where: { partner_id },
+      attributes: [],
+      include: [
+        {
+          model: Offer,
+          as: "offers",
+          include: [
+            {
+              model: Package,
+              as: "packages",
+              attributes: ["id", "number_place"]
+            }
+          ]
+        }
+      ]
+    });
+
+    const bookingsCount = await OfferBookingDetails.findAll({
+      attributes: [
+        "offer_id",
+        [fn("COUNT", col("offer_booking_details.offer_id")), "totalBooked"]
+      ],
+      group: ["offer_booking_details.offer_id"],
+      raw: true
+    });
+
+    const bookingMap = {};
+    bookingsCount.forEach(b => {
+      bookingMap[b.offer_id] = parseInt(b.totalBooked);
+    });
+
+    const result = agences.flatMap(agence =>
+      agence.offers.map(offer => {
+
+        const booked = bookingMap[offer.id] || 0;
+
+        const total = offer.packages.reduce((sum, p) => {
+          return sum + (p.number_place || 0);
+        }, 0);
+
+        const occupation =
+          total === 0 ? 0 : Math.round((booked / total) * 100);
+
+        return {
+          offer_id: offer.id,
+          title: offer.title,
+          package:offer.packages.length,
+          total,
+          booked,
+          occupation
+        };
+      })
+    );
+
+    return res.json({
+      message: "offers stats",
+      data: result
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.getCircuit = async (req, res) => {
+  try {
+    const partner_id = req.userId;
+
+    const partner = await User.findByPk(partner_id, {
+      attributes: [],
+      include: [
+        {
+          model: PartnerFile,
+          as: "partnerInfo",
+          attributes: ["sector"]
+        }
+      ]
+    });
+
+    if (partner.partnerInfo[0].sector !== "voyages circuits") {
+      return res.status(403).json({ message: "partner not allow" });
+    }
+
+    const voyages = await Voyage.findAll({
+      where: { partner_id },
+      attributes: [],
+      include: [
+        {
+          model: Circuit,
+          as: "circuits",
+          include: [
+            {
+              model: Package,
+              as: "packagesCircuit",
+              attributes: ["id", "number_place","price"]
+            }
+          ]
+        }
+      ]
+    });
+
+    const bookingsCount = await CircuitBookingDetails.findAll({
+      attributes: [
+        "circuit_id",
+        [fn("COUNT", col("circuit_booking_details.circuit_id")), "totalBooked"]
+      ],
+      group: ["circuit_booking_details.circuit_id"],
+      raw: true
+    });
+
+    const bookingMap = {};
+    bookingsCount.forEach(b => {
+      bookingMap[b.circuit_id] = parseInt(b.totalBooked);
+    });
+
+    const result = voyages.flatMap(voyage =>
+      voyage.circuits.map(circuit => {
+
+        const booked = bookingMap[circuit.id] || 0;
+        const total = (circuit.packagesCircuit || []).reduce((sum, p) => {
+          return sum + (p.number_place || 0);
+        }, 0);
+        const occupation =
+        total === 0
+          ? 0
+          : Math.max(1, Math.round((booked / total) * 100));
+
+        return {
+          circuit_id: circuit.id,
+          title: circuit.title,
+          package: circuit.packagesCircuit.length,
+          total,
+          booked,
+          occupation
+        };
+      })
+    );
+
+    return res.json({
+      message: "offers stats",
+      data: result
     });
 
   } catch (err) {

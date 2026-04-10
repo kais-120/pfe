@@ -20,9 +20,13 @@ const Hotel = sequelize.define("hotels",{
         allowNull:false,
         defaultValue:"accept"
     },
+     star: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
     destination :{
         type:DataTypes.STRING,
-        allowNull:true,
+        allowNull:false,
     },
     address:{
         type:DataTypes.STRING,

@@ -78,8 +78,8 @@ const sequelize = require("../configs/db");
         defaultValue: [],
       },
       status: {
-        type: DataTypes.ENUM("available", "booked", "maintenance"),
-        defaultValue: "available",
+        type: DataTypes.ENUM("active", "inactive", "maintenance"),
+        defaultValue: "active",
       },
     },
     {

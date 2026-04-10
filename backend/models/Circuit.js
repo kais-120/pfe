@@ -33,21 +33,6 @@ const sequelize = require("../configs/db");
       defaultValue: "modéré",
     },
 
-    price_per_person: {
-      type: DataTypes.FLOAT,
-      allowNull: false,
-    },
-
-    duration_days: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
-
-    max_people: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
-
     inclusions: {
       type: DataTypes.JSON,
       defaultValue: [],

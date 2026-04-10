@@ -72,9 +72,16 @@ const Package = sequelize.define("packages", {
     },
     offer_id:{
       type:DataTypes.BIGINT,
-      allowNull:false,
+      allowNull:true,
       references:{
         model:"offers",
+        key:"id"
+      }
+    },
+    circuit_id:{
+      type:DataTypes.BIGINT,
+      references:{
+        model:"circuit",
         key:"id"
       }
     }

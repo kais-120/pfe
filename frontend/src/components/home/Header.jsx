@@ -1,28 +1,28 @@
 import { Link, NavLink, useNavigate } from "react-router-dom"
-import { Avatar, Box, Flex, HStack, Menu, Portal, Text } from "@chakra-ui/react"
+import { Avatar, Box, Flex, HStack, Menu, Portal, Skeleton, SkeletonCircle, Text } from "@chakra-ui/react"
 import { useEffect, useRef, useState } from "react"
 import { AxiosToken } from "../../Api/Api"
 import Cookies from "universal-cookie"
 import { FaHotel, FaPlane, FaCar, FaGlobe, FaTags, FaCog, FaTachometerAlt, FaSignOutAlt, FaCalendarCheck } from "react-icons/fa"
 import { HiChevronDown } from "react-icons/hi"
 import logo from "../../assets/image.png"
+import { useProfile } from "../../Context/useProfile"
 
 const NAV_LINKS = [
-  { name: "Hôtels",path: "/",icon: FaHotel},
-  { name: "Vols",path: "/airline",icon: FaPlane},
-  { name: "Location de voiture", path: "/location",icon: FaCar},
-  { name: "Voyages/Omra",path: "/agency",  icon: FaGlobe},
-  { name: "Circuits",path: "/voyage",icon: FaTags},
+  { name: "Hôtels", path: "/", icon: FaHotel },
+  { name: "Vols", path: "/airline", icon: FaPlane },
+  { name: "Location de voiture", path: "/location", icon: FaCar },
+  { name: "Voyages/Omra", path: "/agency", icon: FaGlobe },
+  { name: "Circuits", path: "/voyage", icon: FaTags },
 ]
 
 const getDashboardLink = (role) => {
-  if (role === "client")  return { path: "/booking",label: "Mes réservations", icon: FaCalendarCheck }
-  if (role === "partner") return { path: "/partner/dashboard",label: "Tableau de bord",  icon: FaTachometerAlt }
-  return { path: "/dashboard",label: "Tableau de bord",  icon: FaTachometerAlt }
+  if (role === "client") return { path: "/booking", label: "Mes réservations", icon: FaCalendarCheck }
+  if (role === "partner") return { path: "/partner/dashboard", label: "Tableau de bord", icon: FaTachometerAlt }
+  return { path: "/dashboard", label: "Tableau de bord", icon: FaTachometerAlt }
 }
 
 export default function Header() {
-  const [user, setUser] = useState(null)
   const [scrolled, setScrolled] = useState(false)
   const cookie = new Cookies()
   const navigate = useNavigate()
@@ -33,13 +33,8 @@ export default function Header() {
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
 
-  useEffect(() => {
-    if (!cookie.get("auth")) return
-    AxiosToken.get("/auth/profile")
-      .then(r => setUser(r.data.data))
-      .catch(() => navigate("/"))
-  }, [navigate])
-
+ 
+const {user,loading} = useProfile()
   const handleLogout = () => {
     cookie.remove("auth")
     navigate("/login")
@@ -115,11 +110,15 @@ export default function Header() {
 
         {/* Auth section */}
         <Box flexShrink={0}>
-          {user ? (
-            <UserMenu user={user} dashboard={dashboard} onLogout={handleLogout} />
-          ) : (
-            <GuestMenu />
-          )}
+          {
+            loading ? (
+              <UserMenuSkeleton />
+            ) : user ? (
+              <UserMenu user={user} dashboard={dashboard} onLogout={handleLogout} />
+            ) : (
+              <GuestMenu />
+            )
+          }
         </Box>
 
       </Flex>
@@ -213,6 +212,28 @@ function UserMenu({ user, dashboard, onLogout }) {
         </Menu.Positioner>
       </Portal>
     </Menu.Root>
+  )
+}
+
+function UserMenuSkeleton() {
+  return (
+    <Flex
+      align="center"
+      gap={2}
+      px={3}
+      py={1.5}
+      borderRadius="full"
+      border="1.5px solid"
+      borderColor="whiteAlpha.400"
+      _hover={{ bg: "whiteAlpha.150", borderColor: "whiteAlpha.600" }}
+      transition="all 0.15s"
+      cursor="pointer"
+      color="white"
+    >
+      <SkeletonCircle size={7} />
+      <Skeleton w={"100px"} h={2} />
+    </Flex>
+
   )
 }
 

@@ -14,42 +14,42 @@ import { FaGasPump, FaSnowflake, FaWifi } from "react-icons/fa"
 import { useNavigate } from "react-router-dom"
 import { AxiosToken, imageURL } from "../../../../Api/Api"
 import { toaster } from "../../../../components/ui/toaster"
+import { LucideGlobe, LucideGlobeOff } from "lucide-react"
 
-/* ── Constants ──────────────────────────────────────────────────── */
 const IMAGE_BASE = `${imageURL}/services/`
 
 const LOCATION_STATUS = {
-  accept:       { colorScheme: "green",  label: "Approuvé"   },
-  refuse:       { colorScheme: "red",    label: "Refusé"     },
+  accept: { colorScheme: "green", label: "Approuvé" },
+  refuse: { colorScheme: "red", label: "Refusé" },
   "En attente": { colorScheme: "yellow", label: "En attente" },
 }
 
 const VEHICLE_STATUS = {
-  available:    { colorScheme: "green",  label: "Disponible"  },
-  booked:       { colorScheme: "orange", label: "En location" },
-  maintenance:  { colorScheme: "red",    label: "Maintenance" },
+  active: { colorScheme: "green", label: "Disponible" },
+  booked: { colorScheme: "orange", label: "En location" },
+  maintenance: { colorScheme: "red", label: "Maintenance" },
 }
 
 const CATEGORIES = [
-  { value: "economy",  label: "Economy"  },
+  { value: "economy", label: "Economy" },
   { value: "standard", label: "Standard" },
-  { value: "luxury",   label: "Luxury"   },
+  { value: "luxury", label: "Luxury" },
 ]
 
 const FUELS = [
-  { value: "petrol",   label: "Essence"    },
-  { value: "diesel",   label: "Diesel"     },
+  { value: "petrol", label: "Essence" },
+  { value: "diesel", label: "Diesel" },
   { value: "electric", label: "Électrique" },
-  { value: "hybrid",   label: "Hybride"    },
+  { value: "hybrid", label: "Hybride" },
 ]
 
 const FEATURE_META = {
-  ac:        { Icon: FaSnowflake, label: "Climatisation" },
-  gps:       { Icon: LuMapPin,   label: "GPS"            },
-  wifi:      { Icon: FaWifi,     label: "Wi-Fi"          },
-  automatic: { Icon: LuSettings, label: "Automatique"    },
-  bluetooth: { Icon: LuSettings, label: "Bluetooth"      },
-  usb:       { Icon: LuSettings, label: "Port USB"       },
+  ac: { Icon: FaSnowflake, label: "Climatisation" },
+  gps: { Icon: LuMapPin, label: "GPS" },
+  wifi: { Icon: FaWifi, label: "Wi-Fi" },
+  automatic: { Icon: LuSettings, label: "Automatique" },
+  bluetooth: { Icon: LuSettings, label: "Bluetooth" },
+  usb: { Icon: LuSettings, label: "Port USB" },
 }
 
 /* ── Section heading ────────────────────────────────────────────── */
@@ -142,8 +142,9 @@ function VehicleImageSlider({ images }) {
 }
 
 function VehicleCard({ vehicle, onEdit, onDelete }) {
+  console.log(vehicle)
   const images = vehicle.imagesVehicle ?? []
-  const vs     = VEHICLE_STATUS[vehicle.status] ?? { colorScheme: "gray", label: vehicle.status }
+  const vs = VEHICLE_STATUS[vehicle.status] ?? { colorScheme: "gray", label: vehicle.status }
   const catLabel = CATEGORIES.find(c => c.value === vehicle.category)?.label ?? vehicle.category
   const fuelLabel = FUELS.find(f => f.value === vehicle.fuel)?.label ?? vehicle.fuel
 
@@ -154,7 +155,6 @@ function VehicleCard({ vehicle, onEdit, onDelete }) {
       transition="transform 0.2s, box-shadow 0.2s, border-color 0.2s"
       _hover={{ transform: "translateY(-3px)", boxShadow: "0 8px 28px rgba(0,0,0,0.1)", borderColor: "blue.100" }}
     >
-      {/* Image with slider */}
       <Box position="relative">
         <VehicleImageSlider images={images} />
         {/* Status badge */}
@@ -163,7 +163,6 @@ function VehicleCard({ vehicle, onEdit, onDelete }) {
           borderRadius="full" px={2} py={0.5} fontSize="xs">
           {vs.label}
         </Badge>
-        {/* Category badge */}
         {catLabel && (
           <Badge position="absolute" top={2} left={2}
             bg="white" color="gray.700"
@@ -250,6 +249,16 @@ function VehicleCard({ vehicle, onEdit, onDelete }) {
             <IconButton size="xs" variant="outline" borderRadius="lg"
               color="blue.500" borderColor="blue.200" _hover={{ bg: "blue.50" }}
               onClick={() => console.log("vehicle")}>
+                {vehicle.status === "active" ?
+                <LucideGlobeOff size={12} />
+                :
+                <LucideGlobe size={12} />
+                
+                }
+            </IconButton>
+            <IconButton size="xs" variant="outline" borderRadius="lg"
+              color="blue.500" borderColor="blue.200" _hover={{ bg: "blue.50" }}
+              onClick={() => console.log("vehicle")}>
               <LuPencil size={12} />
             </IconButton>
             <IconButton size="xs" variant="outline" borderRadius="lg"
@@ -266,8 +275,8 @@ function VehicleCard({ vehicle, onEdit, onDelete }) {
 
 
 const ServiceLocation = () => {
-  const [location,   setLocation]   = useState(null)
-  const [loading,    setLoading]    = useState(true)
+  const [location, setLocation] = useState(null)
+  const [loading, setLoading] = useState(true)
   const [editTarget, setEditTarget] = useState(null)
   const navigate = useNavigate()
 
@@ -301,12 +310,12 @@ const ServiceLocation = () => {
   }
 
   const handleEditVehicle = (v) => { setEditTarget(v); }
-  const handleSaved        = () => {
+  const handleSaved = () => {
     setEditTarget(null)
     // Refresh data after save
     AxiosToken.get("/service/location/get")
       .then(res => setLocation(res.data.location ?? null))
-      .catch(() => {})
+      .catch(() => { })
   }
 
   /* ── No location yet ── */
@@ -336,20 +345,20 @@ const ServiceLocation = () => {
         <VStack gap={4} align="stretch">
           <Skeleton h="48px" w="300px" borderRadius="xl" />
           <Grid templateColumns="repeat(4, 1fr)" gap={3}>
-            {[1,2,3,4].map(i => <Skeleton key={i} h="80px" borderRadius="xl" />)}
+            {[1, 2, 3, 4].map(i => <Skeleton key={i} h="80px" borderRadius="xl" />)}
           </Grid>
           <Grid templateColumns="repeat(3, 1fr)" gap={5}>
-            {[1,2,3].map(i => <Skeleton key={i} h="280px" borderRadius="2xl" />)}
+            {[1, 2, 3].map(i => <Skeleton key={i} h="280px" borderRadius="2xl" />)}
           </Grid>
         </VStack>
       </Container>
     )
   }
 
-  const vehicles       = location.vehicle ?? []
+  const vehicles = location.vehicle ?? []
   const availableCount = vehicles.filter(v => v.status === "available").length
-  const bookedCount    = vehicles.filter(v => v.status === "booked").length
-  const minPrice       = vehicles.length
+  const bookedCount = vehicles.filter(v => v.status === "booked").length
+  const minPrice = vehicles.length
     ? Math.min(...vehicles.map(v => Number(v.price_per_day || 0)))
     : null
   const ls = LOCATION_STATUS[location.status] ?? { colorScheme: "gray", label: location.status }
@@ -394,37 +403,38 @@ const ServiceLocation = () => {
 
       {/* ── Stats ── */}
       <Grid templateColumns={{ base: "1fr 1fr", md: "repeat(4, 1fr)" }} gap={3} mb={8}>
-        <StatCard icon={LuCar}      label="Total véhicules" value={vehicles.length}                              color="blue"   />
-        <StatCard icon={LuCheck}    label="Disponibles"     value={availableCount}                              color="green"  />
-        <StatCard icon={LuUsers}    label="En location"     value={bookedCount}                                 color="orange" />
+        <StatCard icon={LuCar} label="Total véhicules" value={vehicles.length} color="blue" />
+        <StatCard icon={LuCheck} label="Disponibles" value={availableCount} color="green" />
+        <StatCard icon={LuUsers} label="En location" value={bookedCount} color="orange" />
         <StatCard icon={LuBanknote} label="Prix min / jour" value={minPrice ? `${Math.round(minPrice)} TND` : "—"} color="purple" />
       </Grid>
 
       <Box>
         <SectionHeading
           action={
-              <Button colorScheme="blue" size="sm" borderRadius="xl"
-                fontWeight={600} px={4}
-                onClick={() => { navigate("location/vehicle/add") }}>
-                <Flex align="center" gap={2}>
-                  <LuPlus size={13} />
-                  Ajouter un véhicule
-                </Flex>
-              </Button>
+            <Button colorScheme="blue" size="sm" borderRadius="xl"
+              fontWeight={600} px={4}
+              onClick={() => { navigate("location/vehicle/add") }}>
+              <Flex align="center" gap={2}>
+                <LuPlus size={13} />
+                Ajouter un véhicule
+              </Flex>
+            </Button>
           }
         >
           Flotte de véhicules ({vehicles.length})
         </SectionHeading>
-        
+
 
         {/* Empty state */}
-        {vehicles.length === 0  ? (
+        {vehicles.length === 0 ? (
           <Flex direction="column" align="center" py={14} gap={3}
             bg="white" borderRadius="2xl"
             border="1px dashed" borderColor="gray.200">
             <Text fontWeight={600} color="gray.600">Aucun véhicule dans la flotte</Text>
             <Text fontSize="sm" color="gray.400">Ajoutez votre premier véhicule.</Text>
             <Button colorScheme="blue" borderRadius="xl" size="sm" mt={1}
+              onClick={() => { navigate("location/vehicle/add") }}
             >
               <Flex align="center" gap={2}><LuPlus size={13} />Ajouter</Flex>
             </Button>

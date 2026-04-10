@@ -11,6 +11,16 @@ import { Helmet } from "react-helmet"
 import { Chart, registerables } from "chart.js"
 import { AxiosToken } from "../../Api/Api"
 import { useProfile } from "../../Context/useProfile"
+import RoomsCard from "./Dashboard/RoomsCard"
+import CircuitsCard from "./Dashboard/CircuitsCard"
+import HotelBooking from "./Dashboard/Booking/HotelBooking"
+import CircuitsBooking from "./Dashboard/Booking/CircuitsBooking"
+import HotelStatusCard from "./Dashboard/HotelStatusCard"
+import StatusCard from "./Dashboard/StatusCard"
+import VehicleCard from "./Dashboard/VehicleCard"
+import LocationBooking from "./Dashboard/Booking/LocationBooking"
+import AgencyCard from "./Dashboard/AgencyCard"
+import FlightCard from "./Dashboard/FlightCard"
 Chart.register(...registerables)
 
 
@@ -194,7 +204,7 @@ function BookingsChart() {
       }
     })
     return () => chartRef.current?.destroy()
-  }, [])
+  }, [bookingData])
 
   return (
     <Box bg="white" borderRadius="2xl" border="1px solid" borderColor="gray.100"
@@ -238,24 +248,17 @@ function Stars({ rating }) {
 
 const DashboardPartner = () => {
   const [status, setStatus] = useState([]);
-  const [bookings, setBookings] = useState([]);
   const [reviews, setReviews] = useState([]);
-  const [rooms, setRooms] = useState([]);
 
-  const {user} = useProfile()
-  console.log(user)
+  const { user } = useProfile()
 
   useEffect(() => {
     const dataFetch = async () => {
       try {
         const resStatus = await AxiosToken.get("/dashboard/partner/status");
         setStatus(resStatus.data.data)
-        const resBooking = await AxiosToken.get("/dashboard/partner/last-booking");
-        setBookings(resBooking.data.bookings)
         const resReviews = await AxiosToken.get("/dashboard/partner/last-reviews");
         setReviews(resReviews.data)
-        const resRooms = await AxiosToken.get("/dashboard/partner/my-rooms");
-        setRooms(resRooms.data.rooms)
       } catch (err) {
         console.error(err)
       }
@@ -263,10 +266,10 @@ const DashboardPartner = () => {
     dataFetch()
   }, [])
   const STATS_CONFIG = [
-    { key: "booking", label: "Revenus totaux", Icon: LuBanknote, accent: "#2563EB", bg: "#EFF6FF" },
-    { key: "review", label: "Réservations totales", Icon: LuTicket, accent: "#7C3AED", bg: "#F5F3FF" },
+    { key: "payment", label: "Revenus totaux", Icon: LuBanknote, accent: "#2563EB", bg: "#EFF6FF" },
+    { key: "booking", label: "Réservations totales", Icon: LuTicket, accent: "#7C3AED", bg: "#F5F3FF" },
     { key: "note", label: "Note moyenne", Icon: LuStar, accent: "#D97706", bg: "#FFFBEB" },
-    { key: "payment", label: "Avis reçus", Icon: LuMessageSquare, accent: "#059669", bg: "#ECFDF5" },
+    { key: "review", label: "Avis reçus", Icon: LuMessageSquare, accent: "#059669", bg: "#ECFDF5" },
   ]
   const mergedStats = STATS_CONFIG.map((stat) => {
     const apiData = status.find((s) => s.label === stat.key);
@@ -278,8 +281,7 @@ const DashboardPartner = () => {
     };
   });
 
-  const activeRooms = rooms.filter(r => r.status === "active").length
-  const inactiveRooms = rooms.filter(r => r.status === "inactive").length
+
   const formatTime = (date) => {
     const diff = Math.floor((Date.now() - new Date(date)) / 1000)
     if (diff < 60) return "À l'instant"
@@ -287,6 +289,13 @@ const DashboardPartner = () => {
     if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)}h`
     return new Date(date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
   }
+  const today = new Date();
+  const formatted = today.toLocaleDateString("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <>
@@ -297,130 +306,39 @@ const DashboardPartner = () => {
         <Box mb={7}>
           <Text fontSize="xs" fontWeight={700} color="blue.500"
             textTransform="uppercase" letterSpacing="widest" mb={1}>
-            Partenaire Hôtel
+            Partenaire {user.partnerInfo[0].sector}
           </Text>
           <Text fontSize="2xl" fontWeight={900} color="gray.900" letterSpacing="-0.5px">
             Tableau de bord
           </Text>
           <Text fontSize="sm" color="gray.400" mt={0.5}>
-            Lundi 6 avril 2026 · Données en temps réel
+            {formatted} · Données en temps réel
           </Text>
         </Box>
 
-        <Grid templateColumns={{ base: "1fr 1fr", md: "repeat(4, 1fr)" }} gap={4} mb={6}>
-          {mergedStats.map(({ label, value, delta, Icon, accent, bg }) => {
-            const up = delta > 0
-            return (
-              <Box key={label} bg="white" borderRadius="2xl" p={4}
-                border="1px solid" borderColor="gray.100"
-                boxShadow="0 1px 8px rgba(0,0,0,0.04)"
-                transition="box-shadow 0.2s"
-                _hover={{ boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}>
-                <Flex justify="space-between" align="flex-start" mb={3}>
-                  <Flex w="38px" h="38px" borderRadius="xl"
-                    bg={bg} align="center" justify="center" flexShrink={0}>
-                    <Icon size={17} color={accent} />
-                  </Flex>
-                  {delta !== undefined &&
-                    <Flex align="center" gap={0.5}
-                      bg={up ? "#ECFDF5" : "#FEF2F2"}
-                      borderRadius="full" px={1.5} py={0.5}>
-                      {up
-                        ? <LuArrowUpRight size={10} color="#065F46" />
-                        : <LuArrowDownRight size={10} color="#991B1B" />}
-                      <Text fontSize="10px" fontWeight={700}
-                        color={up ? "#065F46" : "#991B1B"}>
-                        {Math.abs(delta)}{label === "Note moyenne" ? "" : "%"}
-                      </Text>
-                    </Flex>
-                  }
-                </Flex>
-                <Text fontSize="xl" fontWeight={900} color="gray.900" lineHeight={1} mb={0.5}>
-                  {value}
-                </Text>
-                <Text fontSize="11px" color="gray.400">{label}</Text>
-              </Box>
-            )
-          })}
-        </Grid>
+        {
+          user.partnerInfo[0].sector === "hôtel" ?
+          <HotelStatusCard />
+          :
+          <StatusCard />
+        }
 
-        <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={5} mb={6}>
+        <Grid templateColumns={{ base: "1fr", lg: "1fr" }} gap={5} mb={6}>
           <RevenueChart />
           <BookingsChart />
         </Grid>
 
-        <Grid templateColumns={{ base: "1fr", lg: "1fr" }} gap={5} mb={6}>
+        {
+          user.partnerInfo[0].sector === "hôtel" ?
+          <HotelBooking />
+          :
+          user.partnerInfo[0].sector === "location de voitures" ?
+          <LocationBooking />
+          : 
+          <CircuitsBooking />
+        }
 
-          <Box bg="white" borderRadius="2xl" border="1px solid" borderColor="gray.100"
-            boxShadow="0 1px 8px rgba(0,0,0,0.05)" overflow="hidden">
-            <Flex px={5} py={4} borderBottom="1px solid" borderColor="gray.100"
-              align="center" justify="space-between">
-              <Flex align="center" gap={2}>
-                <LuTicket size={15} color="#2563EB" />
-                <Text fontSize="sm" fontWeight={700} color="gray.800">Dernières réservations</Text>
-              </Flex>
-              <Badge bg="#EFF6FF" color="#1D4ED8" borderRadius="full" px={2} py={0.5} fontSize="10px" fontWeight={700}>
-                Live
-              </Badge>
-            </Flex>
-            <VStack spacing={0} align="stretch" px={5} py={3}>
-              {bookings.map((b, i) => {
-                const roomCounts = {};
-
-                b.bookingHotelDetails?.forEach(detail => {
-                  const roomName = detail?.RoomHotelBooking?.name;
-                  if (!roomName) return;
-
-                  roomCounts[roomName] = (roomCounts[roomName] || 0) + 1;
-                });
-
-                const roomText = Object.entries(roomCounts)
-                  .map(([name, count]) => `${count} ${name}`)
-                  .join(", ");
-                const s = STATUS_STYLE[b.status]
-                return (
-                  <Flex key={b.id} gap={3} py={3}
-                    borderBottom={i < bookings.length - 1 ? "1px solid" : "none"}
-                    borderColor="gray.50" align="center">
-                    <Flex w="32px" h="32px" borderRadius="full" flexShrink={0}
-                      bg="#EFF6FF" color="#2563EB"
-                      align="center" justify="center"
-                      fontSize="10px" fontWeight={800}>
-                      {b?.userBooking?.name?.split(" ")?.map(w => w[0])?.join("")?.slice(0, 2)}
-                    </Flex>
-                    <Box flex={1} minW={0}>
-                      <Flex justify="space-between" align="center">
-                        <Text fontSize="xs" fontWeight={700} color="gray.800" noOfLines={1}>
-                          {b?.userBooking?.name}
-                        </Text>
-                        <Text fontSize="11px" fontWeight={800} color="gray.800" ml={2} flexShrink={0}>
-                          {b.total_price} TND
-                        </Text>
-                      </Flex>
-                      <Flex align="center" gap={2} mt={0.5}>
-                        <Text fontSize="10px" color="gray.400" noOfLines={1}>{roomText}</Text>
-                        <Box w="3px" h="3px" borderRadius="full" bg="gray.300" flexShrink={0} />
-                        <Box px={1.5} py={0.5} borderRadius="full" bg={s.bg} flexShrink={0}>
-                          <Text fontSize="9px" fontWeight={700} color={s.text} textTransform="capitalize">
-                            {b.status}
-                          </Text>
-                        </Box>
-                      </Flex>
-                    </Box>
-                    <Flex align="center" gap={1} flexShrink={0}>
-                      <LuClock size={10} color="#9CA3AF" />
-                      <Text fontSize="10px" color="gray.400">{formatTime(b.createdAt)}</Text>
-                    </Flex>
-                  </Flex>
-                )
-              })}
-            </VStack>
-          </Box>
-
-
-        </Grid>
-
-        {/* ── 4. Reviews Section ── */}
+        {user.partnerInfo[0].sector === "hôtel" && 
         <Box bg="white" borderRadius="2xl" border="1px solid" borderColor="gray.100"
           boxShadow="0 1px 8px rgba(0,0,0,0.05)" overflow="hidden" mb={6}>
           <Flex px={5} py={4} borderBottom="1px solid" borderColor="gray.100"
@@ -482,114 +400,18 @@ const DashboardPartner = () => {
             </Grid>
           }
         </Box>
+        }
+          {user.partnerInfo[0].sector === "hôtel" ?
+            <RoomsCard />
+          : user.partnerInfo[0].sector === "location de voitures" ?
+            <VehicleCard />
+          : user.partnerInfo[0].sector === "agence de voyage" ?
+            <AgencyCard />
+          : user.partnerInfo[0].sector === "compagnies aériennes" ?
+            <FlightCard />
+          :<CircuitsCard />
+        }
 
-        <Box bg="white" borderRadius="2xl" border="1px solid" borderColor="gray.100"
-          boxShadow="0 1px 8px rgba(0,0,0,0.05)" overflow="hidden">
-          <Flex px={5} py={4} borderBottom="1px solid" borderColor="gray.100"
-            align="center" justify="space-between" flexWrap="wrap" gap={2}>
-            <Flex align="center" gap={2}>
-              <LuBed size={15} color="#7C3AED" />
-              <Text fontSize="sm" fontWeight={700} color="gray.800">Mes chambres</Text>
-            </Flex>
-            <HStack spacing={2}>
-              <Flex align="center" gap={1.5} px={2.5} py={1} borderRadius="full" bg="#ECFDF5">
-                <Box w="6px" h="6px" borderRadius="full" bg="#10B981" />
-                <Text fontSize="10px" fontWeight={700} color="#065F46">{activeRooms} actives</Text>
-              </Flex>
-              <Flex align="center" gap={1.5} px={2.5} py={1} borderRadius="full" bg="#F1F5F9">
-                <Box w="6px" h="6px" borderRadius="full" bg="#94A3B8" />
-                <Text fontSize="10px" fontWeight={700} color="#475569">{inactiveRooms} inactives</Text>
-              </Flex>
-            </HStack>
-          </Flex>
-          <Box overflowX="auto">
-            <Box as="table" w="full" style={{ borderCollapse: "collapse" }}>
-              <Box as="thead">
-                <Box as="tr" bg="gray.50">
-                  {["Chambre", "Statut", "Réservations", "Prix", "Occupation"].map(h => (
-                    <Box key={h} as="th" px={5} py={3} textAlign="left"
-                      style={{ fontSize: "10px", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                      {h}
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
-              <Box as="tbody">
-                {
-                  rooms && rooms.length === 0 ?
-
-                    <Box as="tr">
-                      <Box as="td" colSpan={5} textAlign="center" py={10}>
-                        <Text fontSize="sm" color="gray.400">
-                          Aucune donnée pour le moment
-                        </Text>
-                      </Box>
-                    </Box>
-                    :
-
-                    rooms.map((room, i) => {
-
-                      return (
-                        <Box key={room.name} as="tr"
-                          style={{ borderTop: "1px solid #F8FAFC", background: "white" }}
-                          onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
-                          onMouseLeave={e => e.currentTarget.style.background = "white"}>
-                          <Box as="td" px={5} py={3.5}>
-                            <Flex align="center" gap={2}>
-                              <Flex w="28px" h="28px" borderRadius="lg" bg="#F5F3FF"
-                                align="center" justify="center" flexShrink={0}>
-                                <LuBed size={13} color="#7C3AED" />
-                              </Flex>
-                              <Text style={{ fontSize: "12px", fontWeight: 600, color: "#1E293B" }}>
-                                {room.name}
-                              </Text>
-                            </Flex>
-                          </Box>
-                          <Box as="td" px={5} py={3.5}>
-                            <Flex align="center" gap={1.5} px={2} py={0.5} borderRadius="full" display="inline-flex"
-                              bg={room.status ? "#ECFDF5" : "#F1F5F9"}>
-                              <Box w="5px" h="5px" borderRadius="full"
-                                bg={room.status ? "#10B981" : "#94A3B8"} />
-                              <Text style={{ fontSize: "10px", fontWeight: 700, color: room.active ? "#065F46" : "#64748B" }}>
-                                {room.status ? "Active" : "Inactive"}
-                              </Text>
-                            </Flex>
-                          </Box>
-                          <Box as="td" px={5} py={3.5}>
-                            <Text style={{ fontSize: "12px", fontWeight: 800, color: "#1E293B" }}>
-                              {room.booked}
-                            </Text>
-                          </Box>
-                          <Box as="td" px={5} py={3.5}>
-                            <Text style={{ fontSize: "12px", color: "#64748B", fontWeight: 600 }}>
-                              {room.price} TND
-                            </Text>
-                          </Box>
-                          <Box as="td" px={5} py={3.5}>
-                            <Flex align="center" gap={2}>
-                              <Box flex={1} bg="gray.100" borderRadius="full" h="5px" overflow="hidden" maxW="80px">
-                                <Box h="100%" borderRadius="full"
-                                  bg={room.status ? "#7C3AED" : "#CBD5E1"}
-                                  style={{ width: `${room.occupation}%`, transition: "width 0.4s" }} />
-                              </Box>
-                              <Text style={{ fontSize: "10px", fontWeight: 700, color: "#64748B" }}>{room.occupation}%</Text>
-                            </Flex>
-                          </Box>
-                        </Box>
-                      )
-                    })}
-              </Box>
-            </Box>
-          </Box>
-          <Flex px={5} py={3.5} borderTop="1px solid" borderColor="gray.100" gap={2} flexWrap="wrap">
-            <Button size="xs" colorScheme="purple" borderRadius="lg" fontWeight={700}>
-              + Ajouter une chambre
-            </Button>
-            <Button size="xs" variant="outline" borderRadius="lg" fontWeight={600}>
-              Gérer les disponibilités
-            </Button>
-          </Flex>
-        </Box>
       </Box>
     </>
   )

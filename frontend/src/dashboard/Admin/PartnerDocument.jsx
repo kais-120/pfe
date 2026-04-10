@@ -7,16 +7,17 @@ import { AxiosToken } from "../../Api/Api"
 import { useNavigate } from "react-router-dom"
 import { LuSearch, LuEye, LuFileText, LuClock } from "react-icons/lu"
 import { LucideCheckCircle, LucideXCircle } from "lucide-react"
+import { Helmet } from "react-helmet"
 
 const STATUS_STYLE = {
-  "en attente": { colorScheme: "yellow", icon: LuClock,       label: "En attente" },
-  "accepté":    { colorScheme: "green",  icon: LucideCheckCircle, label: "Accepté"    },
-  "rejetée":     { colorScheme: "red",    icon: LucideXCircle,     label: "rejetée"     },
+  "en attente": { colorScheme: "yellow", icon: LuClock, label: "En attente" },
+  "accepté": { colorScheme: "green", icon: LucideCheckCircle, label: "Accepté" },
+  "rejetée": { colorScheme: "red", icon: LucideXCircle, label: "rejetée" },
 }
 
 const PartnerDocument = () => {
-  const [data,    setData]    = useState([])
-  const [search,  setSearch]  = useState("")
+  const [data, setData] = useState([])
+  const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
@@ -34,7 +35,7 @@ const PartnerDocument = () => {
     }
     getDocs()
   }, [])
-console.log(data)
+  console.log(data)
   const filtered = data.filter(doc =>
     doc.cin?.toLowerCase().includes(search.toLowerCase()) ||
     doc.users?.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -42,11 +43,13 @@ console.log(data)
     doc.status?.toLowerCase().includes(search.toLowerCase())
   )
 
-  const pending  = data.filter(d => d.status === "en attente").length
+  const pending = data.filter(d => d.status === "en attente").length
   const accepted = data.filter(d => d.status === "accepté").length
-  const refused  = data.filter(d => d.status === "rejetée").length
+  const refused = data.filter(d => d.status === "rejetée").length
 
   return (
+    <>
+    <Helmet title="Documents partenaires"></Helmet>
     <Box>
       {/* Page title */}
       <Box mb={6}>
@@ -63,10 +66,10 @@ console.log(data)
       {!loading && data.length > 0 && (
         <Flex gap={3} mb={5} flexWrap="wrap">
           {[
-            { label:"Total",value: data.length,color: "blue"   },
-            { label:"En attente",value: pending,color: "yellow" },
-            { label:"Acceptés",value: accepted,color: "green"  },
-            { label:"Rejetées",value: refused,color: "red"    },
+            { label: "Total", value: data.length, color: "blue" },
+            { label: "En attente", value: pending, color: "yellow" },
+            { label: "Acceptés", value: accepted, color: "green" },
+            { label: "Rejetées", value: refused, color: "red" },
           ].map(({ label, value, color }) => (
             <Flex
               key={label}
@@ -132,7 +135,7 @@ console.log(data)
           <Table.Root size="sm">
             <Table.Header>
               <Table.Row bg="gray.50">
-                {["#", "CIN", "Partenaire", "Email", "Statut", "Secteur d'activité" ,"Action"].map((h, i) => (
+                {["#", "CIN", "Partenaire", "Email", "Statut", "Secteur d'activité", "Action"].map((h, i) => (
                   <Table.ColumnHeader
                     key={i} px={5} py={3}
                     fontSize="xs" fontWeight={700}
@@ -150,7 +153,7 @@ console.log(data)
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <Table.Row key={i}>
-                    {[1,2,3,4,5,6].map(j => (
+                    {[1, 2, 3, 4, 5, 6].map(j => (
                       <Table.Cell key={j} px={5} py={3.5}>
                         <Skeleton h="16px" borderRadius="md"
                           w={j === 1 ? "20px" : j === 5 ? "80px" : j === 6 ? "50px" : "120px"} />
@@ -171,7 +174,7 @@ console.log(data)
                 </Table.Row>
               ) : (
                 filtered.map((doc, index) => {
-                  const s    = STATUS_STYLE[doc.status] ?? { colorScheme: "gray", label: doc.status, icon: LuFileText }
+                  const s = STATUS_STYLE[doc.status] ?? { colorScheme: "gray", label: doc.status, icon: LuFileText }
                   const Icon = s.icon
 
                   return (
@@ -200,7 +203,7 @@ console.log(data)
                             align="center" justify="center"
                             fontSize="10px" fontWeight={700} flexShrink={0}
                           >
-                            {doc.users?.name?.split(" ").map(w => w[0]).join("").slice(0,2).toUpperCase()}
+                            {doc.users?.name?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
                           </Flex>
                           <Text fontSize="sm" fontWeight={600} color="gray.800">
                             {doc.users?.name}
@@ -225,7 +228,7 @@ console.log(data)
                         </Badge>
                       </Table.Cell>
 
-                       <Table.Cell px={5} py={3.5}>
+                      <Table.Cell px={5} py={3.5}>
                         <Text textTransform={"capitalize"} fontSize="sm" color="gray.500">{doc.sector}</Text>
                       </Table.Cell>
 
@@ -252,6 +255,7 @@ console.log(data)
         </Box>
       </Box>
     </Box>
+    </>
   )
 }
 

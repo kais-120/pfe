@@ -14,18 +14,19 @@ import {
 } from "react-icons/lu";
 import { FaWifi, FaSwimmingPool, FaDumbbell, FaSpa, FaSnowflake, FaUtensils, FaParking } from "react-icons/fa";
 import * as Yup from "yup";
-import { Axios, AxiosToken } from "../../../../Api/Api";
+import { AxiosToken } from "../../../../Api/Api";
 import { toaster } from "../../../../components/ui/toaster";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { Map } from "lucide-react";
+import { useState } from "react";
+import { Map, Star } from "lucide-react";
 
 const validationSchema = Yup.object({
   name: Yup.string().required("Le nom de l'hôtel est requis"),
   description: Yup.string().required("La description est requise"),
   address: Yup.string().required("L'adresse est requise"),
   equipments: Yup.array().min(1, "Veuillez sélectionner au moins un équipement"),
+  state: Yup.string().required("L'état est requise"),
+  star: Yup.string().required("choisir un étoile"),
   images: Yup.array()
     .min(1, "Veuillez ajouter au moins une image")
     .max(15, "Maximum 15 images autorisées"),
@@ -120,92 +121,92 @@ const AddHotel = () => {
   const navigate = useNavigate()
   const [previews, setPreviews] = useState([])
 
-const states = [
+  const states = [
 
     {
-        "label": "ariana",
+      "label": "ariana",
     },
     {
-        "label": "beja",
+      "label": "beja",
     },
     {
-        "label": "ben arous",
+      "label": "ben arous",
     },
     {
-        "label": "bizerte",
+      "label": "bizerte",
     },
     {
-        "label": "gabes",
+      "label": "gabes",
     },
     {
-        "label": "gafsa",
+      "label": "gafsa",
     },
     {
-        "label": "jendouba",
+      "label": "jendouba",
     },
     {
-        "label": "kairouan",
+      "label": "kairouan",
     },
     {
-        "label": "kasserine",
+      "label": "kasserine",
     },
     {
-        "label": "kebili",
+      "label": "kebili",
     },
     {
-        "label": "kef",
+      "label": "kef",
     },
     {
-        "label": "mahdia",
+      "label": "mahdia",
     },
     {
-        "label": "mannouba",
+      "label": "mannouba",
     },
     {
-        "label": "medenine",
+      "label": "medenine",
     },
     {
-        "label": "monastir",
+      "label": "monastir",
     },
     {
-        "label": "nabeul",
+      "label": "nabeul",
     },
     {
-        "label": "sfax",
+      "label": "sfax",
     },
     {
-        "label": "sidi bouzid",
+      "label": "sidi bouzid",
     },
     {
-        "label": "siliana",
+      "label": "siliana",
     },
     {
-        "label": "sousse",
+      "label": "sousse",
     },
     {
-        "label": "tataouine",
+      "label": "tataouine",
     },
     {
-        "label": "tozeur",
+      "label": "tozeur",
     },
     {
-        "label": "tunis",
+      "label": "tunis",
     },
     {
-        "label": "zaghouan",
+      "label": "zaghouan",
     }
-]
+  ]
 
-const { contains } = useFilter({ sensitivity: "base" })
+  const { contains } = useFilter({ sensitivity: "base" })
 
-const { collection, filter } = useListCollection({
-  initialItems: states,
-  filter: contains,
-})
-  
+  const { collection, filter } = useListCollection({
+    initialItems: states,
+    filter: contains,
+  })
+
   const formik = useFormik({
     initialValues: {
-      name: "", description: "", address: "", state: "",
+      name: "", description: "", address: "", state: "",star,
       equipments: [], images: [],
     },
     validationSchema,
@@ -215,6 +216,7 @@ const { collection, filter } = useListCollection({
       formData.append("description", values.description)
       formData.append("state", values.state)
       formData.append("address", values.address)
+      formData.append("star", values.star)
       values.equipments.forEach(eq => formData.append("equipments[]", eq))
       values.images.forEach(img => formData.append("service_doc", img))
 
@@ -253,6 +255,13 @@ const { collection, filter } = useListCollection({
       : [...current, value]
     formik.setFieldValue("equipments", updated)
   }
+  const numbers = [1, 2, 3, 4, 5]
+  const collectionStar = createListCollection({
+  items: [1,2,3,4,5].map(n => ({
+    label: n.toString(),
+    value: n.toString()
+  }))
+})
 
   return (
     <Container py={2}>
@@ -284,7 +293,6 @@ const { collection, filter } = useListCollection({
       <form onSubmit={formik.handleSubmit}>
         <VStack gap={4} align="stretch">
 
-          {/* ── Card 1: Informations générales ── */}
           <Box bg="white" borderRadius="2xl" p={6}
             border="1px solid" borderColor="gray.100"
             boxShadow="0 1px 8px rgba(0,0,0,0.05)">
@@ -346,6 +354,7 @@ const { collection, filter } = useListCollection({
 
               </FormField>
 
+            
               <FormField formik={formik} name="address" label="Adresse" icon={LuMapPin}>
                 <Input
                   name="address" placeholder="Ex: Midoun Djerba, 4116 Midoun"
@@ -359,6 +368,33 @@ const { collection, filter } = useListCollection({
                   _focus={{ boxShadow: "none" }}
                   _placeholder={{ color: "gray.300" }}
                 />
+              </FormField>
+
+              <FormField formik={formik} name="star" label="Étoile" icon={Star}>
+
+                <Select.Root collection={collectionStar}>
+                  <Select.HiddenSelect/>
+                  <Select.Control >
+                    <Select.Trigger border={"none"} outline={"none"}>
+                      <Select.ValueText placeholder="Ex: 4" />
+                    </Select.Trigger>
+                    <Select.IndicatorGroup >
+                      <Select.Indicator />
+                    </Select.IndicatorGroup>
+                  </Select.Control>
+                  <Select.Positioner>
+                  <Select.Content>
+                    {numbers.map((n) => (
+                      <Select.Item key={n} item={{ label: n.toString(), value: n.toString() }}>
+                        {n}
+                        <Select.ItemIndicator />
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Positioner>
+                </Select.Root>
+
+
               </FormField>
 
               <FormField formik={formik} name="description" label="Description" icon={LuAlignLeft}>

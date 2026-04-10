@@ -5,21 +5,10 @@ import { NavLink } from "react-router-dom";
 import { AxiosToken, socketBaseURL } from "../../Api/Api";
 import logo from "../../assets/image.png"
 import { LuScanLine } from "react-icons/lu";
+import { useProfile } from "../../Context/useProfile";
 
 const Sidebar = () => {
-  const [user, setUser] = useState(null);
- 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await AxiosToken.get(`/auth/profile`);
-        setUser(response.data.data)
-      } catch {
-        console.error("err")
-      }
-    }
-    fetchData()
-  }, [])
+  const { user } = useProfile();
 
   const adminList = [
     { icon: Gauge,label: "Tableau de bord",link: "",end: true  },

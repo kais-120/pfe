@@ -4,29 +4,22 @@ import LoadingScreen from '../../components/LoadingScreen';
 import BookingOffer from './Service/booking/BookingOffer';
 import BookingHotel from './Service/booking/BookingHotel';
 import { Box, Spinner } from '@chakra-ui/react';
+import { useProfile } from '../../Context/useProfile';
+import BookingCircuits from './Service/booking/BookingCircuits';
+import BookingLocation from './Service/booking/BookingLocation';
 
 const Booking = () => {
-  const [user,setUser] = useState(null);
-  const [loading,setLoading] = useState(false);
-  useEffect(()=>{
-    setLoading(true)
-    const fetchData = async () => {
-      try{
-
-        const res = await AxiosToken.get("/auth/profile");
-        setUser(res.data.data.partnerInfo[0].sector)
-      }catch{
-        console.error("error")
-      }
-      finally{
-        setLoading(false)
-      }
-    }
-    fetchData()
-  },[])
-  if(loading) return <Box><Spinner /></Box>
+  const { loading, user } = useProfile();
+  const currentUser = user.partnerInfo[0].sector;
+  if (loading) return <Box><Spinner /></Box>
   return (
-    user && user === "agence de voyage" ? <BookingOffer /> : <BookingHotel />
+    currentUser && (currentUser === "agence de voyage")
+      ? <BookingOffer />
+      : (currentUser === "hôtel") ?
+      <BookingHotel />
+      : (currentUser === "location de voitures") ?
+      <BookingLocation />
+      :(<BookingCircuits />)
   )
 }
 

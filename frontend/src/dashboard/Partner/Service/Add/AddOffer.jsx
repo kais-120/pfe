@@ -18,7 +18,6 @@ import { useNavigate } from "react-router-dom"
 import { useState } from "react"
 import AddPackage from "./AddPackage"
 
-/* ── Validation ─────────────────────────────────────────────────── */
 const validationSchema = Yup.object({
   title: Yup.string().required("Le titre est requis"),
   destination: Yup.string().required("La destination est requise"),
@@ -36,63 +35,8 @@ const OFFER_TYPES = [
   { value: "haj", label: "Haj" },
 ]
 
-/* ── Inline packages data (replace with API call as needed) ──────── */
-const PACKAGES_DATA = [
-  {
-    id: 1,
-    title: "Umrah Premium - Medine & Makkah",
-    month: "Août", year: 2026,
-    departureDate: "Jeu. 27 Août", departureTime: "11h40", departureAirport: "TUN-JED",
-    returnDate: "Dim. 06 Sept.", returnTime: "06h25", returnAirport: "JED-TUN",
-    duration: "11J / 10N",
-    destinations: [
-      { name: "Medine, Shaza Regency Plaza 3", rating: 3, nights: 4 },
-      { name: "Makkah, Swissotel Makkah 5", rating: 5, nights: 6 },
-    ],
-    price: 5451, installment: "6X", type: "haj",
-  },
-  {
-    id: 2,
-    title: "Umrah Standard - Medine & Makkah",
-    month: "Septembre", year: 2026,
-    departureDate: "Jeu. 10 Sept.", departureTime: "11h40", departureAirport: "TUN-JED",
-    returnDate: "Dim. 20 Sept.", returnTime: "06h25", returnAirport: "JED-TUN",
-    duration: "11J / 10N",
-    destinations: [
-      { name: "Medine, Shaza Regency Plaza 3", rating: 3, nights: 4 },
-      { name: "Makkah, Swissotel Makkah 5", rating: 5, nights: 6 },
-    ],
-    price: 5306, installment: "6X", type: "haj",
-  },
-  {
-    id: 3,
-    title: "Umrah Gold - Medine & Makkah",
-    month: "Septembre", year: 2026,
-    departureDate: "Jeu. 24 Sept.", departureTime: "11h40", departureAirport: "TUN-JED",
-    returnDate: "Dim. 04 Oct.", returnTime: "06h25", returnAirport: "JED-TUN",
-    duration: "11J / 10N",
-    destinations: [
-      { name: "Medine, Shaza Regency Plaza 3", rating: 3, nights: 4 },
-      { name: "Makkah, Swissotel Makkah 5", rating: 5, nights: 6 },
-    ],
-    price: 5306, installment: "6X", type: "haj",
-  },
-  {
-    id: 4,
-    title: "Umrah Economy - Medine & Makkah",
-    month: "Octobre", year: 2026,
-    departureDate: "Jeu. 01 Oct.", departureTime: "11h40", departureAirport: "TUN-JED",
-    returnDate: "Dim. 11 Oct.", returnTime: "06h25", returnAirport: "JED-TUN",
-    duration: "11J / 10N",
-    destinations: [
-      { name: "Medine, Shaza Regency Plaza 3", rating: 3, nights: 4 },
-      { name: "Makkah, Swissotel Makkah 5", rating: 5, nights: 6 },
-    ],
-    price: 4950, installment: "6X", type: "haj",
-  },
-]
 
-/* ── Shared card wrapper ─────────────────────────────────────────── */
+
 function Card({ title, icon: IconComp, iconColor = "blue", children }) {
   return (
     <Box bg="white" borderRadius="2xl" p={6}
@@ -614,7 +558,6 @@ const AddOffer = () => {
             </VStack>
           </Card>
 
-          {/* ── Card 2 : Packages (list + add) ── */}
           <Box
             bg="white" borderRadius="2xl" p={6}
             border="1px solid" borderColor="gray.100"
@@ -654,7 +597,6 @@ const AddOffer = () => {
             />
           </Box>
 
-          {/* ── Card 3 : Inclus / Non inclus ── */}
           <Card title="Inclus & non inclus" icon={LuCheck} iconColor="purple">
             <Grid templateColumns={{ base: "1fr", sm: "1fr 1fr" }} gap={4}>
               {[

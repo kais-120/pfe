@@ -298,6 +298,15 @@ OfferBookingDetails.belongsTo(Package, {
   as: "bookingPackageOffer"
 })
 
+Package.hasMany(CircuitBookingDetails, {
+  foreignKey: "package_id",
+  as: "bookingCircuitPackage"
+})
+CircuitBookingDetails.belongsTo(Package, {
+  foreignKey: "package_id",
+  as: "bookingPackageCircuit"
+})
+
 Offer.hasMany(OfferBookingDetails, {
   foreignKey: "offer_id",
   as: "offerDetailsBooking"
@@ -334,6 +343,15 @@ Offer.hasMany(Package, {
 Package.belongsTo(Offer, {
     foreignKey:"offer_id",
     as:"offerPackage"
+})
+
+Circuit.hasMany(Package, {
+    foreignKey:"circuit_id",
+    as:"packagesCircuit"
+})
+Package.belongsTo(Circuit, {
+    foreignKey:"circuit_id",
+    as:"CircuitPackage"
 })
 
 Booking.hasMany(Payment,{

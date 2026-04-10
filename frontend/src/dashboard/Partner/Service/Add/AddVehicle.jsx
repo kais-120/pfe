@@ -15,48 +15,49 @@ import { AxiosToken } from "../../../../Api/Api"
 import { toaster } from "../../../../components/ui/toaster"
 import { useNavigate } from "react-router-dom"
 import { useState } from "react"
+import { Helmet } from "react-helmet"
 
 const validationSchema = Yup.object({
-  brand:Yup.string().required("La marque est requise"),
-  model:Yup.string().required("Le modèle est requis"),
-  year:Yup.number().min(1990).max(2030).required("L'année est requise"),
-  category:Yup.string().oneOf(["economy","standard","luxury"]).required("La catégorie est requise"),
-  fuel:Yup.string().oneOf(["petrol","diesel","electric","hybrid"]).required("Le carburant est requis"),
-  seats:Yup.number().min(1).max(20).required("Le nombre de places est requis"),
-  price_per_day:Yup.number().min(1).required("Le prix est requis"),
-  min_age:Yup.number().min(18).required("L'âge minimum est requis"),
-  license_years:Yup.number().min(1).required("Requis"),
-  caution_standard:Yup.number().min(0).required("La caution standard est requise"),
-  deposit:Yup.number().min(0).required("Le dépôt est requis"),
-  images:Yup.array().min(1, "Veuillez ajouter au moins une image").max(15),
+  brand: Yup.string().required("La marque est requise"),
+  model: Yup.string().required("Le modèle est requis"),
+  year: Yup.number().min(1990).max(2030).required("L'année est requise"),
+  category: Yup.string().oneOf(["economy", "standard", "luxury"]).required("La catégorie est requise"),
+  fuel: Yup.string().oneOf(["petrol", "diesel", "electric", "hybrid"]).required("Le carburant est requis"),
+  seats: Yup.number().min(1).max(20).required("Le nombre de places est requis"),
+  price_per_day: Yup.number().min(1).required("Le prix est requis"),
+  min_age: Yup.number().min(18).required("L'âge minimum est requis"),
+  license_years: Yup.number().min(1).required("Requis"),
+  caution_standard: Yup.number().min(0).required("La caution standard est requise"),
+  deposit: Yup.number().min(0).required("Le dépôt est requis"),
+  images: Yup.array().min(1, "Veuillez ajouter au moins une image").max(15),
 })
 
 const CATEGORIES = [
-  { value: "economy",  label: "Economy"  },
+  { value: "economy", label: "Economy" },
   { value: "standard", label: "Standard" },
-  { value: "luxury",   label: "Luxury"   },
+  { value: "luxury", label: "Luxury" },
 ]
 
 const FUELS = [
-  { value: "petrol",   label: "Essence"    },
-  { value: "diesel",   label: "Diesel"     },
+  { value: "petrol", label: "Essence" },
+  { value: "diesel", label: "Diesel" },
   { value: "electric", label: "Électrique" },
-  { value: "hybrid",   label: "Hybride"    },
+  { value: "hybrid", label: "Hybride" },
 ]
 
 const STATUSES = [
-  { value: "available",   label: "Disponible",  color: "green"  },
-  { value: "booked",      label: "En location", color: "orange" },
-  { value: "maintenance", label: "Maintenance", color: "red"    },
+  { value: "available", label: "Disponible", color: "green" },
+  { value: "booked", label: "En location", color: "orange" },
+  { value: "maintenance", label: "Maintenance", color: "red" },
 ]
 
 const FEATURES = [
-  { value: "ac",        label: "Climatisation",  Icon: FaSnowflake  },
-  { value: "gps",       label: "GPS",             Icon: LuMapPin     },
-  { value: "wifi",      label: "Wi-Fi",           Icon: FaWifi       },
-  { value: "automatic", label: "Automatique",     Icon: LuSettings   },
-  { value: "bluetooth", label: "Bluetooth",       Icon: LuSettings   },
-  { value: "usb",       label: "Port USB",        Icon: LuSettings   },
+  { value: "ac", label: "Climatisation", Icon: FaSnowflake },
+  { value: "gps", label: "GPS", Icon: LuMapPin },
+  { value: "wifi", label: "Wi-Fi", Icon: FaWifi },
+  { value: "automatic", label: "Automatique", Icon: LuSettings },
+  { value: "bluetooth", label: "Bluetooth", Icon: LuSettings },
+  { value: "usb", label: "Port USB", Icon: LuSettings },
 ]
 
 function Card({ title, icon: Icon, iconColor = "blue", children }) {
@@ -183,7 +184,7 @@ function ImagePreview({ files, onRemove }) {
 
 /* ── Main component ─────────────────────────────────────────────── */
 const AddVehicle = () => {
-  const navigate  = useNavigate()
+  const navigate = useNavigate()
   const [previews, setPreviews] = useState([])
 
   const formik = useFormik({
@@ -199,21 +200,21 @@ const AddVehicle = () => {
     validationSchema,
     onSubmit: async (values) => {
       const fd = new FormData()
-      fd.append("brand",values.brand)
-      fd.append("model",values.model)
-      fd.append("year",values.year)
-      fd.append("category",values.category)
-      fd.append("fuel",values.fuel)
-      fd.append("seats",values.seats)
-      fd.append("price_per_day",values.price_per_day)
-      fd.append("min_age",values.min_age)
-      fd.append("license_years",values.license_years)
-      fd.append("caution_standard",values.caution_standard)
-      fd.append("deposit",values.deposit)
-      fd.append("description",values.description)
-      fd.append("status",values.status)
-      values.features.forEach(f => fd.append("features[]",  f))
-      values.images.forEach(img => fd.append("service_doc",  img))
+      fd.append("brand", values.brand)
+      fd.append("model", values.model)
+      fd.append("year", values.year)
+      fd.append("category", values.category)
+      fd.append("fuel", values.fuel)
+      fd.append("seats", values.seats)
+      fd.append("price_per_day", values.price_per_day)
+      fd.append("min_age", values.min_age)
+      fd.append("license_years", values.license_years)
+      fd.append("caution_standard", values.caution_standard)
+      fd.append("deposit", values.deposit)
+      fd.append("description", values.description)
+      fd.append("status", values.status)
+      values.features.forEach(f => fd.append("features[]", f))
+      values.images.forEach(img => fd.append("service_doc", img))
 
       try {
         await AxiosToken.post("/service/location/vehicle/add", fd)
@@ -257,6 +258,8 @@ const AddVehicle = () => {
     : null
 
   return (
+    <>
+    <Helmet title="Ajouter vehicule"></Helmet>
     <Container py={2}>
 
       {/* Back */}
@@ -285,24 +288,23 @@ const AddVehicle = () => {
       <form onSubmit={formik.handleSubmit}>
         <VStack gap={4} align="stretch">
 
-          {/* ── Card 1 : Identité du véhicule ── */}
           <Card title="Identité du véhicule" icon={LuCar} iconColor="blue">
             <VStack gap={4} align="stretch">
               <Grid templateColumns={{ base: "1fr", sm: "1fr 1fr" }} gap={4}>
                 <FormField formik={formik} name="brand" label="Marque" icon={LuCar}>
-                  <Input {...inp(formik, "brand")} placeholder="Ex: Renault" />
+                  <Input outline={"none"} {...inp(formik, "brand")} placeholder="Ex: Renault" />
                 </FormField>
                 <FormField formik={formik} name="model" label="Modèle" icon={LuCar}>
-                  <Input {...inp(formik, "model")} placeholder="Ex: Clio 5" />
+                  <Input outline={"none"} {...inp(formik, "model")} placeholder="Ex: Clio 5" />
                 </FormField>
               </Grid>
 
               <Grid templateColumns={{ base: "1fr", sm: "1fr 1fr" }} gap={4}>
                 <FormField formik={formik} name="year" label="Année" icon={LuCalendar}>
-                  <Input {...inp(formik, "year", { type: "number" })} placeholder="2022" />
+                  <Input outline={"none"} {...inp(formik, "year", { type: "number" })} placeholder="2022" />
                 </FormField>
                 <FormField formik={formik} name="seats" label="Nombre de places" icon={LuUsers}>
-                  <Input {...inp(formik, "seats", { type: "number" })} placeholder="5" />
+                  <Input outline={"none"} {...inp(formik, "seats", { type: "number" })} placeholder="5" />
                   <Text fontSize="xs" color="gray.400" flexShrink={0} ml={2}>pers.</Text>
                 </FormField>
               </Grid>
@@ -357,13 +359,16 @@ const AddVehicle = () => {
                   w="full" align="flex-start"
                   border="1.5px solid" borderColor="gray.200"
                   borderRadius="xl" bg="white" px={3} pt={2.5}
-                  _focusWithin={{ borderColor: "blue.400",
-                    boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" }}
+                  _focusWithin={{
+                    borderColor: "blue.400",
+                    boxShadow: "0 0 0 3px rgba(49,130,206,0.12)"
+                  }}
                 >
                   <Box color="gray.400" flexShrink={0} mr={2} mt={0.5}>
                     <LuAlignLeft size={14} />
                   </Box>
                   <Textarea
+                  outline={"none"}
                     name="description"
                     value={formik.values.description}
                     onChange={formik.handleChange}
@@ -385,27 +390,27 @@ const AddVehicle = () => {
             <VStack gap={4} align="stretch">
               <Grid templateColumns={{ base: "1fr", sm: "1fr 1fr" }} gap={4}>
                 <FormField hint="Montant" formik={formik} name="price_per_day" label="Prix / jour" icon={LuBanknote}>
-                  <Input {...inp(formik, "price_per_day", { type: "number" })} placeholder="80" />
+                  <Input outline={"none"} {...inp(formik, "price_per_day", { type: "number" })} placeholder="80" />
                   <Text fontSize="xs" color="gray.400" flexShrink={0} ml={2}>TND</Text>
                 </FormField>
                 <FormField formik={formik} name="deposit" label="Dépôt" icon={LuBanknote}
                   hint="Montant bloqué à la prise en charge">
-                  <Input {...inp(formik, "deposit", { type: "number" })} placeholder="200" />
+                  <Input outline={"none"} {...inp(formik, "deposit", { type: "number" })} placeholder="200" />
                   <Text fontSize="xs" color="gray.400" flexShrink={0} ml={2}>TND</Text>
                 </FormField>
               </Grid>
 
               <Grid templateColumns={{ base: "1fr", sm: "1fr 1fr 1fr" }} gap={4}>
                 <FormField formik={formik} name="caution_standard" label="Caution standard" icon={LuShieldCheck}>
-                  <Input {...inp(formik, "caution_standard", { type: "number" })} placeholder="500" />
+                  <Input outline={"none"} {...inp(formik, "caution_standard", { type: "number" })} placeholder="500" />
                   <Text fontSize="xs" color="gray.400" flexShrink={0} ml={2}>TND</Text>
                 </FormField>
                 <FormField formik={formik} name="min_age" label="Âge minimum" icon={LuShieldCheck}>
-                  <Input {...inp(formik, "min_age", { type: "number" })} placeholder="21" />
+                  <Input outline={"none"} {...inp(formik, "min_age", { type: "number" })} placeholder="21" />
                   <Text fontSize="xs" color="gray.400" flexShrink={0} ml={2}>ans</Text>
                 </FormField>
                 <FormField formik={formik} name="license_years" label="Permis requis" icon={LuShieldCheck}>
-                  <Input {...inp(formik, "license_years", { type: "number" })} placeholder="2" />
+                  <Input outline={"none"} {...inp(formik, "license_years", { type: "number" })} placeholder="2" />
                   <Text fontSize="xs" color="gray.400" flexShrink={0} ml={2}>ans</Text>
                 </FormField>
               </Grid>
@@ -557,6 +562,7 @@ const AddVehicle = () => {
         </VStack>
       </form>
     </Container>
+    </>
   )
 }
 

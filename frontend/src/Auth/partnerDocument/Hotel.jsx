@@ -133,7 +133,7 @@ function FileField({ formik, name, label, hint }) {
             <FileUpload.DropzoneContent>
               <Text fontSize="sm" fontWeight={600}
                 color={hasFile ? "green.600" : "gray.600"}>
-                {hasFile ? formik.values[name]?.name : "Glissez ou cliquez pour uploader"}
+                {hasFile ? formik.values[name]?.name?.substring(0,20) : "Glissez ou cliquez pour uploader"}
               </Text>
               {!hasFile && (
                 <Text fontSize="xs" color="gray.400">PNG, JPG — max 5 MB</Text>
@@ -223,19 +223,23 @@ const Hotel = () => {
 
       setStep(s => s + 1)
     } catch (err) {
-      if(err.response.data){
-        if(err.response.data.errors.cin){
-          setCinError(true)
-          setCinErrorMessage(err.response.data.errors.cin)
-        }
-        if(err.response.data.errors.matricule_fiscale){
-          setMatriculeFiscale(true)
-          setMatriculeFiscaleErrorMessage(err.response.data.errors.matricule_fiscale)
-        }
-        else{
-          setRipError(true),
-          setMatriculeFiscaleErrorMessage(err.response.data.errors.rip)
-        }
+     if (err.response && err.response.data) {
+    const errors = err.response.data.errors || {}
+
+    if (errors.cin) {
+      setCinError(true)
+      setCinErrorMessage(errors.cin)
+    }
+
+    if (errors.matricule_fiscale) {
+      setMatriculeFiscale(true)
+      setMatriculeFiscaleErrorMessage(errors.matricule_fiscale)
+    }
+
+    if (errors.rip) {
+      setRipError(true)
+      setRipErrorMessage(errors.rip)
+    }
       }else{
       const errors = {}
       err.inner.forEach(e => { errors[e.path] = e.message })

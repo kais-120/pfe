@@ -1,6 +1,8 @@
 import {
   Box, Button, Input, Text, Flex, Grid,
   VStack, Field, Textarea, SimpleGrid,
+  HStack,
+  Icon,
 } from "@chakra-ui/react"
 import { useFormik } from "formik"
 import * as yup from "yup"
@@ -11,25 +13,31 @@ import {
   LuCompass, LuMapPin, LuUsers, LuClock,
   LuChevronLeft, LuCheck, LuPlus, LuX,
   LuUpload, LuCalendar, LuMountain, LuTag,
+  LuBanknote,
+  LuListTree,
+  LuSearch,
+  LuArrowRight,
 } from "react-icons/lu"
 import { FaCampground, FaMountain, FaUmbrellaBeach, FaHiking, FaStar } from "react-icons/fa"
 import { useState } from "react"
+import AddPackage from "./AddPackage"
+import { Plane } from "lucide-react"
 
 const CATEGORIES = [
-  { key: "voyage",   label: "Voyage",   Icon: LuCompass       },
-  { key: "camping",  label: "Camping",  Icon: FaCampground    },
-  { key: "désert",   label: "Désert",   Icon: FaMountain      },
-  { key: "aventure", label: "Aventure", Icon: FaHiking        },
-  { key: "plage",    label: "Plage",    Icon: FaUmbrellaBeach },
-  { key: "montagne", label: "Montagne", Icon: FaMountain      },
-  { key: "culturel", label: "Culturel", Icon: FaStar          },
+  { key: "voyage", label: "Voyage", Icon: LuCompass },
+  { key: "camping", label: "Camping", Icon: FaCampground },
+  { key: "désert", label: "Désert", Icon: FaMountain },
+  { key: "aventure", label: "Aventure", Icon: FaHiking },
+  { key: "plage", label: "Plage", Icon: FaUmbrellaBeach },
+  { key: "montagne", label: "Montagne", Icon: FaMountain },
+  { key: "culturel", label: "Culturel", Icon: FaStar },
 ]
 
 const DIFFICULTIES = [
-  { val: "facile",        color: "green"  },
-  { val: "modéré",        color: "yellow" },
-  { val: "difficile",     color: "orange" },
-  { val: "très difficile",color: "red"    },
+  { val: "facile", color: "green" },
+  { val: "modéré", color: "yellow" },
+  { val: "difficile", color: "orange" },
+  { val: "très difficile", color: "red" },
 ]
 
 const INCLUSIONS_DEFAULT = [
@@ -38,12 +46,9 @@ const INCLUSIONS_DEFAULT = [
 ]
 
 const validationSchema = yup.object({
-  title:yup.string().required("Le titre est requis"),
-  location:yup.string().required("La localisation est requise"),
-  description:yup.string().required("La description est requise"),
-  price_per_person:yup.number().positive("Doit être positif").required("Le prix est requis"),
-  duration_days:yup.number().positive("Doit être positif").required("La durée est requise"),
-  max_people:yup.number().positive("Doit être positif").required("La capacité est requise"),
+  title: yup.string().required("Le titre est requis"),
+  location: yup.string().required("La localisation est requise"),
+  description: yup.string().required("La description est requise"),
 })
 
 function FormField({ formik, name, label, required, type = "text",
@@ -62,8 +67,10 @@ function FormField({ formik, name, label, required, type = "text",
       <Flex w="full" align="center"
         border="1.5px solid" borderColor={isInvalid ? "red.400" : "gray.200"}
         borderRadius="xl" bg="white" px={3} transition="all 0.15s"
-        _focusWithin={{ borderColor: isInvalid ? "red.400" : "blue.400",
-          boxShadow: isInvalid ? "0 0 0 3px rgba(245,101,101,0.12)" : "0 0 0 3px rgba(49,130,206,0.12)" }}>
+        _focusWithin={{
+          borderColor: isInvalid ? "red.400" : "blue.400",
+          boxShadow: isInvalid ? "0 0 0 3px rgba(245,101,101,0.12)" : "0 0 0 3px rgba(49,130,206,0.12)"
+        }}>
         {Icon && <Box color={isInvalid ? "red.400" : "gray.400"} mr={2} flexShrink={0}><Icon size={14} /></Box>}
         <Input outline={"none"} name={name} type={type} value={formik.values[name]}
           onChange={formik.handleChange} onBlur={formik.handleBlur}
@@ -93,11 +100,257 @@ function SectionCard({ title, icon: Icon, iconColor = "blue", children }) {
     </Box>
   )
 }
+function PackageRow({ pkg, onSelect, selected }) {
+  const list = Array.isArray(selected) ? selected : [];
+  selected = list.some((p) => p.id === pkg.id)
+
+  return (
+    <Box
+      borderRadius="xl"
+      border="1.5px solid"
+      borderColor={selected ? "pink.400" : "gray.100"}
+      bg={selected ? "pink.50" : "white"}
+      p={4}
+      cursor="pointer"
+      transition="all 0.15s"
+      _hover={{ borderColor: "pink.300", bg: "pink.50" }}
+      onClick={() => onSelect(pkg)}
+    >
+      <Grid templateColumns={{ base: "1fr", sm: "1fr auto auto auto" }} gap={4} alignItems="center">
+
+        {/* Flight dates */}
+        <VStack align="start" gap={1}>
+          <Text fontSize="sm" fontWeight={700} color="gray.900">{pkg.title}</Text>
+          <HStack gap={3} fontSize="xs" color="gray.500" flexWrap="wrap">
+            <Flex align="center" gap={1}>
+              <Icon as={Plane} boxSize="10px" />
+              <Text>{new Date(pkg.departureDate).toISOString().split("T")[0]}</Text>
+              <Text>{pkg.departureTime}</Text>
+              <LuArrowRight size={10} />
+              <Text>{new Date(pkg.returnDate).toISOString().split("T")[0]}</Text>
+              <Text>{pkg.returnTime}</Text>
+            </Flex>
+            <Text color="gray.300">·</Text>
+            <Text>{pkg.duration}</Text>
+          </HStack>
+          {/* Destinations inline */}
+          <HStack gap={3} flexWrap="wrap" mt={0.5}>
+            {pkg.destinations.map((d, i) => (
+              <HStack key={i} gap={1} fontSize="xs" color="gray.600">
+                <LuMapPin size={11} color="#A0AEC0" />
+                <Text>{d.name}</Text>
+                <Text color="gray.400">({d.nights}N)</Text>
+              </HStack>
+            ))}
+          </HStack>
+        </VStack>
+
+        {/* Month badge */}
+        <Box
+          bg="gray.100" borderRadius="lg" px={3} py={1}
+          fontSize="xs" fontWeight={600} color="gray.600"
+          whiteSpace="nowrap"
+        >
+          {pkg.month} {pkg.year}
+        </Box>
+
+        {/* Price */}
+        <VStack align="end" gap={0}>
+          <HStack gap={1} align="baseline">
+            <Text fontSize="xl" fontWeight={800} color="gray.900" lineHeight={1}>
+              {pkg.price.toLocaleString()}
+            </Text>
+            <Text fontSize="xs" color="gray.400" fontWeight={600}>TND</Text>
+          </HStack>
+          <Text fontSize="xs" color="#E91E8C" fontWeight={700}>{pkg.installment}</Text>
+        </VStack>
+
+        {/* Select indicator */}
+        <Flex
+          w="28px" h="28px" borderRadius="full"
+          border="1.5px solid"
+          borderColor={selected ? "pink.400" : "gray.200"}
+          bg={selected ? "pink.500" : "white"}
+          align="center" justify="center"
+          flexShrink={0}
+          transition="all 0.15s"
+        >
+          {selected && <LuCheck size={13} color="white" />}
+        </Flex>
+      </Grid>
+    </Box>
+  )
+}
+
+function PackagesPanel({ selectedPackages, onSelectionChange, allPackages, setAllPackages }) {
+  const [tab, setTab] = useState("list")
+  const [search, setSearch] = useState("")
+
+  const filtered = allPackages.filter((p) =>
+    search === "" ||
+    p.title.toLowerCase().includes(search.toLowerCase()) ||
+    p.destinations.some((d) => d.name.toLowerCase().includes(search.toLowerCase()))
+  )
+
+
+
+  // Group by month
+  const grouped = {}
+  filtered.forEach((pkg) => {
+    const key = `${pkg.month} ${pkg.year}`
+    if (!grouped[key]) grouped[key] = []
+    grouped[key].push(pkg)
+  })
+
+  const toggleSelect = (pkg) => {
+    const isSelected = selectedPackages.some((p) => p.id === pkg.id)
+    onSelectionChange(
+      isSelected
+        ? selectedPackages.filter((p) => p.id !== pkg.id)
+        : [...selectedPackages, pkg]
+    )
+  }
+  return (
+    <Box>
+      {/* Tab switcher */}
+      <HStack
+        gap={0}
+        mb={5}
+        bg="gray.50"
+        borderRadius="xl"
+        p={1}
+        border="1px solid"
+        borderColor="gray.100"
+        w="fit-content"
+      >
+        {[
+          { key: "list", label: "Packages existants", icon: LuListTree },
+          { key: "add", label: "Nouveau package", icon: LuPlus },
+        ].map(({ key, label, icon: TabIcon }) => (
+          <Button
+            key={key}
+            size="sm"
+            borderRadius="lg"
+            px={4}
+            fontWeight={600}
+            fontSize="13px"
+            bg={tab === key ? "white" : "transparent"}
+            color={tab === key ? "gray.800" : "gray.500"}
+            boxShadow={tab === key ? "0 1px 4px rgba(0,0,0,0.08)" : "none"}
+            border="none"
+            _hover={{ bg: tab === key ? "white" : "gray.100" }}
+            transition="all 0.15s"
+            onClick={() => setTab(key)}
+            leftIcon={<TabIcon size={13} />}
+          >
+            {label}
+          </Button>
+        ))}
+      </HStack>
+
+      {/* ── LIST TAB ── */}
+      {tab === "list" && (
+        <Box>
+          {/* Search */}
+          <Flex
+            align="center" gap={2} px={3}
+            border="1.5px solid" borderColor="gray.200"
+            borderRadius="xl" bg="white" mb={4}
+            _focusWithin={{ borderColor: "blue.400", boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" }}
+          >
+            <LuSearch size={14} color="#A0AEC0" />
+            <Input
+              outline={"none"}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Rechercher un package…"
+              border="none" bg="transparent" px={0} h="40px"
+              fontSize="sm" _focus={{ boxShadow: "none" }}
+              _placeholder={{ color: "gray.300" }}
+            />
+          </Flex>
+
+          {/* Selected count pill */}
+          {selectedPackages.length > 0 && (
+            <Flex
+              align="center" gap={2} mb={4} px={3} py={2}
+              bg="pink.50" borderRadius="lg"
+              border="1px solid" borderColor="pink.200"
+            >
+              <LuCheck size={13} color="#E91E8C" />
+              <Text fontSize="xs" color="pink.600" fontWeight={600}>
+                {selectedPackages.length} package{selectedPackages.length > 1 ? "s" : ""} sélectionné{selectedPackages.length > 1 ? "s" : ""}
+              </Text>
+              <Button
+                size="xs" variant="ghost" color="pink.400" ml="auto"
+                fontSize="xs" h="auto" p={1}
+                _hover={{ color: "pink.600" }}
+                onClick={() => onSelectionChange([])}
+              >
+                Tout désélectionner
+              </Button>
+            </Flex>
+          )}
+
+          {/* Grouped list */}
+          {Object.keys(grouped).length === 0 ? (
+            <Flex direction="column" align="center" py={10} color="gray.400" gap={2}>
+              <LuSearch size={24} />
+              <Text fontSize="sm">Aucun package trouvé</Text>
+            </Flex>
+          ) : (
+            <VStack align="stretch" gap={5}>
+              {Object.entries(grouped).map(([monthKey, packages]) => (
+                <Box key={monthKey}>
+                  {/* Month divider */}
+                  <Flex align="center" gap={2} mb={3}>
+                    <Box
+                      w="3px" h="14px" bg="pink.400"
+                      borderRadius="2px" flexShrink={0}
+                    />
+                    <Text fontSize="xs" fontWeight={700} color="gray.600" textTransform="uppercase" letterSpacing="0.08em">
+                      {monthKey}
+                    </Text>
+                    <Box flex={1} h="1px" bg="gray.100" />
+                    <Text fontSize="xs" color="gray.400">{packages.length} package{packages.length > 1 ? "s" : ""}</Text>
+                  </Flex>
+                  <VStack align="stretch" gap={2}>
+                    {packages.map((pkg) => (
+                      <PackageRow
+                        key={pkg.id}
+                        pkg={pkg}
+                        selected={
+                          Array.isArray(selectedPackages) &&
+                          selectedPackages.some((p) => p.id === pkg.id)
+                        }
+
+                        onSelect={toggleSelect}
+                      />
+                    ))}
+                  </VStack>
+                </Box>
+              ))}
+            </VStack>
+          )}
+        </Box>
+      )}
+
+      {tab === "add" && (
+        <Box>
+          <AddPackage ontTab={setTab} onChange={setAllPackages} />
+        </Box>
+      )}
+    </Box>
+  )
+}
 
 const AddCircuit = () => {
   const navigate = useNavigate()
   const [previews, setPreviews] = useState([])
   const [dateInput, setDateInput] = useState("")
+  const [selectedPackages, setSelectedPackages] = useState([])
+  const [allPackages, setAllPackages] = useState([])
+
 
   const formik = useFormik({
     initialValues: {
@@ -111,8 +364,10 @@ const AddCircuit = () => {
     onSubmit: async (values) => {
       try {
         const fd = new FormData()
+        if (allPackages.length > 0)
+        fd.append("packages", JSON.stringify(allPackages))
         Object.entries(values).forEach(([k, v]) => {
-          if (k === "images")          v.forEach(img => fd.append("service_doc", img))
+          if (k === "images") v.forEach(img => fd.append("service_doc", img))
           else if (k === "inclusions" || k === "available_dates")
             v.forEach(x => fd.append(`${k}[]`, x))
           else fd.append(k, v)
@@ -254,16 +509,44 @@ const AddCircuit = () => {
           </SectionCard>
 
           {/* Pricing & capacity */}
-          <SectionCard title="Tarif & capacité" icon={LuTag} iconColor="orange">
-            <Grid templateColumns="1fr 1fr 1fr" gap={4}>
-              <FormField formik={formik} name="price_per_person" label="Prix / personne"
-                required type="number" icon={LuTag} placeholder="350" suffix="TND" />
-              <FormField formik={formik} name="duration_days" label="Durée"
-                required type="number" icon={LuClock} placeholder="3" suffix="jours" />
-              <FormField formik={formik} name="max_people" label="Groupe max"
-                required type="number" icon={LuUsers} placeholder="12" suffix="pers." />
-            </Grid>
-          </SectionCard>
+          <Box
+            bg="white" borderRadius="2xl" p={6}
+            border="1px solid" borderColor="gray.100"
+            boxShadow="0 1px 8px rgba(0,0,0,0.05)"
+          >
+            {/* Card header */}
+            <Flex align="center" justify="space-between" mb={5}>
+              <Flex align="center" gap={2}>
+                <Flex w="28px" h="28px" borderRadius="lg"
+                  bg="green.50" color="green.500"
+                  align="center" justify="center" flexShrink={0}>
+                  <LuBanknote size={14} />
+                </Flex>
+                <Text fontSize="sm" fontWeight={700} color="gray.700">
+                  Tarification & packages
+                </Text>
+              </Flex>
+              {selectedPackages.length > 0 && (
+                <Flex
+                  align="center" gap={1.5} px={3} py={1}
+                  bg="pink.50" borderRadius="full"
+                  border="1px solid" borderColor="pink.200"
+                >
+                  <LuCheck size={11} color="#E91E8C" />
+                  <Text fontSize="xs" color="pink.600" fontWeight={700}>
+                    {selectedPackages.length} lié{selectedPackages.length > 1 ? "s" : ""}
+                  </Text>
+                </Flex>
+              )}
+            </Flex>
+
+            <PackagesPanel
+              allPackages={allPackages}
+              setAllPackages={setAllPackages}
+              selectedPackages={selectedPackages}
+              onSelectionChange={setSelectedPackages}
+            />
+          </Box>
 
           {/* Inclusions */}
           <SectionCard title="Ce qui est inclus" icon={LuCheck} iconColor="teal">
@@ -287,45 +570,7 @@ const AddCircuit = () => {
             </Grid>
           </SectionCard>
 
-          {/* Available dates */}
-          <SectionCard title="Dates disponibles" icon={LuCalendar} iconColor="blue">
-            <Flex gap={2} mb={3}>
-              <Flex flex={1} align="center" border="1.5px solid" borderColor="gray.200"
-                borderRadius="xl" bg="white" px={3}
-                _focusWithin={{ borderColor: "blue.400", boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" }}>
-                <Box color="gray.400" mr={2}><LuCalendar size={14} /></Box>
-                <Input type="date" value={dateInput}
-                  onChange={e => setDateInput(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addDate())}
-                  border="none" bg="transparent" px={0} h="42px" flex={1}
-                  fontSize="sm" color="gray.800" _focus={{ boxShadow: "none" }} />
-              </Flex>
-              <Button colorScheme="blue" borderRadius="xl" px={4} onClick={addDate}>
-                <LuPlus size={14} />
-              </Button>
-            </Flex>
-            {formik.values.available_dates.length > 0 && (
-              <Flex gap={2} flexWrap="wrap">
-                {formik.values.available_dates.map(d => (
-                  <Flex key={d} align="center" gap={2}
-                    bg="blue.50" color="blue.700" borderRadius="full"
-                    px={3} py={1.5} fontSize="xs" fontWeight={600}
-                    border="1px solid" borderColor="blue.200">
-                    <LuCalendar size={11} />
-                    {new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
-                    <Box as="button" type="button" onClick={() => removeDate(d)}>
-                      <LuX size={11} />
-                    </Box>
-                  </Flex>
-                ))}
-              </Flex>
-            )}
-            {formik.values.available_dates.length === 0 && (
-              <Text fontSize="xs" color="gray.400">
-                Ajoutez les dates de départ disponibles pour ce circuit.
-              </Text>
-            )}
-          </SectionCard>
+
 
           {/* Photos */}
           <SectionCard title="Photos du circuit" icon={LuUpload} iconColor="purple">

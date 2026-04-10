@@ -1,6 +1,6 @@
 const express = require("express");
 const AuthenticateToken = require("../middlewares/AuthenticateToken");
-const { GetDashboardStats, GetDashboardServicesStats, GetLatestActivity, GetPartner, getMonthlyStats, getBooking, GetPartnerDashboardStats, getRevenueChart, getBookingsChart, getLastBookings, getLastReviews, getRooms } = require("../controllers/DashboardController");
+const { GetDashboardStats, GetDashboardServicesStats, GetLatestActivity, GetPartner, getMonthlyStats, getBooking, GetPartnerDashboardStats, getRevenueChart, getBookingsChart, getLastBookings, getLastReviews, getRooms, getVehicle, getFlight, getOffer, getCircuit } = require("../controllers/DashboardController");
 const AuthenticateAdmin = require("../middlewares/AuthenticateAdmin");
 const AuthenticatePartner = require("../middlewares/AuthenticatePartner");
 const router = express.Router();
@@ -18,6 +18,10 @@ router.get("/partner/booking-chart",[AuthenticateToken,AuthenticatePartner], get
 router.get("/partner/last-booking",[AuthenticateToken,AuthenticatePartner], getLastBookings);
 router.get("/partner/last-reviews",[AuthenticateToken,AuthenticatePartner], getLastReviews);
 router.get("/partner/my-rooms",[AuthenticateToken,AuthenticatePartner], getRooms);
+router.get("/partner/my-vehicle",[AuthenticateToken,AuthenticatePartner], getVehicle);
+router.get("/partner/my-flight",[AuthenticateToken,AuthenticatePartner], getFlight);
+router.get("/partner/my-offer",[AuthenticateToken,AuthenticatePartner], getOffer);
+router.get("/partner/my-circuit",[AuthenticateToken,AuthenticatePartner], getCircuit);
 
 
 module.exports = router;

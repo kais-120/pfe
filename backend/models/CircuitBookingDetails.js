@@ -1,23 +1,12 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../configs/db");
+const Package = require("./Package");
 
 const CircuitBookingDetails = sequelize.define("circuit_booking_details",{
     id:{
         type:DataTypes.BIGINT,
         autoIncrement:true,
         primaryKey:true
-    },
-    start_date:{
-        type:DataTypes.DATE,
-        allowNull:false,
-    },
-    end_date:{
-        type:DataTypes.DATE,
-        allowNull:false,
-    },
-    number_of_participants:{
-        type:DataTypes.INTEGER,
-        allowNull:false,
     },
     booking_id:{
         type:DataTypes.BIGINT,
@@ -33,6 +22,14 @@ const CircuitBookingDetails = sequelize.define("circuit_booking_details",{
         allowNull:false,
         references:{
             model:"circuit",
+            key:"id"
+        },
+        onDelete:'CASCADE',
+    },
+    package_id:{
+        type:DataTypes.BIGINT,
+        references:{
+            model:Package,
             key:"id"
         },
         onDelete:'CASCADE',

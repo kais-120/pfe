@@ -83,7 +83,7 @@ function LocationCombobox({ value, onChange }) {
 }
 
 
-function ImageSlider({ images, hotelId }) {
+function ImageSlider({ images, hotelId, star }) {
   const [idx, setIdx] = useState(0)
 
   if (!images?.length) return <Skeleton height="220px" borderRadius="xl" />
@@ -133,7 +133,7 @@ function ImageSlider({ images, hotelId }) {
         bg="white" color="orange.400" borderRadius="lg"
         px={2} py={1} fontSize="xs" fontWeight={700} boxShadow="sm"
       >
-        <Flex align="center" gap={1}><FaStar size={10} />4 étoiles</Flex>
+        <Flex align="center" gap={1}><FaStar size={10} />{star} étoiles</Flex>
       </Badge>
     </Box>
   )
@@ -173,7 +173,7 @@ function HotelCard({ hotel,checkIn,checkOut,rooms }) {
       cursor="pointer"
     >
       <Box p={4} pb={3}>
-        <ImageSlider images={hotel.imagesHotel} hotelId={hotel.id} />
+        <ImageSlider images={hotel.imagesHotel} hotelId={hotel.id} star={hotel.star} />
       </Box>
       <VStack align="stretch" px={4} pb={4} spacing={3}>
         <Box>

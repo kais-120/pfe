@@ -3,29 +3,30 @@ import {
   Box, Container, Heading, Text, Image, SimpleGrid,
   Badge, Stack, Flex, Button, IconButton, HStack,
   VStack, Grid, Carousel,
+  Icon,
 } from "@chakra-ui/react";
 import { LuChevronLeft, LuChevronRight, LuPencil, LuTrash2, LuPlus, LuBed, LuUsers, LuBanknote, LuHash } from "react-icons/lu";
 import { FaStar, FaRegStar, FaWifi, FaParking, FaSwimmingPool, FaSpa, FaDumbbell, FaUtensils, FaSnowflake } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { AxiosToken, imageURL } from "../../../../Api/Api";
-import { MessageCircle } from "lucide-react";
+import { Bed, MessageCircle } from "lucide-react";
 
 /* ── Equipment icon map ─────────────────────────────────────────── */
 const EQUIP_META = {
-  wifi:          { Icon: FaWifi,        label: "Wi-Fi"        },
-  piscine:       { Icon: FaSwimmingPool,label: "Piscine"      },
-  parking:       { Icon: FaParking,     label: "Parking"      },
-  spa:           { Icon: FaSpa,         label: "Spa"          },
-  gym:           { Icon: FaDumbbell,    label: "Gym"          },
-  restaurant:    { Icon: FaUtensils,    label: "Restaurant"   },
-  climatisation: { Icon: FaSnowflake,   label: "Climatisation"},
+  wifi: { Icon: FaWifi, label: "Wi-Fi" },
+  piscine: { Icon: FaSwimmingPool, label: "Piscine" },
+  parking: { Icon: FaParking, label: "Parking" },
+  spa: { Icon: FaSpa, label: "Spa" },
+  gym: { Icon: FaDumbbell, label: "Gym" },
+  restaurant: { Icon: FaUtensils, label: "Restaurant" },
+  climatisation: { Icon: FaSnowflake, label: "Climatisation" },
 }
 
 /* ── Star display ───────────────────────────────────────────────── */
 function Stars({ rating, size = 13 }) {
   return (
     <Flex align="center" gap="2px">
-      {[1,2,3,4,5].map(i => {
+      {[1, 2, 3, 4, 5].map(i => {
         const Icon = i <= rating ? FaStar : FaRegStar
         return <Icon key={i} size={size} color={i <= rating ? "#F59E0B" : "#D1D5DB"} />
       })}
@@ -146,7 +147,7 @@ function RoomCard({ room, onEdit, onDelete }) {
 
 /* ── Review card ────────────────────────────────────────────────── */
 function ReviewCard({ review, index }) {
-  const initials = review?.clientReview?.name?.split(" ").map(w => w[0]).join("").slice(0,2).toUpperCase()
+  const initials = review?.clientReview?.name?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
   return (
     <Box
       bg="white" borderRadius="xl" p={4}
@@ -189,7 +190,7 @@ function EmptyState({ icon, title, subtitle }) {
       bg="gray.50" borderRadius="xl"
       border="1px dashed" borderColor="gray.200"
     >
-      <Text fontSize="2xl">{icon}</Text>
+      <Icon as={icon} fontSize="2xl"/>
       <Text fontWeight={600} color="gray.600" fontSize="sm">{title}</Text>
       {subtitle && <Text fontSize="xs" color="gray.400">{subtitle}</Text>}
     </Flex>
@@ -198,7 +199,7 @@ function EmptyState({ icon, title, subtitle }) {
 
 
 const ServiceHotel = () => {
-  const [hotel,    setHotel]    = useState(null)
+  const [hotel, setHotel] = useState(null)
   const [showMore, setShowMore] = useState(false)
   const navigate = useNavigate()
 
@@ -241,7 +242,7 @@ const ServiceHotel = () => {
   const minPrice = hotel.rooms?.length
     ? Math.min(...hotel.rooms.map(r => r.price_by_day))
     : null
-    console.log(hotel)
+  console.log(hotel)
 
   return (
     <Container maxW="6xl" py={8}>
@@ -277,10 +278,10 @@ const ServiceHotel = () => {
 
       {(hotel.rooms?.length > 0 || minPrice) && (
         <Grid templateColumns={{ base: "1fr 1fr", md: "repeat(4, 1fr)" }} gap={3} mb={8}>
-          <StatCard icon={LuBed}      label="Chambres"      value={hotel.rooms?.length ?? 0}       color="blue"   />
-          <StatCard icon={LuBanknote} label="Prix min/nuit" value={minPrice ? `${minPrice} TND` : "—"} color="green"  />
-          <StatCard icon={FaStar}     label="Note moyenne"  value={avgRating ? `${avgRating}/5` : "—"} color="yellow" />
-          <StatCard icon={LuUsers}    label="Avis clients"  value={hotel.hotelReview?.length ?? 0}     color="purple" />
+          <StatCard icon={LuBed} label="Chambres" value={hotel.rooms?.length ?? 0} color="blue" />
+          <StatCard icon={LuBanknote} label="Prix min/nuit" value={minPrice ? `${minPrice} TND` : "—"} color="green" />
+          <StatCard icon={FaStar} label="Note moyenne" value={avgRating ? `${avgRating}/5` : "—"} color="yellow" />
+          <StatCard icon={LuUsers} label="Avis clients" value={hotel.hotelReview?.length ?? 0} color="purple" />
         </Grid>
       )}
 
@@ -375,9 +376,9 @@ const ServiceHotel = () => {
         <SectionHeading>Équipements & services</SectionHeading>
         <Grid templateColumns={{ base: "repeat(2,1fr)", sm: "repeat(3,1fr)", md: "repeat(4,1fr)" }} gap={3}>
           {hotel.equipments.map((item, i) => {
-            const key   = item.toLowerCase()
-            const meta  = EQUIP_META[key]
-            const Icon  = meta?.Icon ?? null
+            const key = item.toLowerCase()
+            const meta = EQUIP_META[key]
+            const Icon = meta?.Icon ?? null
             return (
               <Flex
                 key={i} align="center" gap={3} p={3}
@@ -422,13 +423,13 @@ const ServiceHotel = () => {
               <RoomCard
                 key={room.id}
                 room={room}
-                onEdit={(r)  => navigate(`hotel/room/edit/${r.id}`)}
+                onEdit={(r) => navigate(`hotel/room/edit/${r.id}`)}
                 onDelete={(id) => console.log("delete", id)}
               />
             ))}
           </Stack>
         ) : (
-          <EmptyState icon="🛏️" title="Aucune chambre" subtitle="Ajoutez vos premières chambres pour commencer à recevoir des réservations." />
+          <EmptyState icon={LuBed} title="Aucune chambre" subtitle="Ajoutez vos premières chambres pour commencer à recevoir des réservations." />
         )}
       </Box>
 
@@ -451,9 +452,9 @@ const ServiceHotel = () => {
                   <Text fontSize="xs" color="gray.400" mt={1}>{hotel.hotelReview.length} avis</Text>
                 </Box>
                 <Box flex={1} minW="180px">
-                  {[5,4,3,2,1].map(star => {
+                  {[5, 4, 3, 2, 1].map(star => {
                     const count = hotel.hotelReview.filter(r => r.rate === star).length
-                    const pct   = hotel.hotelReview.length ? (count / hotel.hotelReview.length) * 100 : 0
+                    const pct = hotel.hotelReview.length ? (count / hotel.hotelReview.length) * 100 : 0
                     return (
                       <Flex key={star} align="center" gap={3} mb={1.5}>
                         <Flex align="center" gap={1} w="32px" flexShrink={0}>
@@ -478,7 +479,7 @@ const ServiceHotel = () => {
             </Grid>
           </>
         ) : (
-          <EmptyState icon={<MessageCircle />} title="Aucun avis pour le moment" subtitle="Les avis de vos clients apparaîtront ici." />
+          <EmptyState icon={MessageCircle} title="Aucun avis pour le moment" subtitle="Les avis de vos clients apparaîtront ici." />
         )}
       </Box>
 

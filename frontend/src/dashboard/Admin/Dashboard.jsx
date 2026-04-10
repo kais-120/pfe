@@ -14,6 +14,7 @@ import { useState, useEffect, useRef } from "react"
 import Chart from 'chart.js/auto'
 import { AxiosToken } from "../../Api/Api"
 import { RiUserStarLine } from "react-icons/ri";
+import { Helmet } from "react-helmet"
 
 
 
@@ -343,6 +344,8 @@ const formatted = today.toLocaleDateString("fr-FR", {
   year: "numeric",
 });
   return (
+    <>
+    <Helmet title="Tableau de board"></Helmet>
     <Box>
 
       {/* ── Page header ── */}
@@ -684,6 +687,7 @@ const formatted = today.toLocaleDateString("fr-FR", {
       </Grid>
 
     </Box>
+    </>
   )
 }
 

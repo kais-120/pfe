@@ -35,7 +35,6 @@ const validationSchema = yup.object({
     otherwise: (schema) => schema.notRequired()
   }),  
   seats_total: yup.number().positive("Doit être positif").required("Nombre de sièges requis"),
-  seats_available: yup.number().min(0).required("Sièges disponibles requis"),
 })
 
 /* ── Reusable field wrapper ─────────────────────────────────────── */
@@ -129,8 +128,7 @@ const AddFlight = () => {
   })
 
   return (
-    <Box maxW="700px">
-
+    <Box>
       {/* Back */}
       <Flex as="button" type="button" align="center" gap={1.5}
         color="gray.400" fontSize="sm" mb={6}
@@ -378,9 +376,6 @@ const AddFlight = () => {
             <Grid templateColumns="1fr 1fr 1fr" gap={4}>
               <FormField formik={formik} name="seats_total" label="Sièges total" required
                 type="number" icon={LuUsers} placeholder="180" suffix="sièges" />
-              <FormField formik={formik} name="seats_available" label="Disponibles" required
-                type="number" placeholder="45" suffix="restants"
-                 />
               <FormField formik={formik} name="baggage_kg" label="Bagage inclus"
                 type="number" icon={LuBaggageClaim} placeholder="23" suffix="kg" />
             </Grid>

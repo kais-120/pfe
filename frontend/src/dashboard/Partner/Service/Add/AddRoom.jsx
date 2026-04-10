@@ -11,6 +11,7 @@ import {
   LuBed, LuUsers, LuBanknote, LuHash,
   LuChevronLeft, LuBaby, LuCheck,
 } from "react-icons/lu";
+import { Helmet } from "react-helmet";
 
 const validationSchema = Yup.object({
   name: Yup.string().required("Le nom de chambre est requis"),
@@ -34,6 +35,7 @@ function FormField({ formik, name, label, type = "text", icon: Icon, suffix }) {
       </Field.Label>
       <Flex
         align="center"
+        w="full"
         border="1.5px solid"
         borderColor={isInvalid ? "red.400" : "gray.200"}
         borderRadius="xl"
@@ -60,6 +62,7 @@ function FormField({ formik, name, label, type = "text", icon: Icon, suffix }) {
           onBlur={formik.handleBlur}
           border="none"
           bg="transparent"
+          flex="1"
           px={0}
           h="42px"
           fontSize="sm"
@@ -115,7 +118,9 @@ const AddRoom = () => {
   const isSubmitting = formik.isSubmitting
 
   return (
-    <Container maxW="680px" py={2}>
+    <>
+    <Helmet title="Ajouter chambre"></Helmet>
+    <Container py={2}>
 
       {/* Back button */}
       <Flex
@@ -163,10 +168,10 @@ const AddRoom = () => {
               </Text>
             </Flex>
 
-            <Grid templateColumns={{ base: "1fr", sm: "1fr 1fr" }} gap={4}>
-              <Box gridColumn={{ sm: "1 / -1" }}>
-                <FormField formik={formik} name="name" label="Nom de la chambre" icon={LuBed} />
-              </Box>
+            <Box w={"full"}>
+              <FormField formik={formik} name="name" label="Nom de la chambre" icon={LuBed} />
+            </Box>
+            <Grid mt={"20px"} templateColumns={{ base: "1fr", sm: "1fr 1fr" }} gap={4}>
               <FormField formik={formik} name="capacity" label="Capacité" type="number" icon={LuUsers} suffix="pers." />
               <FormField formik={formik} name="count" label="Nombre de chambres" type="number" icon={LuHash} suffix="unités" />
             </Grid>
@@ -259,6 +264,7 @@ const AddRoom = () => {
         </VStack>
       </form>
     </Container>
+    </>
   )
 }
 

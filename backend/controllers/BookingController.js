@@ -156,12 +156,8 @@ exports.BookingLocation = [
     }
 ]
 exports.BookingCircuit = [
-    body("start_date").notEmpty().withMessage("start date is required")
-        .isDate().withMessage("pickup date should be date"),
-    body("number_of_participants").notEmpty().withMessage("number of participants is required")
-        .isNumeric().withMessage("number of participants should be numeric"),
-    body("price").notEmpty().withMessage("price is required")
-        .isNumeric().withMessage("price should be numeric")
+    body("package_id").notEmpty().withMessage("package id is required")
+        .isNumeric().withMessage("package id should be number"),
     , async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -169,7 +165,7 @@ exports.BookingCircuit = [
         }
         try {
             const io = getIO()
-            const { start_date, number_of_participants,price } = req.body;
+            const { package_id } = req.body;
             const { id } = req.params;
             const circuit = await Circuit.findByPk(id,{
                 include:[{
@@ -180,14 +176,19 @@ exports.BookingCircuit = [
                 }]
             });
             if(!circuit){
-                return res.status(404).send({ message: "vehicle not found" })
+                return res.status(404).send({ message: "circuit not found" })
             }
-            const end_date = new Date(start_date)
-            end_date.setDate(end_date.getDate() + circuit.duration_days)
-
+            const package = await Package.findByPk(package_id);
+            if(package.circuit_id != circuit.id){
+                return res.status(404).json({message:"the circuit not have this package"})
+            }
+            if(package.number_place === 0){
+                return res.status(400).json({message:"there no place"})
+            }
             const client_id = req.userId;
-            const booking = await Booking.create({ total_price:price, type: "voyages circuits", client_id });
-            await CircuitBookingDetails.create({booking_id:booking.id,start_date,end_date,number_of_participants,circuit_id:id})
+            const booking = await Booking.create({ total_price:package.price, type: "voyages circuits", client_id });
+            await CircuitBookingDetails.create({booking_id:booking.id,package_id,circuit_id:id});
+            package.update({number_place:package.number_place - 1})
             
             await Notification.create({ title: "Nouvelle réservation", message: "un client faire un réservation", type: "booking", user_id: circuit.voyagesCircuit.partner_id })
             io.to(`partner-${circuit.voyagesCircuit.partner_id}`).emit("newNotification");
@@ -257,21 +258,26 @@ exports.GetPartnerBookingHotel = async (req, res) => {
             order: [["createdAt", "DESC"]],
             include: [
                 {
-                    model: HotelBookingDetails,
-                    as: "bookingHotelDetails",
+                    model: CircuitBookingDetails,
+                    as: "circuitBooking",
                     required: true,
                     include: [
                         {
-                            model: Room,
-                            as: "RoomHotelBooking",
+                            model: Circuit,
+                            as: "circuitDetails",
+                            attributes:["category","difficulty","location","title"],
                             required: true,
                             include: [
                                 {
-                                    model: Hotel,
-                                    as: "hotelRoom",
+                                    model: Voyage,
+                                    as: "voyagesCircuit",
                                     where: { partner_id },
                                     required: true,
                                     attributes: []
+                                },
+                                {
+                                    model:Package,
+                                    as:"packagesCircuit"
                                 }
                             ]
                         }
