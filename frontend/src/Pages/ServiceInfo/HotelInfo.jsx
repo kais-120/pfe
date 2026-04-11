@@ -15,7 +15,7 @@ import {
   LuUsers, LuShoppingCart, LuX,
 } from "react-icons/lu"
 import Header from "../../components/home/Header"
-import { Axios, imageURL } from "../../Api/Api"
+import { Axios, AxiosToken, imageURL } from "../../Api/Api"
 import DatePicker from "../../components/ui/DatePicker"
 
 /* ── Equipment list ─────────────────────────────────────────────── */
@@ -119,7 +119,6 @@ function GuestCounter({ label, sublabel, value, min, onIncrease, onDecrease }) {
   )
 }
 
-/* ── RoomGuestSelector ──────────────────────────────────────────── */
 function RoomGuestSelector({ guestRooms, setGuestRooms }) {
   const [open, setOpen] = useState(false)
   const ref = React.useRef(null)
@@ -390,8 +389,25 @@ function RoomCard({ slotIndex, room, nights, selected, onSelect }) {
   )
 }
 
-/* ── Booking summary sticky bar ─────────────────────────────────── */
-function BookingSummary({ selections, nights, totalRooms }) {
+function BookingSummary({ selections, nights, totalRooms, id, checkIn, checkOut, guestRooms }) {
+  const handlePayment = async () => {
+    try {
+      const updatedGuestRooms = guestRooms.map((guest, index) => {
+        return {
+          ...guest,
+          room_id: selections[index].roomId
+        };
+      });
+      const res = await AxiosToken.post(`/booking/hotel/${id}`, {
+        check_in_date: checkIn,
+        check_out_date: checkOut,
+        rooms: updatedGuestRooms
+      });
+      window.location = res.data.url
+    } catch {
+      console.error("error")
+    }
+  }
   const selectedCount = Object.values(selections).filter(Boolean).length
   const grandTotal = Object.values(selections)
     .filter(Boolean)
@@ -444,6 +460,7 @@ function BookingSummary({ selections, nights, totalRooms }) {
             </Flex>
           </Box>
           <Button colorScheme="blue" borderRadius="xl" px={7} h="46px"
+            onClick={handlePayment}
             fontWeight={700}
             isDisabled={selectedCount < totalRooms}>
             <Flex align="center" gap={2}>
@@ -470,7 +487,7 @@ function RoomsSection({ id, location }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [selections, setSelections] = useState({})
-const formatDate = (d) => new Date(d).toISOString().split('T')[0]
+  const formatDate = (d) => new Date(d).toISOString().split('T')[0]
 
   const nights = (() => {
     if (!checkIn || !checkOut) return null
@@ -485,7 +502,7 @@ const formatDate = (d) => new Date(d).toISOString().split('T')[0]
       setSelections({})
       const roomsArray = guestRooms.map(r => [r.adults, r.children])
       const res = await Axios.post(`/service/get/hotel/room/search/${id}`, {
-        checkIn:formatDate(checkIn), checkOut:formatDate(checkOut), rooms: roomsArray,
+        checkIn: formatDate(checkIn), checkOut: formatDate(checkOut), rooms: roomsArray,
       })
       setHotel(res.data.hotel)
     } catch {
@@ -598,6 +615,10 @@ const formatDate = (d) => new Date(d).toISOString().split('T')[0]
           </VStack>
 
           <BookingSummary
+            id={id}
+            guestRooms={guestRooms}
+            checkIn={checkIn}
+            checkOut={checkOut}
             selections={selections}
             nights={nights ?? hotel.nights}
             totalRooms={totalRooms}
@@ -663,9 +684,7 @@ function avgRating(reviews) {
   return reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   Main HotelDetail
-═══════════════════════════════════════════════════════════════════ */
+
 export default function HotelDetail() {
   const { id } = useParams()
   const navigate = useNavigate()

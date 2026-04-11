@@ -58,12 +58,16 @@ import PackagesDialog from "./Pages/ServiceInfo/PackagesDialog";
 import Services from "./dashboard/Admin/Services";
 import Dashboard from "./dashboard/Admin/Dashboard";
 import DashboardPartner from "./dashboard/Partner/DashboardPartner";
+import SuccessPayment from "./SuccessPayment";
+import CancelPayment from "./CancelPayment";
 
 function App() {
   return (
     <>
   <Toaster />
     <Routes>
+      <Route path="/payment/cancel" element={<CancelPayment />} />
+      <Route path="/payment/success" element={<SuccessPayment />} />
       <Route path="/add/package" element={<AddPackage />} />
       <Route path="/package" element={<PackagesDialog />} />
   <Route path="/setting" element={<Settings/>} />

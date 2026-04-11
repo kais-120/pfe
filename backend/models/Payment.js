@@ -11,6 +11,15 @@ const Payment = sequelize.define("payments", {
         type: DataTypes.DOUBLE,
         allowNull: false,
     },
+    status: {
+        type:DataTypes.ENUM("en attente", "confirmée","annulée"),
+        allowNull:true,
+        defaultValue:"en attente"
+    },
+    reference: {
+        type:DataTypes.STRING,
+        allowNull:true,
+    },
     client_id: {
         type: DataTypes.BIGINT,
         allowNull: false,

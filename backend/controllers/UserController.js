@@ -12,6 +12,7 @@ const { ForgotPasswordEmail, EmailChangeOtp } = require("./OtpController");
 const Activity = require("../models/Activity");
 
 
+
 exports.AddAgent = [
     body("firstName").notEmpty().withMessage("first name is required"),
     body("lastName").notEmpty().withMessage("last name is required"),
@@ -324,16 +325,19 @@ exports.GetPartnerFile = async (req, res) => {
 exports.AcceptFile = async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = req.userId
+        const userId = req.userId;
         const partnerFiles = await PartnerFile.findByPk(id);
         if (!partnerFiles) {
             return res.status(404).send({ message: "partner file not found" })
         }
-        partnerFiles.update({ status: "accepté", accepted_by: userId });
+        const { email } = await User.findByPk(partnerFiles.partner_id);
+        
+        partnerFiles.update({ status: "accepté", accepted_by: userId});
         return res.send({ message: "partner file updated" })
 
-    } catch {
-        return res.status(500).send({ message: "error server" })
+    } catch (err){
+        console.log(err)
+        return res.status(500).send({ message: err })
     }
 }
 

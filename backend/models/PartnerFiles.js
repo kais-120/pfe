@@ -30,11 +30,6 @@ const PartnerFile = sequelize.define("partner_files",{
         type:DataTypes.STRING(100),
         allowNull:true,
     },
-    rip: {
-    type: DataTypes.STRING(34),
-    allowNull: true,
-    },
-    // hotel
     register_commerce:{
         type:DataTypes.STRING(100),
         allowNull:true,
@@ -43,22 +38,6 @@ const PartnerFile = sequelize.define("partner_files",{
         type:DataTypes.STRING(100),
         allowNull:true,
     },
-    // agency
-    autorisation_travel_agency: {
-    type: DataTypes.STRING(100),
-    allowNull: true,
-    },
-    // Compagnie 
-    licence_avion: {
-    type: DataTypes.STRING(100),
-    allowNull: true,
-    },
-    // circuit
-    assurance_responsabilite_civile: {
-    type: DataTypes.STRING(100),
-    allowNull: true,
-    },
-    
     status:{
         type:DataTypes.ENUM('en attente','accepté','rejetée'),
         allowNull:true
@@ -72,6 +51,15 @@ const PartnerFile = sequelize.define("partner_files",{
         onDelete:"CASCADE"
     },
     accepted_by: {
+            type: DataTypes.BIGINT,
+            allowNull: true,
+            references:{
+                model:"users",
+                key:"id"
+            },
+            onDelete:"SET NULL"
+        },
+    rejected_by: {
             type: DataTypes.BIGINT,
             allowNull: true,
             references:{

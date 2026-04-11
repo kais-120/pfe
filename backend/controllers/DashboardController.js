@@ -981,12 +981,13 @@ exports.getRevenueChart = async (req, res) => {
   }
 };
 
+
 exports.getBookingsChart = async (req, res) => {
   try {
     const partner_id = req.userId;
 
     const partner = await User.findByPk(partner_id, {
-      attributes: [],
+      attributes: ["createdAt"],
       include: [
         {
           model: PartnerFile,
@@ -996,10 +997,13 @@ exports.getBookingsChart = async (req, res) => {
       ]
     });
 
-    const includeConfig = getIncludeByPartner(
-      partner.partnerInfo[0].sector,
-      partner_id
-    );
+    if (!partner) {
+      return res.status(404).json({ message: "Partner not found" });
+    }
+
+    const sector = partner.partnerInfo?.[0]?.sector;
+
+    const includeConfig = getIncludeByPartner(sector, partner_id);
 
     const cleanInclude = (include) => {
       return include.map((item) => ({
@@ -1012,6 +1016,16 @@ exports.getBookingsChart = async (req, res) => {
 
     const includes = cleanInclude(includeConfig);
 
+    const now = new Date();
+
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(now.getMonth() - 5);
+
+    const accountCreated = new Date(partner.createdAt);
+
+    const startDate =
+      accountCreated > sixMonthsAgo ? accountCreated : sixMonthsAgo;
+
     const bookingsData = await Booking.findAll({
       attributes: [
         [fn("TO_CHAR", col("booking.createdAt"), "MM"), "month"],
@@ -1019,9 +1033,7 @@ exports.getBookingsChart = async (req, res) => {
       ],
       where: {
         createdAt: {
-          [Op.gte]: new Date(
-            new Date().setMonth(new Date().getMonth() - 5)
-          )
+          [Op.gte]: startDate
         }
       },
       include: includes,
@@ -1030,21 +1042,25 @@ exports.getBookingsChart = async (req, res) => {
       raw: true
     });
 
-    const MONTHS = Array.from({ length: 6 }, (_, i) => {
-      const date = new Date();
-      date.setMonth(date.getMonth() - (5 - i));
-      return String(date.getMonth() + 1).padStart(2, "0"); // "04"
-    });
+    const MONTHS = [];
+    let tempDate = new Date(startDate);
 
+    while (tempDate <= now) {
+      MONTHS.push(String(tempDate.getMonth() + 1).padStart(2, "0"));
+      tempDate.setMonth(tempDate.getMonth() + 1);
+    }
+
+    // 🔹 map data
     const dataMap = Object.fromEntries(
       bookingsData.map((d) => [d.month, parseInt(d.total)])
     );
 
     const values = MONTHS.map((m) => dataMap[m] || 0);
 
+    // 🔹 labels (Jan, Feb...)
     const labels = MONTHS.map((m, i) => {
-      const date = new Date();
-      date.setMonth(date.getMonth() - (5 - i));
+      const date = new Date(startDate);
+      date.setMonth(date.getMonth() + i);
       return date.toLocaleString("fr-FR", { month: "short" });
     });
 

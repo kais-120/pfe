@@ -1526,10 +1526,10 @@ exports.AddFlight = [
       if (typeof seatsClasses === "string") seatsClasses = JSON.parse(seatsClasses);
       const airline = await Compagnie.findOne({ where: { partner_id } });
 
-      const seats_available = classRows.reduce(
-        (sum, cls) => sum + cls.seats_available,
-        0
-      );
+      const seats_available = Object.values(seatsClasses)
+      .map(v => parseInt(v) || 0)
+      .reduce((a, b) => a + b, 0);
+
       const flight = await Flight.create({
         flight_number,
         departure_airport: from,
@@ -1561,8 +1561,7 @@ exports.AddFlight = [
       await t.commit();
 
       return res.status(201).json({
-        flight,
-        classes: classRows,
+        message:"flight created"
       });
 
     } catch (err) {

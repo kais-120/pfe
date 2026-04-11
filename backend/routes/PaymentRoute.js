@@ -1,8 +1,9 @@
 const express = require("express");
 const AuthenticateToken = require("../middlewares/AuthenticateToken");
 const AuthenticatePartner = require("../middlewares/AuthenticatePartner");
-const { CreatePayment } = require("../controllers/PaymentController");
+const { CreatePayment, VerifyPayment } = require("../controllers/PaymentController");
 const router = express.Router();
 
-router.post("/service",CreatePayment);
+router.put("/verify",VerifyPayment);
+
 module.exports = router;
