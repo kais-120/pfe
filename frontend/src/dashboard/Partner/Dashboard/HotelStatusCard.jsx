@@ -1,6 +1,6 @@
 import { Box, Flex, Grid, Text } from '@chakra-ui/react'
 import { useEffect, useState } from 'react'
-import { LuArrowDownRight, LuArrowUpRight, LuBanknote, LuTicket } from 'react-icons/lu'
+import { LuArrowDownRight, LuArrowUpRight, LuBanknote, LuMessageSquare, LuStar, LuTicket } from 'react-icons/lu'
 import { AxiosToken } from '../../../Api/Api';
 
 const HotelStatusCard = () => {

@@ -1,7 +1,7 @@
 const express = require("express");
 const AuthenticateToken = require("../middlewares/AuthenticateToken");
 const AuthenticatePartner = require("../middlewares/AuthenticatePartner");
-const { AddHotel, AddRoom, GetAllServices, GetAllHotel, GetHotel, GetPublicHotel, GetSearchHotels, AddLocation, GetLocation, AddVehicle, AddAgency, GetAgency, AddOffer, AddAirline, GetAirline, AddFlight, AddVoyage, GetVoyage, AddCircuit, GetPublicLocation, checkAvailability, GetVehicleById, GetPublicAgency, GetOfferById, municipalities, GetPublicAirline, GetFlightById, GetPublicVoyage, GetCircuitById, GetSearchRooms, GetSearchAirline, SearchVehicle, DeleteService } = require("../controllers/ServiceController");
+const { AddHotel, AddRoom, GetAllServices, GetAllHotel, GetHotel, GetPublicHotel, GetSearchHotels, AddLocation, GetLocation, AddVehicle, AddAgency, GetAgency, AddOffer, AddAirline, GetAirline, AddFlight, AddVoyage, GetVoyage, AddCircuit, GetPublicLocation, checkAvailability, GetVehicleById, GetPublicAgency, GetOfferById, municipalities, GetPublicAirline, GetFlightById, GetPublicVoyage, GetCircuitById, GetSearchRooms, GetSearchAirline, SearchVehicle, DeleteService, GetRoom, UpdateHotel } = require("../controllers/ServiceController");
 const upload = require("../middlewares/Uploads");
 const AuthenticateAgent = require("../middlewares/AuthenticateAgent");
 const router = express.Router();
@@ -16,6 +16,8 @@ router.get("/get/hotel/:id",GetPublicHotel);
 router.get("/hotel/get",[AuthenticateToken,AuthenticatePartner],GetHotel);
 router.post("/hotel/add",[AuthenticateToken,AuthenticatePartner,upload.fields([{name:"service_doc",maxCount:15}])],AddHotel);
 router.post("/hotel/room/add",[AuthenticateToken,AuthenticatePartner],AddRoom);
+router.get("/hotel/get/room/:id",[AuthenticateToken,AuthenticatePartner],GetRoom);
+router.post("/hotel/update",[AuthenticateToken,AuthenticatePartner,upload.fields([{name:"service_doc",maxCount:15}])],UpdateHotel);
 
 router.post("/location/add",[AuthenticateToken,AuthenticatePartner],AddLocation);
 router.get("/location/get",[AuthenticateToken,AuthenticatePartner],GetLocation);

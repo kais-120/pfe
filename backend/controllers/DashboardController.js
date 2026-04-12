@@ -72,7 +72,7 @@ exports.GetDashboardStats = async (req, res) => {
       ? ((bookingsThisMonth - bookingsLastMonth) / bookingsLastMonth) * 100
       : 100;
 
-    const totalRevenue = await Payment.sum("amount") || 0;
+    const totalRevenue = await Payment.sum("amount", { where: { status: "confirmée" } }) || 0;
 
     const revenueThisMonth =
       (await Payment.sum("amount", {
@@ -82,6 +82,7 @@ exports.GetDashboardStats = async (req, res) => {
     const revenueLastMonth =
       (await Payment.sum("amount", {
         where: {
+          status: "confirmée",
           createdAt: {
             [Op.gte]: startOfPrevMonth,
             [Op.lt]: endOfPrevMonth,
@@ -207,22 +208,37 @@ exports.GetPartner = async (req, res) => {
 exports.getMonthlyStats = async (req, res) => {
   try {
     const data = await sequelize.query(`
-      SELECT 
-        TO_CHAR(date_trunc('month', m.month), 'Mon') AS month,
-        COALESCE(SUM(p.amount), 0) AS rev,
-        COALESCE(COUNT(b.id), 0) AS res
-      FROM generate_series(
-        date_trunc('month', CURRENT_DATE) - interval '5 month',
-        date_trunc('month', CURRENT_DATE),
-        interval '1 month'
-      ) AS m(month)
-      LEFT JOIN payments p 
-        ON date_trunc('month', p."createdAt") = m.month
-      LEFT JOIN booking b 
-        ON date_trunc('month', b."createdAt") = m.month
-      GROUP BY m.month
-      ORDER BY m.month ASC;
-    `, { type: QueryTypes.SELECT });
+  WITH payments_sum AS (
+    SELECT 
+      date_trunc('month', "createdAt") AS month,
+      SUM(amount) AS rev
+    FROM payments
+    WHERE status = 'confirmée'
+    GROUP BY month
+  ),
+  bookings_count AS (
+    SELECT 
+      date_trunc('month', "createdAt") AS month,
+      COUNT(id) AS res
+    FROM booking
+    GROUP BY month
+  )
+
+  SELECT 
+    TO_CHAR(m.month, 'Mon') AS month,
+    COALESCE(p.rev, 0) AS rev,
+    COALESCE(b.res, 0) AS res
+  FROM generate_series(
+    date_trunc('month', CURRENT_DATE) - interval '5 month',
+    date_trunc('month', CURRENT_DATE),
+    interval '1 month'
+  ) AS m(month)
+
+  LEFT JOIN payments_sum p ON p.month = m.month
+  LEFT JOIN bookings_count b ON b.month = m.month
+
+  ORDER BY m.month ASC;
+`, { type: QueryTypes.SELECT });
 
     res.json({
       message: "monthly stats",
@@ -340,7 +356,7 @@ function getIncludeByPartner(sector, id) {
               {
                 model: Location,
                 as: "locationVehicle",
-                where: {partner_id : id },
+                where: { partner_id: id },
                 required: true,
               }
             ]
@@ -366,7 +382,7 @@ function getIncludeByPartner(sector, id) {
               {
                 model: Agence,
                 as: "agencyOffer",
-                where: {partner_id : id },
+                where: { partner_id: id },
                 required: true,
               }
             ]
@@ -391,7 +407,7 @@ function getIncludeByPartner(sector, id) {
               {
                 model: Hotel,
                 as: "hotelRoom",
-                where: { partner_id : id },
+                where: { partner_id: id },
                 required: true,
               }
             ]
@@ -416,7 +432,7 @@ function getIncludeByPartner(sector, id) {
               {
                 model: Compagnie,
                 as: "compagnieFlight",
-                where: { partner_id : id },
+                where: { partner_id: id },
                 required: true,
               }
             ]
@@ -442,10 +458,10 @@ function getIncludeByPartner(sector, id) {
               {
                 model: Voyage,
                 as: "voyagesCircuit",
-                where: {partner_id : id },
+                where: { partner_id: id },
                 required: true,
               },
-               {
+              {
                 model: Package,
                 as: "packagesCircuit",
                 required: true,
@@ -1111,7 +1127,7 @@ exports.getLastBookings = async (req, res) => {
         }
         , ...includeConfig],
     });
-    
+
 
     return res.json({
       message: "booking data",
@@ -1178,7 +1194,7 @@ exports.getLastReviews = async (req, res) => {
 exports.getRooms = async (req, res) => {
   try {
     const partner_id = req.userId;
-     const partner = await User.findByPk(partner_id,
+    const partner = await User.findByPk(partner_id,
       {
         attributes: [],
         include: [
@@ -1190,8 +1206,8 @@ exports.getRooms = async (req, res) => {
         ]
       }
     );
-    if(partner.partnerInfo[0].sector !== "hôtel"){
-      return res.status(403).json({message:"partner not allow"})
+    if (partner.partnerInfo[0].sector !== "hôtel") {
+      return res.status(403).json({ message: "partner not allow" })
     }
     const rooms = await Hotel.findAll({
       where: { partner_id },
@@ -1204,45 +1220,45 @@ exports.getRooms = async (req, res) => {
       ]
     })
     const today = new Date();
-   const bookingsCount = await HotelBookingDetails.findAll({
-  attributes: [
-    "room_id",
-    [fn("COUNT", col("room_id")), "totalBooked"]
-  ],
-  where: {
-    check_out_date: {
-      [Op.gte]: today
-    }
-  },
-  group: ["room_id"],
-  raw: true
-});
+    const bookingsCount = await HotelBookingDetails.findAll({
+      attributes: [
+        "room_id",
+        [fn("COUNT", col("room_id")), "totalBooked"]
+      ],
+      where: {
+        check_out_date: {
+          [Op.gte]: today
+        }
+      },
+      group: ["room_id"],
+      raw: true
+    });
     const bookingMap = {};
-bookingsCount.forEach(b => {
-  bookingMap[b.room_id] = parseInt(b.totalBooked);
-});
-const result = rooms.flatMap(hotel =>
-  hotel.rooms.map(room => {
-    const booked = bookingMap[room.id] || 0;
-    const total = room.count;
+    bookingsCount.forEach(b => {
+      bookingMap[b.room_id] = parseInt(b.totalBooked);
+    });
+    const result = rooms.flatMap(hotel =>
+      hotel.rooms.map(room => {
+        const booked = bookingMap[room.id] || 0;
+        const total = room.count;
 
-    const occupation = total === 0 ? 0 : Math.round((booked / total) * 100);
+        const occupation = total === 0 ? 0 : Math.round((booked / total) * 100);
 
-    return {
-      room_id: room.id,
-      name: room.name,
-      price: room.price_by_day,
-      status: room.status,
-      total,
-      booked,
-      occupation: occupation
-    };
-  })
-);
+        return {
+          room_id: room.id,
+          name: room.name,
+          price: room.price_by_day,
+          status: room.status,
+          total,
+          booked,
+          occupation: occupation
+        };
+      })
+    );
 
     return res.json({
       message: "review data",
-      rooms:result 
+      rooms: result
     });
 
   } catch (err) {
@@ -1254,7 +1270,7 @@ const result = rooms.flatMap(hotel =>
 exports.getVehicle = async (req, res) => {
   try {
     const partner_id = req.userId;
-     const partner = await User.findByPk(partner_id,
+    const partner = await User.findByPk(partner_id,
       {
         attributes: [],
         include: [
@@ -1266,8 +1282,8 @@ exports.getVehicle = async (req, res) => {
         ]
       }
     );
-    if(partner.partnerInfo[0].sector !== "location de voitures"){
-      return res.status(403).json({message:"partner not allow"})
+    if (partner.partnerInfo[0].sector !== "location de voitures") {
+      return res.status(403).json({ message: "partner not allow" })
     }
     const vehicles = await Location.findAll({
       where: { partner_id },
@@ -1280,42 +1296,42 @@ exports.getVehicle = async (req, res) => {
       ]
     })
     const today = new Date();
-   const locationCount = await CarRentalBookingDetails.findAll({
-  attributes: [
-    "vehicle_id",
-    [fn("COUNT", col("vehicle_id")), "totalBooked"]
-  ],
-  where: {
-    return_date: {
-      [Op.gte]: today
-    }
-  },
-  group: ["vehicle_id"],
-  raw: true
-});
+    const locationCount = await CarRentalBookingDetails.findAll({
+      attributes: [
+        "vehicle_id",
+        [fn("COUNT", col("vehicle_id")), "totalBooked"]
+      ],
+      where: {
+        return_date: {
+          [Op.gte]: today
+        }
+      },
+      group: ["vehicle_id"],
+      raw: true
+    });
     const bookingMap = {};
-locationCount.forEach(b => {
-  bookingMap[b.vehicle_id] = parseInt(b.totalBooked);
-});
-const result = vehicles.flatMap(location =>
-  location.vehicles.map(vehicle => {
-    const booked = bookingMap[vehicle.id] || 0;
+    locationCount.forEach(b => {
+      bookingMap[b.vehicle_id] = parseInt(b.totalBooked);
+    });
+    const result = vehicles.flatMap(location =>
+      location.vehicles.map(vehicle => {
+        const booked = bookingMap[vehicle.id] || 0;
 
-    return {
-      vehicle_id: vehicle.id,
-      brand: vehicle.brand,
-      model: vehicle.model,
-      year: vehicle.year,
-      price: vehicle.price_by_day,
-      status: vehicle.status,
-      booked:booked === 0 ? false : true,
-    };
-  })
-);
+        return {
+          vehicle_id: vehicle.id,
+          brand: vehicle.brand,
+          model: vehicle.model,
+          year: vehicle.year,
+          price: vehicle.price_by_day,
+          status: vehicle.status,
+          booked: booked === 0 ? false : true,
+        };
+      })
+    );
 
     return res.json({
       message: "review data",
-      vehicles:result 
+      vehicles: result
     });
 
   } catch (err) {
@@ -1327,7 +1343,7 @@ const result = vehicles.flatMap(location =>
 exports.getFlight = async (req, res) => {
   try {
     const partner_id = req.userId;
-     const partner = await User.findByPk(partner_id,
+    const partner = await User.findByPk(partner_id,
       {
         attributes: [],
         include: [
@@ -1339,8 +1355,8 @@ exports.getFlight = async (req, res) => {
         ]
       }
     );
-    if(partner.partnerInfo[0].sector !== "compagnies aériennes"){
-      return res.status(403).json({message:"partner not allow"})
+    if (partner.partnerInfo[0].sector !== "compagnies aériennes") {
+      return res.status(403).json({ message: "partner not allow" })
     }
     const flights = await Compagnie.findAll({
       where: { partner_id },
@@ -1353,55 +1369,55 @@ exports.getFlight = async (req, res) => {
       ]
     })
     const today = new Date();
-const bookingsCount = await FlightBookingDetails.findAll({
-  attributes: [
-    "flight_id",
-    [fn("COUNT", col("flight_booking_details.flight_id")), "totalBooked"]
-  ],
-  include: [
-    {
-      model: Flight,
-      as: "detailsFlight",
-      attributes: [],
-      where: {
-        departure: {
-          [Op.gte]: today
+    const bookingsCount = await FlightBookingDetails.findAll({
+      attributes: [
+        "flight_id",
+        [fn("COUNT", col("flight_booking_details.flight_id")), "totalBooked"]
+      ],
+      include: [
+        {
+          model: Flight,
+          as: "detailsFlight",
+          attributes: [],
+          where: {
+            departure: {
+              [Op.gte]: today
+            }
+          }
         }
-      }
-    }
-  ],
-  group: ["flight_booking_details.flight_id"],
-  raw: true
-});
+      ],
+      group: ["flight_booking_details.flight_id"],
+      raw: true
+    });
     const bookingMap = {};
-bookingsCount.forEach(b => {
-  bookingMap[b.flight_id] = parseInt(b.totalBooked);
-});
-const result = flights.flatMap(compagnie =>
-  compagnie.FlightCompagnie.map(flight => {
-    const booked = bookingMap[flight.id] || 0;
-    const total = flight.seats_available;
-    console.log(flight)
+    bookingsCount.forEach(b => {
+      bookingMap[b.flight_id] = parseInt(b.totalBooked);
+    });
+    const result = flights.flatMap(compagnie =>
+      compagnie.FlightCompagnie.map(flight => {
+        const booked = bookingMap[flight.id] || 0;
+        const total = flight.seats_available;
+        console.log(flight)
 
-    const occupation = total === 0 ? 0 : Math.round((booked / total) * 100);
+        const occupation = total === 0 ? 0 : Math.round((booked / total) * 100);
 
-    return {
-      flight_id: flight.id,
-      flight_number: flight.flight_number,
-      status: flight.status,
-      departure_airport:flight.departure_airport,
-      arrival_airport:flight.arrival_airport,
-      type_flight:flight.type_flight,
-      total,
-      booked,
-      occupation: occupation
-    };
-  })
-);
+        return {
+          flight_id: flight.id,
+          flight_number: flight.flight_number,
+          status: flight.status,
+          departure_airport: flight.departure_airport,
+          arrival_airport: flight.arrival_airport,
+          type_flight: flight.type_flight,
+          total,
+          booked,
+          occupation: occupation
+        };
+      })
+    );
 
     return res.json({
       message: "flight data",
-      flight:result 
+      flight: result
     });
 
   } catch (err) {
@@ -1476,7 +1492,7 @@ exports.getOffer = async (req, res) => {
         return {
           offer_id: offer.id,
           title: offer.title,
-          package:offer.packages.length,
+          package: offer.packages.length,
           total,
           booked,
           occupation
@@ -1525,7 +1541,7 @@ exports.getCircuit = async (req, res) => {
             {
               model: Package,
               as: "packagesCircuit",
-              attributes: ["id", "number_place","price"]
+              attributes: ["id", "number_place", "price"]
             }
           ]
         }
@@ -1554,9 +1570,9 @@ exports.getCircuit = async (req, res) => {
           return sum + (p.number_place || 0);
         }, 0);
         const occupation =
-        total === 0
-          ? 0
-          : Math.max(1, Math.round((booked / total) * 100));
+          total === 0
+            ? 0
+            : Math.max(1, Math.round((booked / total) * 100));
 
         return {
           circuit_id: circuit.id,

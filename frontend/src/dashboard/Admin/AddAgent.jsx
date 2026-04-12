@@ -24,11 +24,10 @@ const validationSchema = yup.object().shape({
   confirmPassword: yup.string().required("Confirmation requise").oneOf([yup.ref("password"), null], "Les mots de passe ne correspondent pas"),
 })
 
-/* ── Reusable styled input ──────────────────────────────────────── */
-function FormField({ formik, name, label, type = "text", placeholder, icon: Icon, isInvalid }) {
+function FormField({ formik, name, label, type = "text", placeholder, icon: Icon, isInvalid,isBothInvalid }) {
   const invalid = isInvalid || (formik.touched[name] && !!formik.errors[name])
   return (
-    <Field.Root invalid={invalid} w="full">
+    <Field.Root invalid={invalid || isBothInvalid} w="full">
       <Field.Label>
         <Text fontSize="xs" fontWeight={700} color="gray.600"
           textTransform="uppercase" letterSpacing="wider">
@@ -54,6 +53,7 @@ function FormField({ formik, name, label, type = "text", placeholder, icon: Icon
           </Box>
         )}
         <Input
+        outline={"none"}
           name={name} type={type}
           value={formik.values[name]}
           onChange={formik.handleChange}
@@ -75,7 +75,9 @@ function FormField({ formik, name, label, type = "text", placeholder, icon: Icon
 }
 
 const AddAgent = () => {
-  const [emailError, setEmailError] = useState(false)
+  const [emailError,setEmailError] = useState(false)
+  const [phoneError,setPhoneError] = useState(false)
+  const [emailPhoneError,setEmailPhoneError] = useState(false)
   const navigate = useNavigate()
 
   const formik = useFormik({
@@ -86,13 +88,28 @@ const AddAgent = () => {
     },
     validationSchema,
     onSubmit: async (values) => {
+      setEmailError(false)
+        setEmailPhoneError(false)
+        setPhoneError(false)
       try {
         setEmailError(false)
         const name = `${values.firstName} ${values.lastName}`
         await AxiosToken.post("/auth/register", { ...values, name })
         navigate(-1)
-      } catch {
-        setEmailError(true)
+      } catch(err) {
+        if(err.status === 422) {
+          if(Object.keys(err.response.data.errors).length === 2){
+            setEmailPhoneError(true)
+          }
+          else{
+            if(Object.keys(err.response.data.errors)[0] === "email"){
+              setEmailError(true)
+            }else{
+              setPhoneError(true)
+            }
+            
+          }
+        }
       }
     }
   })
@@ -130,17 +147,39 @@ const AddAgent = () => {
         </Box>
 
         {/* Error banner */}
-        {emailError && (
-          <Flex align="center" gap={2.5} bg="red.50"
-            border="1px solid" borderColor="red.200"
-            borderRadius="xl" px={4} py={3} mb={5}
-          >
-            <Box color="red.500" flexShrink={0}><LucideAlertCircle size={15} /></Box>
-            <Text fontSize="sm" color="red.600" fontWeight={500}>
-              Cet email est déjà utilisé. Veuillez en choisir un autre.
-            </Text>
-          </Flex>
-        )}
+         {emailError && (
+              <Flex align="center" gap={2.5} bg="red.50"
+                border="1px solid" borderColor="red.200"
+                borderRadius="xl" px={4} py={3} mb={5}
+              >
+                <Box color="red.500" flexShrink={0}><LucideAlertCircle size={15} /></Box>
+                <Text fontSize="sm" color="red.600" fontWeight={500}>
+                  Cet email est déjà utilisé. Essayez avec un autre email.
+                </Text>
+              </Flex>
+            )}
+            {emailPhoneError && (
+              <Flex align="center" gap={2.5} bg="red.50"
+                border="1px solid" borderColor="red.200"
+                borderRadius="xl" px={4} py={3} mb={5}
+              >
+                <Box color="red.500" flexShrink={0}><LucideAlertCircle size={15} /></Box>
+                <Text fontSize="sm" color="red.600" fontWeight={500}>
+                  Les email et Numéro de téléphone est déjà utilisé. Essayez avec des autres.
+                </Text>
+              </Flex>
+            )}
+            {phoneError && (
+              <Flex align="center" gap={2.5} bg="red.50"
+                border="1px solid" borderColor="red.200"
+                borderRadius="xl" px={4} py={3} mb={5}
+              >
+                <Box color="red.500" flexShrink={0}><LucideAlertCircle size={15} /></Box>
+                <Text fontSize="sm" color="red.600" fontWeight={500}>
+                  Cet Numéro de téléphone est déjà utilisé. Essayez avec un autre Numéro.
+                </Text>
+              </Flex>
+            )}
 
         <form onSubmit={formik.handleSubmit}>
           <VStack gap={4} w={"full"} align="stretch">
@@ -172,9 +211,11 @@ const AddAgent = () => {
                 <Grid templateColumns="1fr 1fr" gap={4}>
                   <FormField formik={formik} name="email" label="Adresse email"
                     placeholder="agent@example.com" icon={LuMail}
-                    isInvalid={emailError} />
+                    isInvalid={emailError} isBothInvalid={emailPhoneError} />
                   <FormField formik={formik} name="phone" label="Téléphone"
-                    placeholder="12345678" icon={LuPhone} />
+                    placeholder="12345678" icon={LuPhone} 
+                    isInvalid={phoneError} isBothInvalid={emailPhoneError}
+                    />
                 </Grid>
               </VStack>
             </Box>

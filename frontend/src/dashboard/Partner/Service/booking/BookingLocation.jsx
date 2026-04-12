@@ -111,7 +111,6 @@ function BookingOfferCard({ booking, index }) {
   const returnDate = packageData?.returnDate
   const departureTime = packageData?.departureTime
   const returnTime = packageData?.returnTime
-  console.log(booking)
 
   return (
     <Box

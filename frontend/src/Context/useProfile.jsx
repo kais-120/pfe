@@ -1,11 +1,13 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { AxiosToken } from "../Api/Api";
+import { useNavigate } from "react-router-dom";
 
 const ProfileContext = createContext();
 
 export const ProfileProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate()
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -14,6 +16,7 @@ export const ProfileProvider = ({ children }) => {
         const res = await AxiosToken.get("/auth/profile");
         setUser(res.data.data);
       } catch (err) {
+        navigate("/")
         console.error(err);
       }
       finally{

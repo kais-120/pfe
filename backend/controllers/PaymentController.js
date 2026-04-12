@@ -1,5 +1,6 @@
 const { body, validationResult } = require("express-validator");
 const { Payment, Booking, Users, Notification } = require("../models");
+const Activity = require("../models/Activity");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 exports.CreatePayment = async (amount, booking_id, client_id) => {
@@ -124,11 +125,17 @@ exports.VerifyPayment = [
         const { reference } = req.body
         try {
             const payment = await Payment.findOne({where: {reference}})
+            const booking = await Booking.findByPk(payment.booking_id);
             const session = await stripe.checkout.sessions.retrieve(payment.reference);
                 if (session.payment_status === "paid") {
                     await payment.update({status:"confirmée"})
+                    booking.update({status:"confirmée"})
+                    await Activity.create({type:"payment",titre:"paiement est confirmée"})
                 }else{
                     await payment.update({status:"annulée"})
+                    booking.update({status:"annulée"})
+                    await Activity.create({type:"payment",titre:"paiement est annulée"})
+
                 }
             return res.send({ message: "payment updated"});
 

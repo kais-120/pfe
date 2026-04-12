@@ -70,10 +70,11 @@ const mergedStats = STATS_CONFIG.map((stat) => {
 });
 
   const SERVICES_STATS = [
-    { key:"hotel", label: "Hôtels", value: 14, Icon: FaHotel, color: "#3182CE", pct: 70 },
-    { key:"airline", label: "Vols", value: 38, Icon: FaPlane, color: "#805AD5", pct: 55 },
-    { key:"location", label: "Location voitures", value: 9, Icon: FaCar, color: "#38A169", pct: 30 },
-    { key:"voyage", label: "Circuits voyage", value: 22, Icon: FaRoute, color: "#DD6B20", pct: 45 },
+    { key:"hotel", label: "Hôtels", Icon: FaHotel, color: "#3182CE" },
+    { key:"airline", label: "Vols",  Icon: FaPlane, color: "#805AD5" },
+    { key:"location", label: "Location voitures",  Icon: FaCar, color: "#38A169" },
+    { key:"voyage", label: "Voyages circuits",  Icon: FaRoute, color: "#DD6B20" },
+    { key:"agency", label: "Agence de voyage",  Icon: FaRoute, color: "#880808" },
   ]
 
   const mergedServiceStats = SERVICES_STATS.map((stat) => {

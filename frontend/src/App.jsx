@@ -60,6 +60,8 @@ import Dashboard from "./dashboard/Admin/Dashboard";
 import DashboardPartner from "./dashboard/Partner/DashboardPartner";
 import SuccessPayment from "./SuccessPayment";
 import CancelPayment from "./CancelPayment";
+import EditRoom from "./dashboard/Partner/Service/Edit/EditRoom";
+import EditHotel from "./dashboard/Partner/Service/Edit/EditHotel";
 
 function App() {
   return (
@@ -104,7 +106,9 @@ function App() {
       <Route path="service" element={<Service />} />
 
       <Route path="service/hotel/add" element={<AddHotel/>} />
+      <Route path="service/hotel/edit" element={<EditHotel/>} />
       <Route path="service/hotel/room/add" element={<AddRoom/>} />
+      <Route path="service/hotel/room/edit/:id" element={<EditRoom/>} />
 
       <Route path="service/agency/add" element={<AddAgency/>} />
       <Route path="service/agency/offer/add" element={<AddOffer />} />

@@ -19,7 +19,6 @@ const VehicleCard = () => {
         }
         dataFetch()
     }, [])
-    console.log(vehicles)
 
 
     return (

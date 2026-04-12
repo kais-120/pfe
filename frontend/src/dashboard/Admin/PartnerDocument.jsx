@@ -35,7 +35,6 @@ const PartnerDocument = () => {
     }
     getDocs()
   }, [])
-  console.log(data)
   const filtered = data.filter(doc =>
     doc.cin?.toLowerCase().includes(search.toLowerCase()) ||
     doc.users?.name?.toLowerCase().includes(search.toLowerCase()) ||

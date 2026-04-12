@@ -29,16 +29,28 @@ exports.AddAgent = [
         }
         try {
             const { firstName, lastName, email, password, phone } = req.body;
-            const existEmail = await User.findOne({ where: { email } });
+            const name = firstName + " " +lastName;
+            const existEmail = await User.findOne({ where: { email:email.toLowerCase() } });
             const existPhone = await User.findOne({ where: { phone } });
+
+            let errors = {};
+
             if (existEmail) {
-                return res.status(422).json({ message: "email is already used" });
+            errors.email = "email is already used";
             }
+
             if (existPhone) {
-                return res.status(422).json({ message: "phone is already used" });
+            errors.phone = "phone is already used";
+            }
+
+            if (Object.keys(errors).length > 0) {
+            return res.status(422).json({
+                message: "Validation error",
+                errors
+            });
             }
             const passwordHah = await bcrypt.hash(password, 10);
-            await User.create({ first_name: firstName, last_name: lastName, email, password: passwordHah, phone });
+            await User.create({ name, email, password: passwordHah, phone,role:"agent" });
             return res.status(201).json({ message: "account created" });
         } catch {
             return res.status(500).json({ message: "server error" });

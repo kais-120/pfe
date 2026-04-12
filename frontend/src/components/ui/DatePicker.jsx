@@ -121,7 +121,6 @@ export default function DatePicker({ checkIn, checkOut,setCheckIn,setCheckOut,is
   const today = new Date();
   const threeNight = new Date(today)
   threeNight.setDate(threeNight.getDate() + 3)
-  console.log(threeNight)
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [startDate, setStartDate] = useState(checkIn ? new Date(checkIn) : today);

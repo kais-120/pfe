@@ -12,9 +12,9 @@ const Booking = sequelize.define("booking",{
         allowNull:false,
     },
     status:{
-        type:DataTypes.ENUM("terminée", "confirmée","annulée"),
+        type:DataTypes.ENUM("terminée", "confirmée","annulée","en attente"),
         allowNull:false,
-        defaultValue:"confirmée"
+        defaultValue:"en attente"
     },
     type:{
         type:DataTypes.ENUM("agence de voyage","location de voitures","hotel","compagnies aériennes","voyages circuits"),

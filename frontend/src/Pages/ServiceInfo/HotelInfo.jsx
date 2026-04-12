@@ -17,6 +17,9 @@ import {
 import Header from "../../components/home/Header"
 import { Axios, AxiosToken, imageURL } from "../../Api/Api"
 import DatePicker from "../../components/ui/DatePicker"
+import { useProfile } from "../../Context/useProfile"
+import { Helmet } from "react-helmet"
+import { Tooltip } from '../../components/ui/tooltip'
 
 /* ── Equipment list ─────────────────────────────────────────────── */
 const EQUIPMENT_LIST = [
@@ -390,6 +393,7 @@ function RoomCard({ slotIndex, room, nights, selected, onSelect }) {
 }
 
 function BookingSummary({ selections, nights, totalRooms, id, checkIn, checkOut, guestRooms }) {
+  const { user } = useProfile();
   const handlePayment = async () => {
     try {
       const updatedGuestRooms = guestRooms.map((guest, index) => {
@@ -459,17 +463,30 @@ function BookingSummary({ selections, nights, totalRooms, id, checkIn, checkOut,
               <Text fontSize="sm" color="gray.500">TND</Text>
             </Flex>
           </Box>
-          <Button colorScheme="blue" borderRadius="xl" px={7} h="46px"
-            onClick={handlePayment}
-            fontWeight={700}
-            isDisabled={selectedCount < totalRooms}>
-            <Flex align="center" gap={2}>
-              <LuShoppingCart size={15} />
-              {selectedCount < totalRooms
-                ? `Sélectionnez encore ${totalRooms - selectedCount} chambre${totalRooms - selectedCount > 1 ? "s" : ""}`
-                : "Réserver maintenant"}
-            </Flex>
-          </Button>
+          <Tooltip content={
+            !user
+              ? "Vous devez vous connecter pour réserver"
+              : user.role !== "client"
+                ? "Seuls les clients peuvent effectuer une réservation"
+                : selectedCount < totalRooms
+                  ? `Sélectionnez encore ${totalRooms - selectedCount} chambre${totalRooms - selectedCount > 1 ? "s" : ""
+                  }`
+                  : "Prêt à réserver"
+          }
+          >
+            <Button colorScheme="blue" borderRadius="xl" px={7} h="46px"
+              onClick={handlePayment}
+              fontWeight={700}
+              disabled={((!user || user.role !== "client") || selectedCount < totalRooms)}
+              isDisabled={selectedCount < totalRooms}>
+              <Flex align="center" gap={2}>
+                <LuShoppingCart size={15} />
+                {selectedCount < totalRooms
+                  ? `Sélectionnez encore ${totalRooms - selectedCount} chambre${totalRooms - selectedCount > 1 ? "s" : ""}`
+                  : "Réserver maintenant"}
+              </Flex>
+            </Button>
+          </Tooltip>
         </Flex>
       </Flex>
     </Box>
@@ -735,6 +752,7 @@ export default function HotelDetail() {
 
   return (
     <>
+      <Helmet title={hotel.name}></Helmet>
       <Header />
 
       <Box maxW="1100px" mx="auto" px={{ base: 4, md: 6 }} py={8}>

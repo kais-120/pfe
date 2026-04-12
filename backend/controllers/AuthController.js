@@ -26,8 +26,8 @@ exports.Register =[
         try{
         const {firstName,lastName,email,password,phone} = req.body;
         const name = firstName + " " +lastName;
-       const existEmail = await User.findOne({ where: { email:email.toLowerCase() } });
-     const existPhone = await User.findOne({ where: { phone } });
+        const existEmail = await User.findOne({ where: { email:email.toLowerCase() } });
+        const existPhone = await User.findOne({ where: { phone } });
 
             let errors = {};
 

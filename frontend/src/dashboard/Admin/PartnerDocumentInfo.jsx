@@ -248,7 +248,6 @@ const PartnerDocumentInfo = () => {
   const statusStyle = STATUS_STYLE[status] ?? { colorScheme: "gray", Icon: LuFileText, label: status }
   const StatusIcon  = statusStyle.Icon
   const isPending   = status === "en attente"
-  console.log(history)
 
   return (
     <Box maxW="860px" mx="auto">

@@ -510,6 +510,87 @@ exports.AddRoom = [
   }
 ]
 
+exports.GetRoom = async (req, res) => {
+    try {
+     const {id} = req.params;
+     const room = await Room.findOne({where: {hotel_id:id}})
+     if(!room){
+       return res.status(404).json({ message: "room not found" });
+     }
+      return res.json({ message: "room found",room });
+    } catch {
+      return res.status(500).send({ message: "error server" })
+    }
+  }
+
+exports.UpdateHotel = async (req, res) => {
+  try {
+    const partner_id = req.userId;
+    const { name, description, destination, address, star, delete_images } = req.body;
+    
+    let equipments = [];
+    if (req.body.equipments) {
+      equipments = Array.isArray(req.body.equipments)
+        ? req.body.equipments
+        : [req.body.equipments];
+    }
+
+    const hotel = await Hotel.findOne({ where: { partner_id } });
+    if (!hotel) {
+      return res.status(404).json({ message: 'Hôtel non trouvé' });
+    }
+
+    await hotel.update({
+      name: name || hotel.name,
+      description: description || hotel.description,
+      destination: destination?.trim() || hotel.destination,
+      address: address || hotel.address,
+      star: star ? parseInt(star) : hotel.star,
+      equipments: equipments.length > 0 ? equipments : hotel.equipments,
+    });
+
+    if (delete_images) {
+      try {
+        const idsToDelete = JSON.parse(delete_images);
+        if (Array.isArray(idsToDelete) && idsToDelete.length > 0) {
+          await ImageService.destroy({
+            where: {
+              id: idsToDelete,
+              service_id: hotel.id, // ✅ USE hotel.id instead of undefined 'id'
+            },
+          });
+        }
+      } catch (error) {
+        console.error('Error parsing delete_images:', error);
+      }
+    }
+
+    if (req.files) {
+      if(req.files?.service_doc?.length > 0){
+      const imagePromises = req.files.service_doc.map(file =>
+        ImageService.create({
+          image_url: file.filename,
+          type: 'hotel',
+          service_id: hotel.id,
+        }),
+      );
+      await Promise.all(imagePromises);
+    }
+    }
+
+
+    return res.status(200).json({
+      message: 'Hôtel modifié avec succès',
+    });
+  } catch (error) {
+    console.error('Error updating hotel:', error);
+    return res.status(500).json({
+      message: 'Erreur lors de la modification de l\'hôtel',
+      error: error.message,
+    });
+  }
+};
+
 exports.AddLocation = [
   body("name").notEmpty().withMessage("name is required"),
   body("address").notEmpty().withMessage("address is required"),

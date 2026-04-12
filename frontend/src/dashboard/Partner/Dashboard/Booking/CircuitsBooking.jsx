@@ -23,7 +23,6 @@ const CircuitsBooking = () => {
         }
         dataFetch()
     }, [])
-    console.log(bookings)
  const formatTime = (date) => {
     const diff = Math.floor((Date.now() - new Date(date)) / 1000)
     if (diff < 60) return "À l'instant"

@@ -432,7 +432,6 @@ const AddOffer = () => {
       if (allPackages.length > 0)
         fd.append("packages", JSON.stringify(allPackages))
       values.images.forEach((img) => fd.append("service_doc", img))
-      console.log(allPackages)
 
       try {
         await AxiosToken.post("/service/agency/offer/add", fd)
@@ -443,7 +442,6 @@ const AddOffer = () => {
       }
     },
   })
-  console.log(formik.errors)
 
   const handleFiles = (files) => {
     const arr = Array.from(files)

@@ -23,7 +23,6 @@ const [status,setStatus] = useState("");
       verifiedPartner();
 
     },[])
-    console.log(status)
 
   return (
     status === 200 ?

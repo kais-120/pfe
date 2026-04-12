@@ -26,7 +26,6 @@ const ForgotPassword = () => {
         setError(false)
         const response = await Axios.post("/auth/forgot-password", { email: values.email })
         setSent(true)
-        console.log(response)
         setTimeout(() => navigate(`/verify-otp/${response.data.token}`), 1500)
       } catch {
         setError(true)

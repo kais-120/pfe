@@ -254,7 +254,7 @@ const AddPackage = ({ ontTab, onChange }) => {
         validationSchema,
         onSubmit: async (values) => {
             try {
-                console.log("Package published:", values)
+                
                 onChange((prev) => [
                     ...prev,
                     { ...values, id: prev.length + 1 }

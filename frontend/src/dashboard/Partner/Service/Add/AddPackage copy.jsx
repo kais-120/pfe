@@ -600,7 +600,7 @@ const AddPackage = () => {
     })
 
     const handleSubmit = () => {
-        console.log("Package submitted:", form)
+        
         navigate(-1)
     }
 

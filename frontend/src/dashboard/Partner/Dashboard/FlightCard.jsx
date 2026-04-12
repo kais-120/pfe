@@ -19,7 +19,6 @@ const FlightCard = () => {
         }
         dataFetch()
     }, [])
-console.log(flights)
 
     return (
         <Box bg="white" borderRadius="2xl" border="1px solid" borderColor="gray.100"
