@@ -6,6 +6,7 @@ import { AxiosToken } from "../../Api/Api";
 import LoadingScreen from "../../components/LoadingScreen";
 import ServiceAirline from "./Service/Fetsh/ServiceAirline";
 import ServiceVoyage from "./Service/Fetsh/ServiceVoyage";
+import { Helmet } from "react-helmet";
 
 const Service = () => {
    const [user, setUser] = useState(null);
@@ -22,7 +23,9 @@ const Service = () => {
       fetchData()
     }, [])
   return (
-    user ? (
+    <>
+    <Helmet title="Mon service"></Helmet>
+    {user ? (
       user?.partnerInfo?.[0]?.sector === "hôtel" ? (
         <ServiceHotel /> 
       ) : ( 
@@ -36,6 +39,8 @@ const Service = () => {
         <ServiceVoyage />
       ) : <ServiceLocation />
     ) : <LoadingScreen />
+    }
+    </>
   )
 }
 

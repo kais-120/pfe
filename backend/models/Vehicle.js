@@ -81,9 +81,14 @@ const sequelize = require("../configs/db");
         type: DataTypes.ENUM("active", "inactive", "maintenance"),
         defaultValue: "active",
       },
+      deletedAt:{
+        type:DataTypes.DATE
+      }
     },
     {
       tableName: "vehicles",
+      paranoid:true,
+      deletedAt:"deletedAt",
       timestamps: true,
     }
   );

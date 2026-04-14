@@ -46,11 +46,6 @@ const Package = sequelize.define("packages", {
     returnAirport: {
       type: DataTypes.STRING,
     },
-
-    duration: {
-      type: DataTypes.STRING,
-    },
-
     price: {
       type: DataTypes.FLOAT,
       allowNull: false,

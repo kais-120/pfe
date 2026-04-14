@@ -62,44 +62,44 @@ exports.GetPublicHotel = async (req, res) => {
 
 exports.DeleteService = async (req, res) => {
   try {
-    const { id,type } = req.params;
-    if(type === "hotels"){
+    const { id, type } = req.params;
+    if (type === "hotels") {
       const hotel = await Hotel.findByPk(id);
-      if(!hotel){
+      if (!hotel) {
         return res.status(404).json({ message: "hotel not found" });
       }
       hotel.destroy();
     }
-    else if(type === "compagnies"){
+    else if (type === "compagnies") {
       const airline = await Compagnie.findByPk(id);
-      if(!airline){
+      if (!airline) {
         return res.status(404).json({ message: "airline not found" });
       }
       airline.destroy();
     }
-    else if(type === "locations"){
+    else if (type === "locations") {
       const location = await Location.findByPk(id);
-      if(!location){
+      if (!location) {
         return res.status(404).json({ message: "location not found" });
       }
       location.destroy();
     }
-    else if(type === "agences"){
+    else if (type === "agences") {
       const agency = await Agence.findByPk(id);
-      if(!agency){
+      if (!agency) {
         return res.status(404).json({ message: "agency not found" });
       }
       agency.destroy();
     }
-    else{
+    else {
       const voyage = await Voyage.findByPk(id);
-      if(!voyage){
+      if (!voyage) {
         return res.status(404).json({ message: "voyage not found" });
       }
       voyage.destroy();
     }
 
-    return res.json({ message: "service found"});
+    return res.json({ message: "service found" });
   } catch (err) {
     console.log(err)
     return res.status(500).send({ message: "error server" })
@@ -330,66 +330,66 @@ exports.GetAllServices = async (req, res) => {
       voyages
     ] = await Promise.all([
       Hotel.findAll({
-        include:[
+        include: [
           {
-            model:User,
-            as:"partnerHotel",
-            include:[{
-              model:PartnerFile,
-              as:"partnerInfo",
-              attributes:["cin"]
+            model: User,
+            as: "partnerHotel",
+            include: [{
+              model: PartnerFile,
+              as: "partnerInfo",
+              attributes: ["cin"]
             }]
           }
         ]
       }),
       Agence.findAll({
-        include:[
+        include: [
           {
-            model:User,
-            as:"partnerAgence",
-            include:[{
-              model:PartnerFile,
-              as:"partnerInfo",
-              attributes:["cin"]
+            model: User,
+            as: "partnerAgence",
+            include: [{
+              model: PartnerFile,
+              as: "partnerInfo",
+              attributes: ["cin"]
             }]
           }
         ]
       }),
       Compagnie.findAll({
-        include:[
+        include: [
           {
-            model:User,
-            as:"partnerCompagnie",
-            include:[{
-              model:PartnerFile,
-              as:"partnerInfo",
-              attributes:["cin"]
+            model: User,
+            as: "partnerCompagnie",
+            include: [{
+              model: PartnerFile,
+              as: "partnerInfo",
+              attributes: ["cin"]
             }]
           }
         ]
       }),
       Location.findAll({
-        include:[
+        include: [
           {
-            model:User,
-            as:"partnerLocation",
-            include:[{
-              model:PartnerFile,
-              as:"partnerInfo",
-              attributes:["cin"]
+            model: User,
+            as: "partnerLocation",
+            include: [{
+              model: PartnerFile,
+              as: "partnerInfo",
+              attributes: ["cin"]
             }]
           }
         ]
       }),
       Voyage.findAll({
-        include:[
+        include: [
           {
-            model:User,
-            as:"partnerVoyage",
-            include:[{
-              model:PartnerFile,
-              as:"partnerInfo",
-              attributes:["cin"]
+            model: User,
+            as: "partnerVoyage",
+            include: [{
+              model: PartnerFile,
+              as: "partnerInfo",
+              attributes: ["cin"]
             }]
           }
         ]
@@ -454,7 +454,7 @@ exports.AddHotel = [
   body("equipments").notEmpty().withMessage("equipments by day is required"),
   body("destination").notEmpty().withMessage("destination by day is required"),
   body("start").notEmpty().withMessage("start is required")
-  .isNumeric().withMessage("start should be numeric"),
+    .isNumeric().withMessage("start should be numeric"),
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -462,8 +462,8 @@ exports.AddHotel = [
     }
     try {
       const partner_id = req.userId;
-      const { name, description, address, equipments,destination,start } = req.body;
-      const hotel = await Hotel.create({ name, description, address, equipments, destination ,start,partner_id });
+      const { name, description, address, equipments, destination, start } = req.body;
+      const hotel = await Hotel.create({ name, description, address, equipments, destination, start, partner_id });
       const files = req.files.service_doc;
       for (const element of files) {
         await ImageService.create({
@@ -472,7 +472,7 @@ exports.AddHotel = [
           service_id: hotel.id
         });
       }
-      await Activity.create({type:"service",titre:`Nouvel hôtel a créé`})
+      await Activity.create({ type: "service", titre: `Nouvel hôtel a créé` })
       return res.json({ message: "hotel created" });
     } catch (err) {
       return res.status(500).send({ message: "error server" })
@@ -511,23 +511,23 @@ exports.AddRoom = [
 ]
 
 exports.GetRoom = async (req, res) => {
-    try {
-     const {id} = req.params;
-     const room = await Room.findOne({where: {hotel_id:id}})
-     if(!room){
-       return res.status(404).json({ message: "room not found" });
-     }
-      return res.json({ message: "room found",room });
-    } catch {
-      return res.status(500).send({ message: "error server" })
+  try {
+    const { id } = req.params;
+    const room = await Room.findOne({ where: { hotel_id: id } })
+    if (!room) {
+      return res.status(404).json({ message: "room not found" });
     }
+    return res.json({ message: "room found", room });
+  } catch {
+    return res.status(500).send({ message: "error server" })
   }
+}
 
 exports.UpdateHotel = async (req, res) => {
   try {
     const partner_id = req.userId;
     const { name, description, destination, address, star, delete_images } = req.body;
-    
+
     let equipments = [];
     if (req.body.equipments) {
       equipments = Array.isArray(req.body.equipments)
@@ -556,7 +556,7 @@ exports.UpdateHotel = async (req, res) => {
           await ImageService.destroy({
             where: {
               id: idsToDelete,
-              service_id: hotel.id, // ✅ USE hotel.id instead of undefined 'id'
+              service_id: hotel.id,
             },
           });
         }
@@ -566,16 +566,16 @@ exports.UpdateHotel = async (req, res) => {
     }
 
     if (req.files) {
-      if(req.files?.service_doc?.length > 0){
-      const imagePromises = req.files.service_doc.map(file =>
-        ImageService.create({
-          image_url: file.filename,
-          type: 'hotel',
-          service_id: hotel.id,
-        }),
-      );
-      await Promise.all(imagePromises);
-    }
+      if (req.files?.service_doc?.length > 0) {
+        const imagePromises = req.files.service_doc.map(file =>
+          ImageService.create({
+            image_url: file.filename,
+            type: 'hotel',
+            service_id: hotel.id,
+          }),
+        );
+        await Promise.all(imagePromises);
+      }
     }
 
 
@@ -602,9 +602,8 @@ exports.AddLocation = [
     try {
       const partner_id = req.userId;
       const { name, address } = req.body;
-      console.log(name)
       await Location.create({ name, address, partner_id });
-      await Activity.create({type:"service",titre:`Nouvel location a créé`})
+      await Activity.create({ type: "service", titre: `Nouvel location a créé` })
       return res.json({ message: "location created" });
     } catch (err) {
       return res.status(500).send({ message: "error server" })
@@ -937,6 +936,119 @@ exports.AddVehicle = [
   },
 ];
 
+exports.UpdateVehicle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      brand,
+      model,
+      year,
+      category,
+      fuel,
+      seats,
+      price_per_day,
+      min_age,
+      license_years,
+      caution_standard,
+      deposit,
+      description,
+      status,
+      delete_images,
+    } = req.body;
+
+    // Parse features array
+    let features = [];
+    if (req.body.features) {
+      features = Array.isArray(req.body.features)
+        ? req.body.features
+        : [req.body.features];
+    }
+
+    // Find vehicle
+    const vehicle = await Vehicle.findByPk(id);
+    if (!vehicle) {
+      return res.status(404).json({ message: "Véhicule non trouvé" });
+    }
+
+    // Update vehicle fields
+    await vehicle.update({
+      brand: brand || vehicle.brand,
+      model: model || vehicle.model,
+      year: year ? parseInt(year) : vehicle.year,
+      category: category || vehicle.category,
+      fuel: fuel || vehicle.fuel,
+      seats: seats ? parseInt(seats) : vehicle.seats,
+      price_per_day: price_per_day || vehicle.price_per_day,
+      min_age: min_age ? parseInt(min_age) : vehicle.min_age,
+      license_years: license_years ? parseInt(license_years) : vehicle.license_years,
+      caution_standard: caution_standard ? parseInt(caution_standard) : vehicle.caution_standard,
+      deposit: deposit || vehicle.deposit,
+      description: description || vehicle.description,
+      status: status || vehicle.status,
+      features: features.length > 0 ? features : vehicle.features,
+    });
+
+    if (delete_images) {
+      try {
+        const idsToDelete = JSON.parse(delete_images);
+        if (Array.isArray(idsToDelete) && idsToDelete.length > 0) {
+          await ImageService.destroy({
+            where: {
+              id: idsToDelete,
+              service_id: vehicle.id,
+            },
+          });
+        }
+      } catch (error) {
+        console.error("Error parsing delete_images:", error);
+      }
+    }
+
+    if (req.files) {
+      if (req.files?.service_doc?.length > 0) {
+        const imagePromises = req.files.service_doc.map((file) =>
+          ImageService.create({
+            image_url: file.filename,
+            type: "vehicle",
+            service_id: vehicle.id,
+          })
+        );
+        await Promise.all(imagePromises);
+      }
+    }
+    return res.status(200).json({
+      message: "Véhicule modifié avec succès",
+    });
+  } catch (error) {
+    console.error("Error updating vehicle:", error);
+    return res.status(500).json({
+      message: "Erreur lors de la modification du véhicule",
+      error: error.message,
+    });
+  }
+};
+
+exports.DeleteVehicle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const partner_id = req.userId;
+    const vehicle = await Vehicle.findByPk(id);
+    if (vehicle.partner_id != partner_id) {
+      return res.status(403).json({
+        message: "you don't have access to delete this vehicle",
+      });
+    }
+    await vehicle.destroy();
+    return res.status(200).json({
+      message: "vehicle deleted",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "error server",
+    });
+  }
+};
+
 exports.AddAgency = [
   body("name").notEmpty().withMessage("name is required"),
   body("description").notEmpty().withMessage("Description is required"),
@@ -990,7 +1102,7 @@ exports.AddAgency = [
         partner_id: userId,
       });
       await agence.update({ logo: file[0].filename });
-      await Activity.create({type:"service",titre:`Nouvel agence a créé`})
+      await Activity.create({ type: "service", titre: `Nouvel agence a créé` })
 
       return res.status(201).send({ message: "Agence créée avec succès" });
     } catch (err) {
@@ -1094,7 +1206,7 @@ exports.GetOfferById = async (req, res) => {
       images: images.map(img => img.toJSON()),
     };
 
-    return res.send({ message: "Vehicle detail", offer });
+    return res.send({ message: "offer detail", offer });
 
   } catch (err) {
     console.log(err);
@@ -1112,6 +1224,10 @@ exports.GetAgency = async (req, res) => {
           model: Offer,
           as: "offers",
           required: false,
+          include:[{
+            model:Package,
+            as:"packages",
+          }]
         },
 
       ]
@@ -1121,7 +1237,7 @@ exports.GetAgency = async (req, res) => {
     }
     const images = await ImageService.findAll({
       where: {
-        type: "agence",
+        type: "offer",
       },
     });
 
@@ -1138,15 +1254,16 @@ exports.GetAgency = async (req, res) => {
     });
     const agency = {
       ...agencyJSON,
-      offer: offerWithImages,
+      offers: offerWithImages,
     };
-    return res.json({ message: "agency found", agency });
+    return res.json({ message: "agency found1", agency });
   } catch (err) {
     console.log(err)
     return res.status(500).send({ message: "error server" })
   }
 
 };
+
 exports.AddOffer = [
   body("title").notEmpty().withMessage("title is required"),
   body("type").notEmpty().withMessage("type is required"),
@@ -1278,7 +1395,7 @@ exports.AddAirline = [
 
   body("hub")
     .notEmpty().withMessage("hub is required")
-    .isLength({ min: 3}).withMessage("Hub invalid"),
+    .isLength({ min: 3 }).withMessage("Hub invalid"),
 
   body("description")
     .notEmpty().withMessage("description is required"),
@@ -1308,7 +1425,7 @@ exports.AddAirline = [
         services: amenities,
         partner_id
       });
-      await Activity.create({type:"service",titre:`Nouvel compagnie a créé`})
+      await Activity.create({ type: "service", titre: `Nouvel compagnie a créé` })
       return res.status(201).send({ message: "airline created" });
     } catch (err) {
       console.error(err);
@@ -1608,8 +1725,8 @@ exports.AddFlight = [
       const airline = await Compagnie.findOne({ where: { partner_id } });
 
       const seats_available = Object.values(seatsClasses)
-      .map(v => parseInt(v) || 0)
-      .reduce((a, b) => a + b, 0);
+        .map(v => parseInt(v) || 0)
+        .reduce((a, b) => a + b, 0);
 
       const flight = await Flight.create({
         flight_number,
@@ -1642,7 +1759,7 @@ exports.AddFlight = [
       await t.commit();
 
       return res.status(201).json({
-        message:"flight created"
+        message: "flight created"
       });
 
     } catch (err) {
@@ -1682,7 +1799,7 @@ exports.AddVoyage = [
         equipments,
         partner_id
       });
-      await Activity.create({type:"service",titre:`Nouvel voyage a créé`})
+      await Activity.create({ type: "service", titre: `Nouvel voyage a créé` })
       res.status(201).send({ message: "voyage created" });
     } catch (err) {
       console.log(err)
@@ -1691,7 +1808,7 @@ exports.AddVoyage = [
 
   }
 ];
-exports. GetVoyage = async (req, res) => {
+exports.GetVoyage = async (req, res) => {
   try {
     const partner_id = req.userId;
     const voyageData = await Voyage.findOne({
@@ -1700,11 +1817,31 @@ exports. GetVoyage = async (req, res) => {
         {
           model: Circuit,
           as: "circuits",
+          required:false,
+          where:{
+            deletedAt:null
+          },
+          include: [
+            {
+              model: Package,
+              as: "packagesCircuit",
+             required:false,
+
+              include: [
+                {
+                  model: Destination,
+                  as: "destination",
+                  required:false,
+
+                }
+              ]
+            }
+          ]
         }
       ]
     });
     if (!voyageData) {
-      return res.status(404).json({ message: "airline not found" });
+      return res.status(404).json({ message: "voyage not found" });
     }
     const images = await ImageService.findAll({
       where: {
@@ -1744,6 +1881,16 @@ exports.GetCircuitById = async (req, res) => {
         {
           model: Voyage,
           as: "voyagesCircuit",
+        },
+        {
+          model: Package,
+          as: "packagesCircuit",
+          include: [
+            {
+              model: Destination,
+              as: "destination"
+            }
+          ]
         }
       ]
     });
@@ -1768,6 +1915,64 @@ exports.GetCircuitById = async (req, res) => {
 
 };
 
+exports.UpdateCircuit = async (req, res) => {
+  const { id } = req.params
+  const {
+    title, location, description,
+    category, difficulty,
+    packages,
+    removed_images,
+  } = req.body
+
+  const inclusions = req.body["inclusions[]"] || []
+  const available_dates = req.body["available_dates[]"] || []
+
+  try {
+    await Circuit.update(
+      {
+        title, location, description,
+        category, difficulty,
+        inclusions: Array.isArray(inclusions) ? inclusions : [inclusions],
+        available_dates: Array.isArray(available_dates) ? available_dates : [available_dates],
+      },
+      { where: { id } }
+    )
+
+    if (removed_images) {
+      const ids = JSON.parse(removed_images)
+      if (ids.length > 0) {
+        const toDelete = await Image.findAll({ where: { id: ids } })
+        toDelete.forEach((img) => {
+          const filePath = path.join(__dirname, "../uploads", img.image_url)
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
+        })
+        await Image.destroy({ where: { id: ids } })
+      }
+    }
+
+    if (req.files && req.files.length > 0) {
+      const imageRecords = req.files.map((file) => ({
+        image_url: file.filename,
+        type: "circuit",
+        service_id: id,
+      }))
+      await Image.bulkCreate(imageRecords)
+    }
+
+    // ── 4. Sync packages if provided ──
+    if (packages) {
+      const pkgs = JSON.parse(packages)
+      // You can add your own sync logic here —
+      // e.g. update existing ones, create new ones
+    }
+
+    return res.json({ message: "Circuit mis à jour avec succès." })
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({ message: "Erreur serveur." })
+  }
+}
+
 exports.GetPublicVoyage = async (req, res) => {
   try {
     const voyageData = await Voyage.findAll({
@@ -1777,6 +1982,13 @@ exports.GetPublicVoyage = async (req, res) => {
           model: Circuit,
           as: "circuits",
           required: true,
+          include:[
+            {
+              model:Package,
+              as:"packagesCircuit",
+              attributes:["price"]
+            }
+          ]
         }
       ]
     });
@@ -1816,6 +2028,24 @@ exports.GetPublicVoyage = async (req, res) => {
   }
 };
 
+exports.DeleteCircuit = async (req,res) => {
+  try{
+    const {id} = req.params;
+    const partner_id = req.userId;
+    const circuit = await Circuit.findByPk(id);
+    if(!circuit){
+      return res.status(404).json({message:"circuit not found"})
+    }
+    if(circuit.partner_id != partner_id){
+      return res.status(403).json({message:"you don't have access to this circuit"})
+    }
+    await circuit.destroy();
+      return res.json({message:"circuit deleted"})
+  }catch{
+    return res.status(500).json({message:"error service"})
+  }
+}
+
 exports.AddCircuit = [
   body("title").notEmpty().withMessage("Title is required"),
   body("location").notEmpty().withMessage("Location is required"),
@@ -1829,7 +2059,7 @@ exports.AddCircuit = [
       const { title, location, description, category, difficulty, inclusions, available_dates } = req.body;
       const partner_id = req.userId;
       let packages = [];
-       try {
+      try {
         packages = JSON.parse(req.body.packages || "[]");
         if (!Array.isArray(packages)) throw new Error();
       } catch {
@@ -1840,8 +2070,23 @@ exports.AddCircuit = [
       if (!voyage) {
         res.status(404).send({ message: "voyage not found" });
       }
-      const circuit = await Circuit.create({ title, location, description, category, difficulty, inclusions, available_dates, voyage_id: voyage.id });
-      
+      let maxDuration = 0;
+
+      for (const pkg of packages) {
+        const departure = new Date(pkg.departureDate);
+        const ret = new Date(pkg.returnDate);
+
+        const duration = Math.max(
+          1,
+          Math.ceil((ret - departure) / (1000 * 60 * 60 * 24))
+        );
+
+        if (duration > maxDuration) {
+          maxDuration = duration;
+        }
+      }
+      const circuit = await Circuit.create({ title, location, duration: maxDuration, description, category, difficulty, inclusions, available_dates, voyage_id: voyage.id });
+
       for (const pkg of packages) {
         const createdPackage = await Package.create({
           title: pkg.title,
@@ -1871,7 +2116,7 @@ exports.AddCircuit = [
           await Destination.bulkCreate(destinationsData);
         }
       }
-      
+
       const files = req.files.service_doc;
       for (const element of files) {
         await ImageService.create({

@@ -271,6 +271,7 @@ const ServiceHotel = () => {
         <Button
           colorScheme="blue" borderRadius="xl" leftIcon={<LuPencil size={13} />}
           size="sm" px={5}
+          onClick={()=>navigate(`hotel/edit`)}
         >
           Modifier l'hôtel
         </Button>

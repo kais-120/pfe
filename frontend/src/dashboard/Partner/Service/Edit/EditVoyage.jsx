@@ -12,7 +12,7 @@ import {
   LuChevronLeft, LuCheck, LuPlus, LuX,
 } from "react-icons/lu"
 import { FaCampground, FaMountain, FaUmbrellaBeach, FaHiking, FaStar } from "react-icons/fa"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 const CATEGORIES = [
   { key: "voyage", label: "Voyage", Icon: LuCompass },
@@ -83,21 +83,36 @@ function SectionCard({ title, icon: Icon, iconColor = "blue", children }) {
   )
 }
 
-const AddVoyageAgency = () => {
+const EditVoyage = () => {
   const navigate = useNavigate()
   const [customEquip, setCustomEquip] = useState("")
+  const [voyage,setVoyage] = useState();
+  const [loading,setLoading] = useState(true);
+  useEffect(()=>{
+    const voyageData = async () => {
+        try{
+            const res = await AxiosToken.get("/service/voyage/get")
+            setVoyage(res.data.voyage);
+        }catch(err){
+        }finally{
+            setLoading(false)
+        }
+    }
+    voyageData();
+  },[])
 
   const formik = useFormik({
+    enableReinitialize:true,
     initialValues: {
-      name: "", description: "", location: "",
-      website: "", phone: "",
-      categories: [], equipments: [],
+      name: voyage?.name || "", description: voyage?.description || "", location:voyage?.location || "",
+      website: voyage?.website || "",  phone: voyage?.phone || "",
+      categories:voyage?.categories || [], equipments:voyage?.equipments || [],
     },
     validationSchema,
     onSubmit: async (values) => {
       try {
-        await AxiosToken.post("/service/voyage/add", values)
-        toaster.create({ description: "Agence créée avec succès.", type: "success", closable: true })
+        await AxiosToken.put("/service/voyage/add", values)
+        toaster.create({ description: "Agence mettre a jour avec succès.", type: "success", closable: true })
         setTimeout(() => navigate("/partner/dashboard/service"), 1800)
       } catch {
         toaster.create({ description: "Une erreur est survenue.", type: "error", closable: true })
@@ -131,10 +146,10 @@ const AddVoyageAgency = () => {
         <Text fontSize="xs" fontWeight={700} color="blue.500"
           textTransform="uppercase" letterSpacing="widest" mb={1}>Nouveau service</Text>
         <Text fontSize="2xl" fontWeight={900} color="gray.900" letterSpacing="-0.5px">
-          Créer mon espace voyages
+          Modifier mon agence de voyage
         </Text>
         <Text fontSize="sm" color="gray.400" mt={1}>
-          Renseignez votre profil pour attirer des voyageurs
+           Mettez à jour les informations du agence
         </Text>
       </Box>
 
@@ -254,8 +269,8 @@ const AddVoyageAgency = () => {
               color="gray.500" borderColor="gray.200" _hover={{ bg: "gray.50" }}
               onClick={() => navigate(-1)}>Annuler</Button>
             <Button type="submit" colorScheme="blue" borderRadius="xl" px={8} fontWeight={700}
-              loading={formik.isSubmitting} loadingText="Création…">
-              <Flex align="center" gap={2}><LuCheck size={14} />Créer l'agence</Flex>
+              loading={formik.isSubmitting} loadingText="A jour">
+              <Flex align="center" gap={2}><LuCheck size={14} />Enregistrer les modifications</Flex>
             </Button>
           </Flex>
 
@@ -265,4 +280,4 @@ const AddVoyageAgency = () => {
   )
 }
 
-export default AddVoyageAgency
+export default EditVoyage

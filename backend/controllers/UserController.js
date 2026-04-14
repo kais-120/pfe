@@ -460,7 +460,6 @@ exports.UpdateEmail = [
                 where: { user_id, type: "email" }
                 , order: [["create_at", "DESC"]]
             });
-            console.log(otpCode)
             if (!otpCode) {
                 return res.status(404).send({ message: "user not found" });
             }

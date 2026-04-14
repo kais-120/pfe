@@ -29,17 +29,17 @@ const validationSchema = Yup.object({
   destination: Yup.string().required("L'état est requise"),
   star: Yup.string().required("choisir un étoile"),
   images: Yup.array().test(
-  "images-required",
-  "Au moins une image est requise",
-  function (value) {
-    const { existingImages } = this.options.context;
+    "images-required",
+    "Au moins une image est requise",
+    function (value) {
+      const { existingImages } = this.options.context;
 
-    if ((value && value.length > 0) || (existingImages && existingImages.length > 0)) {
-      return true;
+      if ((value && value.length > 0) || (existingImages && existingImages.length > 0)) {
+        return true;
+      }
+      return false;
     }
-    return false;
-  }
-),
+  ),
 });
 
 const EQUIPMENTS = [
@@ -63,6 +63,7 @@ const STATES = [
   { label: "kairouan" },
   { label: "kasserine" },
   { label: "kebili" },
+  { label: "hammamet" },
   { label: "kef" },
   { label: "mahdia" },
   { label: "mannouba" },
@@ -93,7 +94,7 @@ const collectionStar = createListCollection({
 // Memoized FormField component
 const FormField = React.memo(function FormField({ formik, name, label, icon: Icon, children, hint }) {
   const isInvalid = formik.touched[name] && formik.errors[name];
-  
+
   return (
     <Field.Root invalid={!!isInvalid} w="full">
       <Field.Label>
@@ -164,7 +165,7 @@ const ImagePreview = React.memo(function ImagePreview({ files, existingImages, o
           </Box>
         </Box>
       ))}
-      
+
       {/* New images from upload */}
       {files?.map((file, i) => (
         <Box key={`new-${i}`} position="relative" borderRadius="lg" overflow="hidden"
@@ -238,11 +239,11 @@ const EquipmentGrid = React.memo(function EquipmentGrid({ equipments, selected, 
 const EditHotel = () => {
   const navigate = useNavigate();
 
-  
   const [loading, setLoading] = useState(true);
   const [newPreviews, setNewPreviews] = useState([]);
   const [existingImages, setExistingImages] = useState([]);
   const [imagesToDelete, setImagesToDelete] = useState([]);
+  const [destinationInput, setDestinationInput] = useState("");
 
   const { contains } = useFilter({ sensitivity: "base" });
   const { collection, filter } = useListCollection({
@@ -261,36 +262,38 @@ const EditHotel = () => {
       images: [],
     },
     validationSchema,
-
-    alidate: async (values) => {
-    try {
-      await validationSchema.validate(values, {
-        abortEarly: false,
-        context: {
-          isEdit: true,
-          existingImages: existingImages,
-        },
-      });
-    } catch (err) {
-      const errors = {};
-      err.inner.forEach(e => {
-        errors[e.path] = e.message;
-      });
-      return errors;
-    }
-  },
+    validateOnChange: false,
+    validateOnBlur: false, // Never validate on blur - control it manually
 
     onSubmit: useCallback(async (values) => {
+      // Validate on submit
+      try {
+        await validationSchema.validate(values, {
+          abortEarly: false,
+          context: {
+            isEdit: true,
+            existingImages: existingImages,
+          },
+        });
+      } catch (err) {
+        const errors = {};
+        err.inner.forEach(e => {
+          errors[e.path] = e.message;
+        });
+        formik.setErrors(errors);
+        return;
+      }
+
       const formData = new FormData();
       formData.append("name", values.name);
       formData.append("description", values.description);
       formData.append("destination", values.destination);
       formData.append("address", values.address);
       formData.append("star", values.star);
-      
+
       values.equipments.forEach(eq => formData.append("equipments[]", eq));
       values.images.forEach(img => formData.append("service_doc", img));
-      
+
       if (imagesToDelete.length > 0) {
         formData.append("delete_images", JSON.stringify(imagesToDelete));
       }
@@ -302,6 +305,7 @@ const EditHotel = () => {
           type: "success",
           closable: true,
         });
+        navigate("/partner/dashboard/service");
       } catch (error) {
         toaster.create({
           description: error.response?.data?.message || "Une erreur est survenue.",
@@ -309,7 +313,7 @@ const EditHotel = () => {
           closable: true,
         });
       }
-    }, [imagesToDelete, navigate]),
+    }, [imagesToDelete, existingImages, navigate]),
   });
 
   // Fetch hotel data on mount
@@ -319,16 +323,19 @@ const EditHotel = () => {
         const response = await AxiosToken.get(`/service/hotel/get`);
         const hotel = response.data.hotel;
 
+        const destination = hotel.destination?.toLowerCase().trim() || "";
+
         formik.setValues({
           name: hotel.name || "",
           description: hotel.description || "",
           address: hotel.address || "",
-          destination: hotel.destination?.trim() || "",
+          destination: destination,
           star: hotel.star?.toString() || "",
           equipments: hotel.equipments || [],
           images: [],
         });
 
+        setDestinationInput(destination);
         setExistingImages(hotel.images || []);
         setLoading(false);
       } catch (error) {
@@ -341,7 +348,7 @@ const EditHotel = () => {
       }
     };
 
-     fetchHotel();
+    fetchHotel();
   }, [navigate]);
 
   const handleNewFiles = useCallback((files) => {
@@ -367,6 +374,23 @@ const EditHotel = () => {
       ? current.filter(e => e !== value)
       : [...current, value];
     formik.setFieldValue("equipments", updated);
+  }, [formik]);
+
+  const handleDestinationChange = useCallback((e) => {
+    const value = e.value[0] || "";
+    formik.setFieldValue("destination", value);
+    setDestinationInput(value);
+    // Mark as touched, but don't validate - validation happens on submit
+    formik.setFieldTouched("destination", true);
+  }, [formik]);
+
+  const handleDestinationInputChange = useCallback((e) => {
+    setDestinationInput(e.inputValue);
+    filter(e.inputValue);
+  }, [filter]);
+
+  const handleInputBlur = useCallback((fieldName) => {
+    formik.setFieldTouched(fieldName, true);
   }, [formik]);
 
   const totalImages = (existingImages?.length || 0) + (newPreviews?.length || 0);
@@ -432,7 +456,7 @@ const EditHotel = () => {
                   name="name" placeholder="Ex: Vincci Helios Beach"
                   value={formik.values.name}
                   onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
+                  onBlur={() => handleInputBlur("name")}
                   border="none" bg="transparent" px={0} h="42px"
                   outline="none"
                   flex={1} w="full"
@@ -445,12 +469,20 @@ const EditHotel = () => {
               <FormField formik={formik} name="destination" label="État" icon={Map}>
                 <Combobox.Root
                   collection={collection}
-                  onInputValueChange={(e) => filter(e.inputValue)}
+                  inputValue={destinationInput}
+                  onInputValueChange={handleDestinationInputChange}
                   value={[formik.values.destination]}
-                  onValueChange={(e) => formik.setFieldValue("destination", e.value[0] || "")}
+                  onValueChange={handleDestinationChange}
                 >
                   <Combobox.Control>
-                    <Combobox.Input outline="none" border="none" placeholder="Ex: tunis" />
+                    <Combobox.Input
+                      outline="none"
+                      border="none"
+                      placeholder="Ex: tunis"
+                      fontSize="sm"
+                      color="gray.800"
+                      _placeholder={{ color: "gray.300" }}
+                    />
                     <Combobox.IndicatorGroup>
                       <Combobox.ClearTrigger />
                       <Combobox.Trigger />
@@ -477,7 +509,7 @@ const EditHotel = () => {
                   name="address" placeholder="Ex: Midoun Djerba, 4116 Midoun"
                   value={formik.values.address}
                   onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
+                  onBlur={() => handleInputBlur("address")}
                   outline="none"
                   border="none" bg="transparent" px={0} h="42px"
                   flex={1} w="full"
@@ -491,10 +523,20 @@ const EditHotel = () => {
                 <Combobox.Root
                   collection={collectionStar}
                   value={[formik.values.star]}
-                  onValueChange={(e) => formik.setFieldValue("star", e.value[0] || "")}
+                  onValueChange={(e) => {
+                    formik.setFieldValue("star", e.value[0] || "");
+                    formik.setFieldTouched("star", true);
+                  }}
                 >
                   <Combobox.Control>
-                    <Combobox.Input outline="none" border="none" placeholder="Ex: 4" />
+                    <Combobox.Input
+                      outline="none"
+                      border="none"
+                      placeholder="Ex: 4"
+                      fontSize="sm"
+                      color="gray.800"
+                      _placeholder={{ color: "gray.300" }}
+                    />
                     <Combobox.IndicatorGroup>
                       <Combobox.ClearTrigger />
                       <Combobox.Trigger />
@@ -521,7 +563,7 @@ const EditHotel = () => {
                   placeholder="Décrivez votre hôtel : emplacement, ambiance, services..."
                   value={formik.values.description}
                   onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
+                  onBlur={() => handleInputBlur("description")}
                   outline="none"
                   border="none" bg="transparent" px={0}
                   flex={1} w="full"
@@ -651,7 +693,7 @@ const EditHotel = () => {
             >
               <Flex align="center" gap={2}>
                 <LuCheck size={14} />
-                Modifier l'hôtel
+                Enregistrer les modifications
               </Flex>
             </Button>
           </Flex>

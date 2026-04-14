@@ -3,12 +3,18 @@ import {
   Box, Container, Heading, Text, Button, Badge,
   Flex, VStack, Grid, HStack, Image,
   Skeleton, SkeletonText,
+  Dialog,
+  IconButton,
+  Portal,
+  CloseButton,
 } from "@chakra-ui/react"
 import {
   LuMapPin, LuPlus, LuPencil, LuTrash2,
   LuUsers, LuTag, LuClock, LuCalendar,
   LuStar, LuMountain, LuCompass, LuCheck,
   LuChevronRight, LuImage,
+  LuPen,
+  LuShieldAlert,
 } from "react-icons/lu"
 import { FaCampground, FaMountain, FaUmbrellaBeach, FaHiking } from "react-icons/fa"
 import { useNavigate } from "react-router-dom"
@@ -16,20 +22,20 @@ import { AxiosToken, imageURL } from "../../../../Api/Api"
 import { toaster } from "../../../../components/ui/toaster"
 
 const CATEGORY_META = {
-  voyage:{ Icon: LuCompass,label: "Voyage",color: "blue"   },
-  camping:{ Icon: FaCampground,label: "Camping",color: "green"  },
-  desert:{ Icon: LuMountain,label: "Désert",color: "orange" },
-  aventure:{ Icon: FaHiking,label: "Aventure",color: "red"    },
-  plage:{ Icon: FaUmbrellaBeach,label: "Plage",color: "teal"   },
-  montagne:{ Icon: FaMountain,label: "Montagne",color: "purple" },
-  culturel:{ Icon: LuStar,label: "Culturel",color: "yellow" },
+  voyage: { Icon: LuCompass, label: "Voyage", color: "blue" },
+  camping: { Icon: FaCampground, label: "Camping", color: "green" },
+  desert: { Icon: LuMountain, label: "Désert", color: "orange" },
+  aventure: { Icon: FaHiking, label: "Aventure", color: "red" },
+  plage: { Icon: FaUmbrellaBeach, label: "Plage", color: "teal" },
+  montagne: { Icon: FaMountain, label: "Montagne", color: "purple" },
+  culturel: { Icon: LuStar, label: "Culturel", color: "yellow" },
 }
 
 const DIFFICULTY_STYLE = {
-  "facile":{ color: "green"  },
-  "modéré":{ color: "yellow" },
-  "difficile":{ color: "orange" },
-  "très difficile":{ color: "red"   },
+  "facile": { color: "green" },
+  "modéré": { color: "yellow" },
+  "difficile": { color: "orange" },
+  "très difficile": { color: "red" },
 }
 
 const formatDate = (d) => d
@@ -66,10 +72,10 @@ function SectionTitle({ children, action }) {
   )
 }
 
-function CircuitCard({ circuit, onDelete }) {
-  const cat   = CATEGORY_META[circuit.category] ?? { Icon: LuCompass, label: circuit.category, color: "blue" }
+function CircuitCard({ circuit, onDelete, navigate }) {
+  const cat = CATEGORY_META[circuit.category] ?? { Icon: LuCompass, label: circuit.category, color: "blue" }
   const CatIcon = cat.Icon
-  const diff  = DIFFICULTY_STYLE[circuit.difficulty] ?? { color: "gray" }
+  const diff = DIFFICULTY_STYLE[circuit.difficulty] ?? { color: "gray" }
   const mainImg = circuit.imagesCircuits?.[0]?.image_url
     ? `${imageURL}/services/${circuit.imagesCircuits[0]?.image_url}`
     : null
@@ -105,12 +111,92 @@ function CircuitCard({ circuit, onDelete }) {
             </Badge>
           )}
         </Flex>
-        <Button size="xs" position="absolute" top={2} right={2}
+        <HStack position="absolute" top={2} right={2}>
+          <Dialog.Root>
+            <Dialog.Trigger asChild>
+              <IconButton
+               size="xs"
+                variant="solid" bg="blackAlpha.600" color="white"
+              borderRadius="lg" _hover={{ bg: "red.500" }}
+                aria-label="Supprimer"
+              >
+                <LuTrash2 size={13} />
+              </IconButton>
+            </Dialog.Trigger>
+            <Portal>
+              <Dialog.Backdrop />
+              <Dialog.Positioner>
+                <Dialog.Content borderRadius="2xl" overflow="hidden">
+                  {/* Dialog header */}
+                  <Box bg="red.50" px={6} py={5}
+                    borderBottom="1px solid" borderColor="red.100">
+                    <Flex align="center" gap={3}>
+                      <Flex w="36px" h="36px" borderRadius="xl"
+                        bg="red.100" color="red.500"
+                        align="center" justify="center" flexShrink={0}>
+                        <LuShieldAlert size={16} />
+                      </Flex>
+                      <Dialog.Title fontSize="md" fontWeight={700} color="gray.900">
+                        Supprimer le circuit
+                      </Dialog.Title>
+                    </Flex>
+                  </Box>
+
+                  <Dialog.Body px={6} py={5}>
+                    <Text fontSize="sm" color="gray.600" lineHeight="1.7">
+                      Vous êtes sur le point de supprimer{" "}
+                      <Text as="span" fontWeight={700} color="gray.800">
+                        {circuit.title}
+                      </Text>
+                      . Cette action est <Text as="span" color="red.500" fontWeight={600}>irréversible</Text> - toutes les données associées seront définitivement perdues.
+                    </Text>
+                  </Dialog.Body>
+
+                  <Dialog.Footer
+                    px={6} py={4}
+                    borderTop="1px solid" borderColor="gray.100"
+                    gap={3}
+                  >
+                    <Dialog.ActionTrigger asChild>
+                      <Button variant="outline" borderRadius="xl"
+                        size="sm" color="gray.500">
+                        Annuler
+                      </Button>
+                    </Dialog.ActionTrigger>
+                    <Button
+                      colorScheme="red" borderRadius="xl"
+                      size="sm" fontWeight={700}
+                      onClick={() => onDelete?.(circuit.id)}
+                    >
+                      <Flex align="center" gap={1.5}>
+                        <luTrash2 size={13} />
+                        Supprimer définitivement
+                      </Flex>
+                    </Button>
+                  </Dialog.Footer>
+
+                  <Dialog.CloseTrigger asChild>
+                    <CloseButton size="sm" position="absolute" top={3} right={3} />
+                  </Dialog.CloseTrigger>
+                </Dialog.Content>
+              </Dialog.Positioner>
+            </Portal>
+          </Dialog.Root>
+          {/* <Button size="xs"
           variant="solid" bg="blackAlpha.600" color="white"
           borderRadius="lg" _hover={{ bg: "red.500" }}
           onClick={() => onDelete?.(circuit.id)}>
           <LuTrash2 size={12} />
-        </Button>
+        
+        </Button> */}
+          <Button size="xs"
+            variant="solid" bg="blackAlpha.600" color="white"
+            borderRadius="lg" _hover={{ bg: "blue.500" }}
+            onClick={() => navigate(`voyage/circuit/edit/${circuit.id}`)}
+          >
+            <LuPen size={12} />
+          </Button>
+        </HStack>
       </Box>
 
       <Box p={4}>
@@ -122,26 +208,26 @@ function CircuitCard({ circuit, onDelete }) {
           <Text fontSize="xs" color="gray.500" noOfLines={1}>{circuit.location}</Text>
         </Flex>
         <Text fontSize="sm" color="gray.600" lineHeight="1.6" noOfLines={2} mb={3}>
-          {circuit.description}
+          {circuit.description && circuit.description.length < 25 ? circuit.description : circuit.description.slice(0, 25) + "..."}
         </Text>
 
         <Grid templateColumns="1fr 1fr 1fr" gap={2} mb={3}>
           <Box bg="gray.50" borderRadius="lg" p={2} textAlign="center">
             <Text fontSize="xs" color="gray.400" mb={0.5}>Durée</Text>
             <Text fontSize="sm" fontWeight={700} color="gray.700">
-              {circuit.duration_days ? `${circuit.duration_days}j` : "—"}
+              {circuit.duration ? `${circuit.duration}j` : "—"}
             </Text>
           </Box>
           <Box bg="gray.50" borderRadius="lg" p={2} textAlign="center">
-            <Text fontSize="xs" color="gray.400" mb={0.5}>Groupe</Text>
+            <Text fontSize="xs" color="gray.400" mb={0.5}>Packages</Text>
             <Text fontSize="sm" fontWeight={700} color="gray.700">
-              {circuit.max_people ? `${circuit.max_people} pers.` : "—"}
+              {circuit.packagesCircuit ? `${circuit.packagesCircuit.length} pack.` : 0}
             </Text>
           </Box>
           <Box bg="blue.50" borderRadius="lg" p={2} textAlign="center">
             <Text fontSize="xs" color="gray.400" mb={0.5}>Prix</Text>
             <Text fontSize="sm" fontWeight={800} color="blue.600">
-              {circuit.price_per_person ? `${circuit.price_per_person} TND` : "—"}
+              {circuit.packagesCircuit ? `${circuit.packagesCircuit?.[0]?.price} TND` : "—"}
             </Text>
           </Box>
         </Grid>
@@ -167,47 +253,6 @@ function CircuitCard({ circuit, onDelete }) {
   )
 }
 
-/* ── Option card ────────────────────────────────────────────────── */
-function OptionCard({ option, onDelete }) {
-  return (
-    <Box bg="white" borderRadius="xl" p={4}
-      border="1px solid" borderColor="gray.100"
-      boxShadow="0 1px 6px rgba(0,0,0,0.04)"
-      transition="box-shadow 0.2s, border-color 0.2s"
-      _hover={{ boxShadow: "0 4px 16px rgba(0,0,0,0.08)", borderColor: "blue.100" }}>
-      <Flex justify="space-between" align="flex-start">
-        <Flex align="center" gap={3} flex={1} mr={3}>
-          <Flex w="36px" h="36px" borderRadius="lg"
-            bg="purple.50" color="purple.500"
-            align="center" justify="center" flexShrink={0}>
-            <LuTag size={15} />
-          </Flex>
-          <Box>
-            <Text fontWeight={700} fontSize="sm" color="gray.800">{option.name}</Text>
-            {option.description && (
-              <Text fontSize="xs" color="gray.500" mt={0.5} noOfLines={1}>
-                {option.description}
-              </Text>
-            )}
-          </Box>
-        </Flex>
-        <Flex align="center" gap={3} flexShrink={0}>
-          <Box textAlign="right">
-            <Text fontSize="xs" color="gray.400">Prix</Text>
-            <Text fontSize="md" fontWeight={800} color="blue.600">
-              +{option.price} TND
-            </Text>
-          </Box>
-          <Button size="xs" variant="ghost" color="red.400"
-            borderRadius="lg" _hover={{ bg: "red.50" }}
-            onClick={() => onDelete?.(option.id)}>
-            <LuTrash2 size={12} />
-          </Button>
-        </Flex>
-      </Flex>
-    </Box>
-  )
-}
 
 function PageSkeleton() {
   return (
@@ -227,11 +272,11 @@ function PageSkeleton() {
   )
 }
 
-/* ── Main component ─────────────────────────────────────────────── */
 const ServiceVoyage = () => {
-  const [agency,   setAgency]   = useState(null)
-  const [loading,  setLoading]  = useState(true)
+  const [agency, setAgency] = useState(null)
+  const [loading, setLoading] = useState(true)
   const [showMore, setShowMore] = useState(false)
+  const [deleted, setDeleted] = useState(0)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -247,27 +292,18 @@ const ServiceVoyage = () => {
       }
     }
     fetchData()
-  }, [])
+  }, [deleted])
 
   const handleDeleteCircuit = async (id) => {
     try {
-      await AxiosToken.delete(`/service/travel/circuit/${id}`)
-      setAgency(prev => ({ ...prev, circuits: prev.circuits.filter(c => c.id !== id) }))
+      await AxiosToken.delete(`/service/voyage/circuit/${id}`)
+      setDeleted(prev => prev + 1)
       toaster.create({ description: "Circuit supprimé.", type: "info", closable: true })
     } catch {
       toaster.create({ description: "Erreur de suppression.", type: "error", closable: true })
     }
   }
 
-  const handleDeleteOption = async (id) => {
-    try {
-      await AxiosToken.delete(`/service/travel/option/${id}`)
-      setAgency(prev => ({ ...prev, options: prev.options.filter(o => o.id !== id) }))
-      toaster.create({ description: "Option supprimée.", type: "info", closable: true })
-    } catch {
-      toaster.create({ description: "Erreur de suppression.", type: "error", closable: true })
-    }
-  }
 
   if (loading) return <PageSkeleton />
 
@@ -275,7 +311,7 @@ const ServiceVoyage = () => {
     return (
       <Container maxW="6xl" py={24}>
         <Flex direction="column" align="center" gap={4} textAlign="center">
-          <Heading size="lg" color="gray.800">Aucune agence de voyage</Heading>
+          <Heading size="lg" color="gray.800">Aucune espace voyages</Heading>
           <Text color="gray.500" maxW="400px" lineHeight="1.7">
             Vous n'avez pas encore créé votre espace voyage. Commencez par renseigner
             votre profil, vos circuits et vos options.
@@ -293,11 +329,11 @@ const ServiceVoyage = () => {
 
   /* ── Computed stats ── */
   const totalCircuits = agency.circuits?.length ?? 0
-  const totalOptions  = agency.options?.length  ?? 0
-  const minPrice      = agency.circuits?.length
+  const totalOptions = agency.options?.length ?? 0
+  const minPrice = agency.circuits?.length
     ? Math.min(...agency.circuits.map(c => Number(c.price_per_person) || 0))
     : null
-  const categories    = [...new Set(agency.circuits?.map(c => c.category).filter(Boolean))]
+  const categories = [...new Set(agency.circuits?.map(c => c.category).filter(Boolean))]
 
   return (
     <Container maxW="6xl" py={8}>
@@ -310,7 +346,7 @@ const ServiceVoyage = () => {
             Mon service
           </Text>
           <Heading size="xl" fontWeight={900} color="gray.900" letterSpacing="-0.5px">
-            {agency.agency_name ?? "Mon Agence Voyage"}
+            {agency.agency_name ?? "Mon espace voyages"}
           </Heading>
           <Flex align="center" gap={3} mt={1} flexWrap="wrap">
             {agency.location && (
@@ -336,17 +372,17 @@ const ServiceVoyage = () => {
           </Flex>
         </Box>
         <Button colorScheme="blue" borderRadius="xl" size="sm" px={5} fontWeight={600}
-          onClick={() => navigate("edit")}>
+          onClick={() => navigate("voyage/edit")}>
           <Flex align="center" gap={2}><LuPencil size={13} />Modifier</Flex>
         </Button>
       </Flex>
 
       {/* ── Stats ── */}
       <Grid templateColumns={{ base: "1fr 1fr", md: "repeat(4, 1fr)" }} gap={3} mb={8}>
-        <StatCard icon={LuCompass}  label="Circuits"       value={totalCircuits}                color="blue"   />
-        <StatCard icon={LuTag}      label="Options extra"  value={totalOptions}                 color="purple" />
-        <StatCard icon={LuUsers}    label="Capacité max"   value={agency.circuits?.reduce((s,c) => s + (Number(c.max_people)||0), 0) || "—"} color="green" />
-        <StatCard icon={LuStar}     label="Prix min/pers." value={minPrice ? `${minPrice} TND` : "—"} color="orange" />
+        <StatCard icon={LuCompass} label="Circuits" value={totalCircuits} color="blue" />
+        <StatCard icon={LuTag} label="Options extra" value={totalOptions} color="purple" />
+        <StatCard icon={LuUsers} label="Capacité max" value={agency.circuits?.reduce((s, c) => s + (Number(c.max_people) || 0), 0) || "—"} color="green" />
+        <StatCard icon={LuStar} label="Prix min/pers." value={minPrice ? `${minPrice} TND` : "—"} color="orange" />
       </Grid>
 
       <VStack gap={8} align="stretch">
@@ -435,7 +471,7 @@ const ServiceVoyage = () => {
           {agency.circuits?.length > 0 ? (
             <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }} gap={5}>
               {agency.circuits.map(circuit => (
-                <CircuitCard key={circuit.id} circuit={circuit}
+                <CircuitCard key={circuit.id} circuit={circuit} navigate={navigate}
                   onDelete={handleDeleteCircuit} />
               ))}
             </Grid>
@@ -455,42 +491,6 @@ const ServiceVoyage = () => {
           )}
         </Box>
 
-        {/* ── Options ── */}
-        <Box>
-          <SectionTitle
-            action={
-              <Button colorScheme="purple" size="sm" borderRadius="xl"
-                px={4} fontWeight={600}
-                onClick={() => navigate("voyage/travel/add")}>
-                <Flex align="center" gap={2}><LuPlus size={13} />Ajouter une option</Flex>
-              </Button>
-            }
-          >
-            Options personnalisées
-          </SectionTitle>
-
-          {agency.options?.length > 0 ? (
-            <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={3}>
-              {agency.options.map(option => (
-                <OptionCard key={option.id} option={option}
-                  onDelete={handleDeleteOption} />
-              ))}
-            </Grid>
-          ) : (
-            <Flex direction="column" align="center" py={12} gap={3}
-              bg="white" borderRadius="2xl"
-              border="1px dashed" borderColor="gray.200">
-              <Text fontWeight={600} color="gray.600">Aucune option créée</Text>
-              <Text fontSize="sm" color="gray.400">
-                Ajoutez des excursions, guides ou équipements supplémentaires.
-              </Text>
-              <Button colorScheme="purple" borderRadius="xl" size="sm" mt={1}
-                onClick={() => navigate("voyage/travel/add")}>
-                <Flex align="center" gap={2}><LuPlus size={13} />Ajouter une option</Flex>
-              </Button>
-            </Flex>
-          )}
-        </Box>
 
       </VStack>
     </Container>

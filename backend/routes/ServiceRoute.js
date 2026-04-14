@@ -1,7 +1,7 @@
 const express = require("express");
 const AuthenticateToken = require("../middlewares/AuthenticateToken");
 const AuthenticatePartner = require("../middlewares/AuthenticatePartner");
-const { AddHotel, AddRoom, GetAllServices, GetAllHotel, GetHotel, GetPublicHotel, GetSearchHotels, AddLocation, GetLocation, AddVehicle, AddAgency, GetAgency, AddOffer, AddAirline, GetAirline, AddFlight, AddVoyage, GetVoyage, AddCircuit, GetPublicLocation, checkAvailability, GetVehicleById, GetPublicAgency, GetOfferById, municipalities, GetPublicAirline, GetFlightById, GetPublicVoyage, GetCircuitById, GetSearchRooms, GetSearchAirline, SearchVehicle, DeleteService, GetRoom, UpdateHotel } = require("../controllers/ServiceController");
+const { AddHotel, AddRoom, GetAllServices, GetAllHotel, GetHotel, GetPublicHotel, GetSearchHotels, AddLocation, GetLocation, AddVehicle, AddAgency, GetAgency, AddOffer, AddAirline, GetAirline, AddFlight, AddVoyage, GetVoyage, AddCircuit, GetPublicLocation, checkAvailability, GetVehicleById, GetPublicAgency, GetOfferById, municipalities, GetPublicAirline, GetFlightById, GetPublicVoyage, GetCircuitById, GetSearchRooms, GetSearchAirline, SearchVehicle, DeleteService, GetRoom, UpdateHotel, UpdateVehicle, UpdateCircuit, DeleteCircuit } = require("../controllers/ServiceController");
 const upload = require("../middlewares/Uploads");
 const AuthenticateAgent = require("../middlewares/AuthenticateAgent");
 const router = express.Router();
@@ -26,6 +26,8 @@ router.post("/location/search/get",SearchVehicle);
 router.post("/check-availability", checkAvailability)
 router.get("/vehicle/get/:id", GetVehicleById)
 router.post("/location/vehicle/add",[AuthenticateToken,AuthenticatePartner,upload.fields([{name:"service_doc",maxCount:15}])],AddVehicle);
+router.post("/vehicle/update/:id",[AuthenticateToken,AuthenticatePartner,upload.fields([{name:"service_doc",maxCount:15}])] ,UpdateVehicle)
+router.delete("/vehicle/:id",[AuthenticateToken,AuthenticatePartner] ,UpdateVehicle)
 
 router.post("/agency/add",[AuthenticateToken,AuthenticatePartner,upload.fields([{name:"service_doc",maxCount:1}])],AddAgency);
 router.get("/agency/get",[AuthenticateToken,AuthenticatePartner],GetAgency);
@@ -43,8 +45,10 @@ router.post("/airline/flight/add",[AuthenticateToken,AuthenticatePartner],AddFli
 router.post("/voyage/add",[AuthenticateToken,AuthenticatePartner],AddVoyage);
 router.get("/voyage/get",[AuthenticateToken,AuthenticatePartner],GetVoyage);
 router.get("/voyage/public/get",GetPublicVoyage);
+router.delete("/voyage/circuit/:id",DeleteCircuit);
 router.get("/voyage/circuit/public/get/:id",GetCircuitById);
 router.post("/voyage/circuit/add",[AuthenticateToken,AuthenticatePartner,upload.fields([{name:"service_doc",maxCount:15}])],AddCircuit);
+router.post("/voyage/circuit/update/:id",[AuthenticateToken,AuthenticatePartner,upload.fields([{name:"service_doc",maxCount:15}])],UpdateCircuit);
 
 
 

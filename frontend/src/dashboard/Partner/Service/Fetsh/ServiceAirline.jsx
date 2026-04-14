@@ -10,6 +10,7 @@ import {
   LuTrendingUp, LuTicket, LuStar, LuWifi,
   LuBaggageClaim, LuUtensils, LuCalendar,
   LuCheck, LuX, LuChevronRight,
+  LuPen,
 } from "react-icons/lu"
 import { FaStar, FaWifi, FaUtensils, FaSuitcase } from "react-icons/fa"
 import { useNavigate } from "react-router-dom"
@@ -18,25 +19,25 @@ import { toaster } from "../../../../components/ui/toaster"
 
 /* ── Helpers ────────────────────────────────────────────────────── */
 const AMENITY_META = {
-  wifi:    { Icon: FaWifi,     label: "Wi-Fi à bord"    },
-  meals:   { Icon: FaUtensils, label: "Repas inclus"    },
+  wifi: { Icon: FaWifi, label: "Wi-Fi à bord" },
+  meals: { Icon: FaUtensils, label: "Repas inclus" },
   baggage: { Icon: FaSuitcase, label: "Bagage en soute" },
-  lounge:  { Icon: FaStar,     label: "Salon VIP"       },
+  lounge: { Icon: FaStar, label: "Salon VIP" },
 }
 
 const FLIGHT_STATUS_STYLE = {
-  "programmé": { color: "blue"   },
-  "en vol":    { color: "green"  },
-  "atterri":   { color: "gray"   },
-  "retardé":   { color: "orange" },
-  "annulé":    { color: "red"    },
+  "programmé": { color: "blue" },
+  "en vol": { color: "green" },
+  "atterri": { color: "gray" },
+  "retardé": { color: "orange" },
+  "annulé": { color: "red" },
 }
 
 const formatDateTime = (dt) => dt
   ? new Date(dt).toLocaleString("fr-FR", {
-      day: "numeric", month: "short",
-      hour: "2-digit", minute: "2-digit",
-    })
+    day: "numeric", month: "short",
+    hour: "2-digit", minute: "2-digit",
+  })
   : "—"
 
 /* ── Stat card ──────────────────────────────────────────────────── */
@@ -72,7 +73,7 @@ function SectionTitle({ children, action }) {
 }
 
 /* ── Flight card ────────────────────────────────────────────────── */
-function FlightCard({ flight, onDelete }) {
+function FlightCard({ flight, onDelete,navigate }) {
   const s = FLIGHT_STATUS_STYLE[flight.status] ?? { color: "gray" }
   const occup = flight.seats_total
     ? Math.round(((flight.seats_total - (flight.seats_available ?? 0)) / flight.seats_total) * 100)
@@ -108,6 +109,11 @@ function FlightCard({ flight, onDelete }) {
             )}
           </Box>
         </Flex>
+        <Button size="xs" variant="ghost" color="blue.400"
+          borderRadius="lg" _hover={{ bg: "blue.50" }}
+          onClick={() => navigate("airline/flight/edit/" + flight.id)}>
+          <LuPen size={13} />
+        </Button>
         <Button size="xs" variant="ghost" color="red.400"
           borderRadius="lg" _hover={{ bg: "red.50" }}
           onClick={() => onDelete?.(flight.id)}>
@@ -119,7 +125,7 @@ function FlightCard({ flight, onDelete }) {
       <Flex align="center" gap={3} mb={4}>
         <Box>
           <Text fontSize="xl" fontWeight={900} color="gray.900" lineHeight={1}>
-            {flight.from?.split("(")[1]?.replace(")", "") ?? flight.from?.slice(0,3).toUpperCase()}
+            {flight.from?.split("(")[1]?.replace(")", "") ?? flight.from?.slice(0, 3).toUpperCase()}
           </Text>
           <Text fontSize="xs" color="gray.400">{formatDateTime(flight.departure)}</Text>
         </Box>
@@ -138,7 +144,7 @@ function FlightCard({ flight, onDelete }) {
         </Flex>
         <Box textAlign="right">
           <Text fontSize="xl" fontWeight={900} color="gray.900" lineHeight={1}>
-            {flight.to?.split("(")[1]?.replace(")", "") ?? flight.to?.slice(0,3).toUpperCase()}
+            {flight.to?.split("(")[1]?.replace(")", "") ?? flight.to?.slice(0, 3).toUpperCase()}
           </Text>
           <Text fontSize="xs" color="gray.400">{formatDateTime(flight.arrival)}</Text>
         </Box>
@@ -346,7 +352,6 @@ const ServiceAirline = () => {
   const totalOffers = airline.offers?.length ?? 0
   const totalPassengers = airline.flights?.reduce((s, f) =>
     s + ((f.seats_total ?? 0) - (f.seats_available ?? 0)), 0) ?? 0
-  console.log(airline)
 
   return (
     <Container maxW="6xl" py={8}>
@@ -375,17 +380,17 @@ const ServiceAirline = () => {
         </Box>
         <Button colorScheme="blue" borderRadius="xl"
           size="sm" px={5} fontWeight={600}
-          onClick={() => navigate("edit")}>
+          onClick={() => navigate("airline/edit")}>
           <Flex align="center" gap={2}><LuPencil size={13} />Modifier</Flex>
         </Button>
       </Flex>
 
       {/* ── Stats ── */}
       <Grid templateColumns={{ base: "1fr 1fr", md: "repeat(4, 1fr)" }} gap={3} mb={8}>
-        <StatCard icon={LuPlane}      label="Total vols"      value={totalFlights}    color="blue"   />
-        <StatCard icon={LuCheck}      label="Vols actifs"     value={activeFlights}   color="green"  />
-        <StatCard icon={LuUsers}      label="Passagers"       value={totalPassengers} color="purple" />
-        <StatCard icon={LuTag}        label="Offres actives"  value={totalOffers}     color="orange" />
+        <StatCard icon={LuPlane} label="Total vols" value={totalFlights} color="blue" />
+        <StatCard icon={LuCheck} label="Vols actifs" value={activeFlights} color="green" />
+        <StatCard icon={LuUsers} label="Passagers" value={totalPassengers} color="purple" />
+        <StatCard icon={LuTag} label="Offres actives" value={totalOffers} color="orange" />
       </Grid>
 
       <VStack gap={8} align="stretch">
@@ -503,7 +508,7 @@ const ServiceAirline = () => {
           {airline.FlightCompagnie?.length > 0 ? (
             <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }} gap={4}>
               {airline.FlightCompagnie.map(flight => (
-                <FlightCard key={flight.id} flight={flight}
+                <FlightCard key={flight.id} flight={flight} navigate={navigate}
                   onDelete={handleDeleteFlight} />
               ))}
             </Grid>
@@ -523,42 +528,6 @@ const ServiceAirline = () => {
           )}
         </Box>
 
-        {/* ── Exclusive Offers ── */}
-        <Box>
-          <SectionTitle
-            action={
-              <Button colorScheme="orange" size="sm" borderRadius="xl"
-                px={4} fontWeight={600}
-                onClick={() => navigate("offer/add")}>
-                <Flex align="center" gap={2}><LuPlus size={13} />Nouvelle offre</Flex>
-              </Button>
-            }
-          >
-            Offres exclusives
-          </SectionTitle>
-
-          {airline.offers?.length > 0 ? (
-            <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={4}>
-              {airline.offers.map(offer => (
-                <OfferCard key={offer.id} offer={offer}
-                  onDelete={handleDeleteOffer} />
-              ))}
-            </Grid>
-          ) : (
-            <Flex direction="column" align="center" py={12} gap={3}
-              bg="white" borderRadius="2xl"
-              border="1px dashed" borderColor="gray.200">
-              <Text fontWeight={600} color="gray.600">Aucune offre créée</Text>
-              <Text fontSize="sm" color="gray.400">
-                Créez des promotions pour attirer plus de passagers.
-              </Text>
-              <Button colorScheme="orange" borderRadius="xl" size="sm" mt={1}
-                onClick={() => navigate("offer/add")}>
-                <Flex align="center" gap={2}><LuPlus size={13} />Créer une offre</Flex>
-              </Button>
-            </Flex>
-          )}
-        </Box>
 
       </VStack>
     </Container>

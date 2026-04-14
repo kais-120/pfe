@@ -129,7 +129,7 @@ function CircuitCard({ circuit, voyage }) {
         {/* Description */}
         {circuit.description && (
           <Text fontSize="sm" color="gray.600" lineHeight="1.7" noOfLines={2}>
-            {circuit.description}
+            {circuit.description.length > 25 ? circuit.description.slice(0,25) + "..." : circuit.description.length > 25 }
           </Text>
         )}
 
@@ -212,7 +212,7 @@ function CircuitCard({ circuit, voyage }) {
             <Text fontSize="xs" color="gray.400">À partir de</Text>
             <Flex align="baseline" gap={1}>
               <Text fontSize="xl" fontWeight={900} color="orange.500" lineHeight="1.2">
-                {Number(circuit.price_per_person).toFixed(0)}
+                {Number(circuit?.packagesCircuit?.[0]?.price).toFixed(0)}
               </Text>
               <Text fontSize="xs" color="gray.500">TND / pers.</Text>
             </Flex>

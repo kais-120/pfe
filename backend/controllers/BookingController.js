@@ -177,7 +177,6 @@ exports.BookingLocation = [
             if (!vehicle) {
                 return res.status(404).send({ message: "vehicle not found" })
             }
-            console.log(vehicle.locationVehicle.partner_id)
             const client_id = req.userId;
             const booking = await Booking.create({ total_price: price, type: "location de voitures", client_id });
             await CarRentalBookingDetails.create({ booking_id: booking.id, pickup_date, return_date, car_id: id })

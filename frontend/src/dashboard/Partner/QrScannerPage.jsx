@@ -13,21 +13,21 @@ import { LucideCheckCircle, LucideXCircle } from "lucide-react"
 
 /* ── Status config ──────────────────────────────────────────────── */
 const STATUS = {
-  idle:     { color: "blue",  label: "Prêt à scanner"         },
-  scanning: { color: "blue",  label: "Scan en cours…"         },
-  success:  { color: "green", label: "QR code détecté !"      },
-  error:    { color: "red",   label: "Code invalide ou expiré" },
-  loading:  { color: "yellow",label: "Traitement…"            },
+  idle: { color: "blue", label: "Prêt à scanner" },
+  scanning: { color: "blue", label: "Scan en cours…" },
+  success: { color: "green", label: "QR code détecté !" },
+  error: { color: "red", label: "Code invalide ou expiré" },
+  loading: { color: "yellow", label: "Traitement…" },
 }
 
 export default function QrScannerPage() {
-  const [status,  setStatus]  = useState("idle")
-  const [result,  setResult]  = useState(null)
-  const [paused,  setPaused]  = useState(false)
-  const [error,   setError]   = useState("")
-  const [camErr,  setCamErr]  = useState(false)
-  const navigate  = useNavigate()
-  const cooldown  = useRef(false)
+  const [status, setStatus] = useState("idle")
+  const [result, setResult] = useState(null)
+  const [paused, setPaused] = useState(false)
+  const [error, setError] = useState("")
+  const [camErr, setCamErr] = useState(false)
+  const navigate = useNavigate()
+  const cooldown = useRef(false)
 
   /* ── Handle scan result ── */
   const handleScan = async (detectedCodes) => {
@@ -105,8 +105,8 @@ export default function QrScannerPage() {
             border="1.5px solid"
             borderColor={
               status === "success" ? "green.300"
-              : status === "error" ? "red.300"
-              : "gray.100"
+                : status === "error" ? "red.300"
+                  : "gray.100"
             }
             boxShadow="0 2px 16px rgba(0,0,0,0.08)"
             overflow="hidden"
@@ -123,8 +123,8 @@ export default function QrScannerPage() {
                 <Box color={`${s.color}.500`}>
                   {status === "success" ? <LucideCheckCircle size={15} />
                     : status === "error" ? <LucideXCircle size={15} />
-                    : status === "loading" ? <LuZap size={15} />
-                    : <LuScanLine size={15} />}
+                      : status === "loading" ? <LuZap size={15} />
+                        : <LuScanLine size={15} />}
                 </Box>
                 <Text fontSize="sm" fontWeight={600} color={`${s.color}.700`}>
                   {s.label}
@@ -158,7 +158,7 @@ export default function QrScannerPage() {
                   transition="opacity 0.3s"
                   sx={{
                     "& video": { width: "100%", height: "300px", objectFit: "cover" },
-                    "& svg":   { display: "none" },
+                    "& svg": { display: "none" },
                   }}>
                   <Scanner
                     onScan={handleScan}
@@ -182,9 +182,9 @@ export default function QrScannerPage() {
                   >
                     {/* Corner marks */}
                     {[
-                      { top: 0, left: 0,  borderTop: "3px solid", borderLeft: "3px solid"  },
+                      { top: 0, left: 0, borderTop: "3px solid", borderLeft: "3px solid" },
                       { top: 0, right: 0, borderTop: "3px solid", borderRight: "3px solid" },
-                      { bottom: 0, left: 0,  borderBottom: "3px solid", borderLeft: "3px solid"  },
+                      { bottom: 0, left: 0, borderBottom: "3px solid", borderLeft: "3px solid" },
                       { bottom: 0, right: 0, borderBottom: "3px solid", borderRight: "3px solid" },
                     ].map((style, i) => (
                       <Box key={i} position="absolute" w="22px" h="22px"
@@ -200,9 +200,9 @@ export default function QrScannerPage() {
                       animation="scanline 2s ease-in-out infinite"
                       sx={{
                         "@keyframes scanline": {
-                          "0%":   { top: "10px",  opacity: 0 },
-                          "10%":  { opacity: 1 },
-                          "90%":  { opacity: 1 },
+                          "0%": { top: "10px", opacity: 0 },
+                          "10%": { opacity: 1 },
+                          "90%": { opacity: 1 },
                           "100%": { top: "176px", opacity: 0 },
                         }
                       }}
@@ -217,7 +217,7 @@ export default function QrScannerPage() {
                   align="center" justify="center"
                   bg="blackAlpha.600" direction="column" gap={2}>
                   {status === "success" && <LucideCheckCircle size={48} color="#68D391" />}
-                  {status === "error"   && <LucideXCircle     size={48} color="#FC8181" />}
+                  {status === "error" && <LucideXCircle size={48} color="#FC8181" />}
                   {status === "loading" && (
                     <Box color="white" fontSize="xs">Traitement…</Box>
                   )}

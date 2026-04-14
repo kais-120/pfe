@@ -258,7 +258,7 @@ function VehicleCard({ vehicle, onEdit, onDelete }) {
             </IconButton>
             <IconButton size="xs" variant="outline" borderRadius="lg"
               color="blue.500" borderColor="blue.200" _hover={{ bg: "blue.50" }}
-              onClick={() => console.log("vehicle")}>
+              onClick={onEdit}>
               <LuPencil size={12} />
             </IconButton>
             <IconButton size="xs" variant="outline" borderRadius="lg"
@@ -309,16 +309,8 @@ const ServiceLocation = () => {
     }
   }
 
-  const handleEditVehicle = (v) => { setEditTarget(v); }
-  const handleSaved = () => {
-    setEditTarget(null)
-    // Refresh data after save
-    AxiosToken.get("/service/location/get")
-      .then(res => setLocation(res.data.location ?? null))
-      .catch(() => { })
-  }
+  const handleEditVehicle = (id) => { navigate(`location/vehicle/edit/${id}`); }
 
-  /* ── No location yet ── */
   if (!loading && !location) {
     return (
       <Container maxW="6xl" py={24}>
@@ -445,7 +437,7 @@ const ServiceLocation = () => {
             gap={5}>
             {vehicles.map(v => (
               <VehicleCard key={v.id} vehicle={v}
-                onEdit={handleEditVehicle}
+                onEdit={()=>handleEditVehicle(v.id)}
                 onDelete={handleDeleteVehicle}
               />
             ))}

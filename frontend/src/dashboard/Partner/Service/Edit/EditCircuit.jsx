@@ -1,24 +1,25 @@
 import {
   Box, Button, Input, Text, Flex, Grid,
   VStack, Field, Textarea, SimpleGrid,
-  HStack, Icon, ActionBar, Portal,
+  HStack, Icon, ActionBar,
 } from "@chakra-ui/react"
 import { useFormik } from "formik"
 import * as yup from "yup"
-import { useNavigate } from "react-router-dom"
-import { AxiosToken } from "../../../../Api/Api"
+import { useNavigate, useParams } from "react-router-dom"
+import { AxiosToken, imageURL } from "../../../../Api/Api"
 import { toaster } from "../../../../components/ui/toaster"
 import {
-  LuCompass, LuMapPin, LuClock,
-  LuChevronLeft, LuCheck, LuPlus, LuX,
-  LuUpload, LuMountain, LuTag,
+  LuCompass, LuMapPin,
+  LuChevronLeft, LuCheck, LuPlus,
+  LuUpload, LuMountain,
   LuBanknote, LuListTree, LuSearch,
-  LuArrowRight, LuPencil, LuTrash2,
+  LuArrowRight, LuPencil, LuTrash2, LuX,
 } from "react-icons/lu"
 import { FaCampground, FaMountain, FaUmbrellaBeach, FaHiking, FaStar } from "react-icons/fa"
-import { useState } from "react"
-import AddPackage from "./AddPackage"
+import { useEffect, useState } from "react"
+import AddPackage from "../Add/AddPackage"
 import { Plane } from "lucide-react"
+
 
 const CATEGORIES = [
   { key: "voyage", label: "Voyage", Icon: LuCompass },
@@ -49,7 +50,7 @@ const validationSchema = yup.object({
 })
 
 function FormField({ formik, name, label, required, type = "text",
-  icon: IconComp, placeholder, suffix, hint }) {
+  icon: IconComp, placeholder, suffix }) {
   const isInvalid = formik.touched[name] && !!formik.errors[name]
   return (
     <Field.Root invalid={isInvalid} w="full">
@@ -60,7 +61,6 @@ function FormField({ formik, name, label, required, type = "text",
           {required && <Text color="red.400" fontSize="xs">*</Text>}
         </Flex>
       </Field.Label>
-      {hint && <Text fontSize="xs" color="gray.400" mt={-1} mb={1}>{hint}</Text>}
       <Flex w="full" align="center"
         border="1.5px solid" borderColor={isInvalid ? "red.400" : "gray.200"}
         borderRadius="xl" bg="white" px={3} transition="all 0.15s"
@@ -75,15 +75,13 @@ function FormField({ formik, name, label, required, type = "text",
             <IconComp size={14} />
           </Box>
         )}
-        <Input
-          outline="none" name={name} type={type}
+        <Input outline="none" name={name} type={type}
           value={formik.values[name]}
           onChange={formik.handleChange} onBlur={formik.handleBlur}
           placeholder={placeholder}
           border="none" bg="transparent" px={0} h="42px" flex={1}
           fontSize="sm" color="gray.800"
-          _focus={{ boxShadow: "none" }} _placeholder={{ color: "gray.300" }}
-        />
+          _focus={{ boxShadow: "none" }} _placeholder={{ color: "gray.300" }} />
         {suffix && (
           <Text fontSize="xs" color="gray.400" fontWeight={600} ml={2} flexShrink={0}>
             {suffix}
@@ -99,6 +97,7 @@ function FormField({ formik, name, label, required, type = "text",
   )
 }
 
+// ── SectionCard ────────────────────────────────────────────────────────
 function SectionCard({ title, icon: IconComp, iconColor = "blue", children }) {
   return (
     <Box bg="white" borderRadius="2xl" p={6}
@@ -117,24 +116,16 @@ function SectionCard({ title, icon: IconComp, iconColor = "blue", children }) {
   )
 }
 
+// ── PackageRow ─────────────────────────────────────────────────────────
 function PackageRow({ pkg, onSelect, selected }) {
   return (
-    <Box
-      borderRadius="xl"
-      border="1.5px solid"
+    <Box borderRadius="xl" border="1.5px solid"
       borderColor={selected ? "pink.400" : "gray.100"}
       bg={selected ? "pink.50" : "white"}
-      p={4}
-      cursor="pointer"
-      transition="all 0.15s"
+      p={4} cursor="pointer" transition="all 0.15s"
       _hover={{ borderColor: "pink.300", bg: "pink.50" }}
-      onClick={() => onSelect(pkg)}
-    >
-      <Grid
-        templateColumns={{ base: "1fr", sm: "1fr auto auto auto" }}
-        gap={4}
-        alignItems="center"
-      >
+      onClick={() => onSelect(pkg)}>
+      <Grid templateColumns={{ base: "1fr", sm: "1fr auto auto auto" }} gap={4} alignItems="center">
         <VStack align="start" gap={1}>
           <Text fontSize="sm" fontWeight={700} color="gray.900">{pkg.title}</Text>
           <HStack gap={3} fontSize="xs" color="gray.500" flexWrap="wrap">
@@ -150,7 +141,7 @@ function PackageRow({ pkg, onSelect, selected }) {
             <Text>{pkg.duration}</Text>
           </HStack>
           <HStack gap={3} flexWrap="wrap" mt={0.5}>
-            {pkg.destinations.map((d, i) => (
+            {(pkg.destinations || pkg.destination || []).map((d, i) => (
               <HStack key={i} gap={1} fontSize="xs" color="gray.600">
                 <LuMapPin size={11} color="#A0AEC0" />
                 <Text>{d.name}</Text>
@@ -168,22 +159,17 @@ function PackageRow({ pkg, onSelect, selected }) {
         <VStack align="end" gap={0}>
           <HStack gap={1} align="baseline">
             <Text fontSize="xl" fontWeight={800} color="gray.900" lineHeight={1}>
-              {pkg.price.toLocaleString()}
+              {Number(pkg.price).toLocaleString()}
             </Text>
             <Text fontSize="xs" color="gray.400" fontWeight={600}>TND</Text>
           </HStack>
           <Text fontSize="xs" color="#E91E8C" fontWeight={700}>{pkg.installment}</Text>
         </VStack>
 
-        <Flex
-          w="28px" h="28px" borderRadius="full"
-          border="1.5px solid"
+        <Flex w="28px" h="28px" borderRadius="full" border="1.5px solid"
           borderColor={selected ? "pink.400" : "gray.200"}
           bg={selected ? "pink.500" : "white"}
-          align="center" justify="center"
-          flexShrink={0}
-          transition="all 0.15s"
-        >
+          align="center" justify="center" flexShrink={0} transition="all 0.15s">
           {selected && <LuCheck size={13} color="white" />}
         </Flex>
       </Grid>
@@ -191,6 +177,7 @@ function PackageRow({ pkg, onSelect, selected }) {
   )
 }
 
+// ── PackagesPanel ──────────────────────────────────────────────────────
 function PackagesPanel({ selectedPackages, onSelectionChange, allPackages, setAllPackages }) {
   const [tab, setTab] = useState("list")
   const [search, setSearch] = useState("")
@@ -199,7 +186,9 @@ function PackagesPanel({ selectedPackages, onSelectionChange, allPackages, setAl
   const filtered = allPackages.filter((p) =>
     search === "" ||
     p.title.toLowerCase().includes(search.toLowerCase()) ||
-    p.destinations.some((d) => d.name.toLowerCase().includes(search.toLowerCase()))
+    (p.destinations || p.destination || []).some(
+      (d) => d.name?.toLowerCase().includes(search.toLowerCase())
+    )
   )
 
   const grouped = {}
@@ -233,7 +222,7 @@ function PackagesPanel({ selectedPackages, onSelectionChange, allPackages, setAl
 
   return (
     <Box>
-      {/* ── Tab switcher ── */}
+      {/* Tab switcher */}
       <HStack gap={0} mb={5} bg="gray.50" borderRadius="xl" p={1}
         border="1px solid" borderColor="gray.100" w="fit-content">
         {[
@@ -245,17 +234,15 @@ function PackagesPanel({ selectedPackages, onSelectionChange, allPackages, setAl
             bg={tab === key ? "white" : "transparent"}
             color={tab === key ? "gray.800" : "gray.500"}
             boxShadow={tab === key ? "0 1px 4px rgba(0,0,0,0.08)" : "none"}
-            border="none"
-            _hover={{ bg: tab === key ? "white" : "gray.100" }}
-            transition="all 0.15s"
-            onClick={() => setTab(key)}
+            border="none" _hover={{ bg: tab === key ? "white" : "gray.100" }}
+            transition="all 0.15s" onClick={() => setTab(key)}
             leftIcon={<TabIcon size={13} />}>
             {label}
           </Button>
         ))}
       </HStack>
 
-      {/* ── LIST TAB ── */}
+      {/* LIST TAB */}
       {tab === "list" && (
         <Box>
           <Flex align="center" gap={2} px={3}
@@ -291,12 +278,9 @@ function PackagesPanel({ selectedPackages, onSelectionChange, allPackages, setAl
                   </Flex>
                   <VStack align="stretch" gap={2}>
                     {packages.map((pkg) => (
-                      <PackageRow
-                        key={pkg.id}
-                        pkg={pkg}
+                      <PackageRow key={pkg.id} pkg={pkg}
                         selected={selectedPackages.some((p) => p.id === pkg.id)}
-                        onSelect={toggleSelect}
-                      />
+                        onSelect={toggleSelect} />
                     ))}
                   </VStack>
                 </Box>
@@ -306,23 +290,21 @@ function PackagesPanel({ selectedPackages, onSelectionChange, allPackages, setAl
         </Box>
       )}
 
-      {/* ── ADD TAB ── */}
       {tab === "add" && (
-        <AddPackage ontTab={setTab} onChange={setAllPackages} type={"circuit"} />
+        <AddPackage ontTab={setTab} onChange={setAllPackages} type="circuit" />
       )}
 
-      {/* ── EDIT TAB ── */}
       {tab === "edit" && editingPkg && (
         <AddPackage
           ontTab={(t) => { setTab(t); setEditingPkg(null) }}
           onChange={setAllPackages}
           initialValues={editingPkg}
           isEditing
-          type={"circuit"}
+          type="circuit"
         />
       )}
 
-      {/* ── ActionBar ── */}
+      {/* ActionBar */}
       <ActionBar.Root open={selectedPackages.length > 0}>
         <ActionBar.Positioner>
           <ActionBar.Content>
@@ -330,32 +312,14 @@ function PackagesPanel({ selectedPackages, onSelectionChange, allPackages, setAl
               {selectedPackages.length} sélectionné{selectedPackages.length > 1 ? "s" : ""}
             </ActionBar.SelectionTrigger>
             <ActionBar.Separator />
-
-            <Button
-              size="sm"
-              variant="outline"
-              borderRadius="lg"
-              fontSize="13px"
-              gap={1.5}
-              disabled={selectedPackages.length !== 1}
-              onClick={handleEditSelected}
-            >
-              <LuPencil size={13} />
-              Modifier
+            <Button size="sm" variant="outline" borderRadius="lg" fontSize="13px" gap={1.5}
+              disabled={selectedPackages.length !== 1} onClick={handleEditSelected}>
+              <LuPencil size={13} /> Modifier
             </Button>
-
-            <Button
-              size="sm"
-              colorScheme="red"
-              borderRadius="lg"
-              fontSize="13px"
-              gap={1.5}
-              onClick={handleDeleteSelected}
-            >
-              <LuTrash2 size={13} />
-              Supprimer ({selectedPackages.length})
+            <Button size="sm" colorScheme="red" borderRadius="lg" fontSize="13px" gap={1.5}
+              onClick={handleDeleteSelected}>
+              <LuTrash2 size={13} /> Supprimer ({selectedPackages.length})
             </Button>
-
             <ActionBar.CloseTrigger onClick={() => onSelectionChange([])} />
           </ActionBar.Content>
         </ActionBar.Positioner>
@@ -364,41 +328,95 @@ function PackagesPanel({ selectedPackages, onSelectionChange, allPackages, setAl
   )
 }
 
-const AddCircuit = () => {
+// ── EditCircuit ────────────────────────────────────────────────────────
+const EditCircuit = () => {
   const navigate = useNavigate()
-  const [previews, setPreviews] = useState([])
+  const { id } = useParams()
+
+  const [existingImages, setExistingImages] = useState([])
+  const [removedImageIds, setRemovedImageIds] = useState([])
+  const [newFiles, setNewFiles] = useState([])
+  const [newPreviews, setNewPreviews] = useState([])
+
   const [selectedPackages, setSelectedPackages] = useState([])
   const [allPackages, setAllPackages] = useState([])
+  const [loading, setLoading] = useState(true)
 
   const formik = useFormik({
     initialValues: {
       title: "", location: "", description: "",
       category: "voyage", difficulty: "modéré",
-      price_per_person: "", duration_days: "", max_people: "",
       inclusions: [], available_dates: [],
-      images: [],
     },
     validationSchema,
     onSubmit: async (values) => {
       try {
         const fd = new FormData()
-        if (allPackages.length > 0)
-          fd.append("packages", JSON.stringify(allPackages))
         Object.entries(values).forEach(([k, v]) => {
-          if (k === "images") v.forEach(img => fd.append("service_doc", img))
-          else if (k === "inclusions" || k === "available_dates")
+          if (k === "inclusions" || k === "available_dates")
             v.forEach(x => fd.append(`${k}[]`, x))
-          else fd.append(k, v)
+          else
+            fd.append(k, v)
         })
-        await AxiosToken.post("/service/voyage/circuit/add", fd)
-        toaster.create({ description: "Circuit ajouté avec succès.", type: "success", closable: true })
+
+        // ── Packages ──
+        if (selectedPackages.length > 0)
+          fd.append("packages", JSON.stringify(selectedPackages))
+
+        // ── New images (only if user selected new ones) ──
+        newFiles.forEach(file => fd.append("service_doc", file))
+
+        // ── IDs of existing images to delete ──
+        if (removedImageIds.length > 0)
+          fd.append("removed_images", JSON.stringify(removedImageIds))
+
+        await AxiosToken.put(`/service/voyage/circuit/update/${id}`, fd)
+        toaster.create({ description: "Circuit modifié avec succès.", type: "success", closable: true })
         setTimeout(() => navigate(-1), 1800)
       } catch {
         toaster.create({ description: "Une erreur est survenue.", type: "error", closable: true })
       }
-    }
+    },
   })
 
+  useEffect(() => {
+    const fetchCircuit = async () => {
+      try {
+        const res = await AxiosToken.get(`/service/voyage/circuit/public/get/${id}`)
+        const c = res.data.circuit
+
+        // Pre-fill formik
+        formik.setValues({
+          title: c.title || "",
+          location: c.location || "",
+          description: c.description || "",
+          category: c.category || "voyage",
+          difficulty: c.difficulty || "modéré",
+          inclusions: c.inclusions || [],
+          available_dates: c.available_dates || [],
+        })
+
+        // Pre-fill packages — normalize destination field name
+        const pkgs = (c.packagesCircuit || []).map((p) => ({
+          ...p,
+          destinations: p.destination || p.destinations || [],
+          seats: p.number_place,
+        }))
+        setAllPackages(pkgs)
+        setSelectedPackages(pkgs)   // all pre-linked packages start selected
+
+        // Pre-fill existing images
+        setExistingImages(c.images || [])
+      } catch {
+        toaster.create({ description: "Impossible de charger le circuit.", type: "error", closable: true })
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchCircuit()
+  }, [id])
+
+  // ── Inclusions toggle ──
   const toggleIncl = (val) => {
     const arr = formik.values.inclusions
     formik.setFieldValue(
@@ -407,11 +425,35 @@ const AddCircuit = () => {
     )
   }
 
+  // ── Remove an existing server image ──
+  const removeExistingImage = (imgId) => {
+    setRemovedImageIds((prev) => [...prev, imgId])
+    setExistingImages((prev) => prev.filter((img) => img.id !== imgId))
+  }
+
+  // ── Remove a newly added (not yet uploaded) image ──
+  const removeNewImage = (index) => {
+    setNewFiles((prev) => prev.filter((_, i) => i !== index))
+    setNewPreviews((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  // ── Handle new file selection ──
   const handleImages = (files) => {
     const arr = Array.from(files)
-    formik.setFieldValue("images", arr)
-    setPreviews(arr.map(f => URL.createObjectURL(f)))
+    setNewFiles(arr)
+    setNewPreviews(arr.map(f => URL.createObjectURL(f)))
   }
+
+  if (loading) {
+    return (
+      <Flex align="center" justify="center" minH="300px">
+        <Text color="gray.400" fontSize="sm">Chargement…</Text>
+      </Flex>
+    )
+  }
+
+  // Total visible images count (existing kept + new)
+  const totalImages = existingImages.length + newPreviews.length
 
   return (
     <Box>
@@ -419,7 +461,7 @@ const AddCircuit = () => {
         color="gray.400" fontSize="sm" mb={6}
         _hover={{ color: "blue.500" }} transition="color 0.15s"
         onClick={() => navigate(-1)}>
-        <LuChevronLeft size={14} />Retour
+        <LuChevronLeft size={14} /> Retour
       </Flex>
 
       <Box mb={8}>
@@ -428,10 +470,10 @@ const AddCircuit = () => {
           Gestion des circuits
         </Text>
         <Text fontSize="2xl" fontWeight={900} color="gray.900" letterSpacing="-0.5px">
-          Ajouter un circuit
+          Modifier le circuit
         </Text>
         <Text fontSize="sm" color="gray.400" mt={1}>
-          Décrivez l'expérience que vous proposez
+          Modifiez les informations de votre circuit
         </Text>
       </Box>
 
@@ -452,31 +494,23 @@ const AddCircuit = () => {
                   <Text fontSize="xs" fontWeight={700} color="gray.600"
                     textTransform="uppercase" letterSpacing="wider">Description *</Text>
                 </Flex>
-                <Flex w="full" align="flex-start"
-                  border="1.5px solid"
+                <Flex w="full" align="flex-start" border="1.5px solid"
                   borderColor={
                     formik.touched.description && formik.errors.description
                       ? "red.400" : "gray.200"
                   }
                   borderRadius="xl" bg="white" px={3} pt={2.5}
-                  _focusWithin={{
-                    borderColor: "blue.400",
-                    boxShadow: "0 0 0 3px rgba(49,130,206,0.12)"
-                  }}>
-                  <Textarea
-                    outline="none" name="description"
+                  _focusWithin={{ borderColor: "blue.400", boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" }}>
+                  <Textarea outline="none" name="description"
                     value={formik.values.description}
                     onChange={formik.handleChange} onBlur={formik.handleBlur}
-                    placeholder="3 jours au cœur du désert avec nuit sous les étoiles…"
+                    placeholder="Description du circuit…"
                     border="none" bg="transparent" px={0} flex={1}
                     fontSize="sm" color="gray.800" minH="100px" resize="vertical"
-                    _focus={{ boxShadow: "none" }} _placeholder={{ color: "gray.300" }}
-                  />
+                    _focus={{ boxShadow: "none" }} _placeholder={{ color: "gray.300" }} />
                 </Flex>
                 {formik.touched.description && formik.errors.description && (
-                  <Text fontSize="xs" color="red.500" mt={1}>
-                    {formik.errors.description}
-                  </Text>
+                  <Text fontSize="xs" color="red.500" mt={1}>{formik.errors.description}</Text>
                 )}
               </Box>
             </VStack>
@@ -532,7 +566,7 @@ const AddCircuit = () => {
             </VStack>
           </SectionCard>
 
-          {/* ── Pricing & packages ── */}
+          {/* ── Packages ── */}
           <Box bg="white" borderRadius="2xl" p={6}
             border="1px solid" borderColor="gray.100"
             boxShadow="0 1px 8px rgba(0,0,0,0.05)">
@@ -558,7 +592,6 @@ const AddCircuit = () => {
                 </Flex>
               )}
             </Flex>
-
             <PackagesPanel
               allPackages={allPackages}
               setAllPackages={setAllPackages}
@@ -591,10 +624,13 @@ const AddCircuit = () => {
 
           {/* ── Photos ── */}
           <SectionCard title="Photos du circuit" icon={LuUpload} iconColor="purple">
+
+            {/* Upload zone */}
             <Box border="2px dashed" borderColor="gray.200" borderRadius="xl"
               bg="gray.50" p={5} cursor="pointer" transition="all 0.15s"
               _hover={{ borderColor: "blue.300", bg: "blue.50" }}
-              position="relative" mb={previews.length > 0 ? 3 : 0}>
+              position="relative"
+              mb={totalImages > 0 ? 4 : 0}>
               <Box as="input" type="file" accept="image/*" multiple
                 position="absolute" inset={0} opacity={0} cursor="pointer"
                 onChange={e => handleImages(e.target.files)} />
@@ -605,25 +641,84 @@ const AddCircuit = () => {
                   <LuUpload size={16} color="#718096" />
                 </Flex>
                 <Text fontSize="sm" fontWeight={600} color="gray.600">
-                  Glissez vos photos ici
+                  {newFiles.length > 0
+                    ? `${newFiles.length} nouvelle${newFiles.length > 1 ? "s" : ""} photo${newFiles.length > 1 ? "s" : ""} sélectionnée${newFiles.length > 1 ? "s" : ""}`
+                    : "Glissez de nouvelles photos ici"}
                 </Text>
-                <Text fontSize="xs" color="gray.400">JPG, PNG — max 5 MB</Text>
+                <Text fontSize="xs" color="gray.400">
+                  {existingImages.length > 0
+                    ? `${existingImages.length} photo${existingImages.length > 1 ? "s" : ""} existante${existingImages.length > 1 ? "s" : ""} — laisser vide pour les conserver`
+                    : "JPG, PNG — max 5 MB"}
+                </Text>
               </Flex>
             </Box>
-            {previews.length > 0 && (
-              <SimpleGrid columns={5} gap={2}>
-                {previews.map((src, i) => (
-                  <Box key={i} h="70px" borderRadius="lg" overflow="hidden"
-                    border="1px solid" borderColor="gray.100">
-                    <Box as="img" src={src} w="100%" h="100%"
-                      style={{ objectFit: "cover" }} />
-                  </Box>
-                ))}
-              </SimpleGrid>
+
+            {/* ── Existing server images ── */}
+            {existingImages.length > 0 && (
+              <Box mb={3}>
+                <Text fontSize="xs" fontWeight={700} color="gray.500"
+                  textTransform="uppercase" letterSpacing="wider" mb={2}>
+                  Photos actuelles
+                </Text>
+                <SimpleGrid columns={5} gap={2}>
+                  {existingImages.map((img) => (
+                    <Box key={img.id} position="relative" h="70px" borderRadius="lg"
+                      overflow="hidden" border="1px solid" borderColor="gray.100"
+                      _hover={{ "& > button": { opacity: 1 } }}>
+                      <Box as="img"
+                        src={`${imageURL}/services/${img.image_url}`}
+                        w="100%" h="100%" style={{ objectFit: "cover" }} />
+                      <Box as="button" type="button"
+                        position="absolute" top="3px" right="3px"
+                        w="18px" h="18px" borderRadius="full"
+                        bg="red.500" color="white"
+                        display="flex" alignItems="center" justifyContent="center"
+                        opacity={0} transition="opacity 0.15s"
+                        _hover={{ bg: "red.600" }}
+                        onClick={() => removeExistingImage(img.id)}>
+                        <LuX size={10} />
+                      </Box>
+                    </Box>
+                  ))}
+                </SimpleGrid>
+              </Box>
             )}
-            {previews.length > 0 && (
+
+            {/* ── New images preview ── */}
+            {newPreviews.length > 0 && (
+              <Box>
+                <Text fontSize="xs" fontWeight={700} color="gray.500"
+                  textTransform="uppercase" letterSpacing="wider" mb={2}>
+                  Nouvelles photos
+                </Text>
+                <SimpleGrid columns={5} gap={2}>
+                  {newPreviews.map((src, i) => (
+                    <Box key={i} position="relative" h="70px" borderRadius="lg"
+                      overflow="hidden" border="1.5px solid" borderColor="blue.200"
+                      _hover={{ "& > button": { opacity: 1 } }}>
+                      <Box as="img" src={src} w="100%" h="100%"
+                        style={{ objectFit: "cover" }} />
+                      <Box as="button" type="button"
+                        position="absolute" top="3px" right="3px"
+                        w="18px" h="18px" borderRadius="full"
+                        bg="red.500" color="white"
+                        display="flex" alignItems="center" justifyContent="center"
+                        opacity={0} transition="opacity 0.15s"
+                        _hover={{ bg: "red.600" }}
+                        onClick={() => removeNewImage(i)}>
+                        <LuX size={10} />
+                      </Box>
+                    </Box>
+                  ))}
+                </SimpleGrid>
+              </Box>
+            )}
+
+            {totalImages > 0 && (
               <Text fontSize="xs" color="gray.400" mt={2}>
-                {previews.length} photo{previews.length > 1 ? "s" : ""} sélectionnée{previews.length > 1 ? "s" : ""}
+                {totalImages} photo{totalImages > 1 ? "s" : ""} au total
+                {removedImageIds.length > 0 &&
+                  ` · ${removedImageIds.length} supprimée${removedImageIds.length > 1 ? "s" : ""}`}
               </Text>
             )}
           </SectionCard>
@@ -637,7 +732,7 @@ const AddCircuit = () => {
             <Button type="submit" colorScheme="blue" borderRadius="xl" px={8} fontWeight={700}
               loading={formik.isSubmitting} loadingText="Enregistrement…">
               <Flex align="center" gap={2}>
-                <LuCheck size={14} />Ajouter le circuit
+                <LuCheck size={14} /> Enregistrer les modifications
               </Flex>
             </Button>
           </Flex>
@@ -648,4 +743,4 @@ const AddCircuit = () => {
   )
 }
 
-export default AddCircuit
+export default EditCircuit

@@ -62,6 +62,14 @@ import SuccessPayment from "./SuccessPayment";
 import CancelPayment from "./CancelPayment";
 import EditRoom from "./dashboard/Partner/Service/Edit/EditRoom";
 import EditHotel from "./dashboard/Partner/Service/Edit/EditHotel";
+import EditLocation from "./dashboard/Partner/Service/Edit/EditLocation";
+import EditVehicle from "./dashboard/Partner/Service/Edit/EditVehicle";
+import EditCircuit from "./dashboard/Partner/Service/Edit/EditCircuit";
+import EditVoyage from "./dashboard/Partner/Service/Edit/EditVoyage";
+import EditAirline from "./dashboard/Partner/Service/Edit/EditAirline";
+import EditFlight from "./dashboard/Partner/Service/Edit/EditFlight";
+import EditAgency from "./dashboard/Partner/Service/Edit/EditAgency";
+import EditOffer from "./dashboard/Partner/Service/Edit/EditOffer";
 
 function App() {
   return (
@@ -111,18 +119,26 @@ function App() {
       <Route path="service/hotel/room/edit/:id" element={<EditRoom/>} />
 
       <Route path="service/agency/add" element={<AddAgency/>} />
+      <Route path="service/agency/edit" element={<EditAgency/>} />
       <Route path="service/agency/offer/add" element={<AddOffer />} />
+      <Route path="service/agency/offer/edit/:id" element={<EditOffer />} />
 
       <Route path="service/location/add" element={<AddLocation />} />
+      <Route path="service/location/edit" element={<EditLocation/>} />
+      <Route path="service/location/vehicle/edit/:id" element={<EditVehicle/>} />
       <Route path="service/location/vehicle/add" element={<AddVehicle />} />
 
       <Route path="service/airline/add" element={<AddAirline />} />
+      <Route path="service/airline/edit" element={<EditAirline />} />
       <Route path="service/airline/flight/add" element={<AddFlight />} />
+      <Route path="service/airline/flight/edit/:id" element={<EditFlight />} />
       <Route path="service/airline/offer/add" element={<AddAirlineOffer />} />
 
       <Route path="service/voyage/add" element={<AddVoyageAgency />} />
-      <Route path="service/voyage/travel/add" element={<AddTravelOption />} />
       <Route path="service/voyage/circuit/add" element={<AddCircuit />} />
+      <Route path="service/voyage/edit" element={<EditVoyage />} />
+      <Route path="service/voyage/circuit/edit/:id" element={<EditCircuit/>} />
+
 
 
       <Route path="bookings" element={<Booking/>} />

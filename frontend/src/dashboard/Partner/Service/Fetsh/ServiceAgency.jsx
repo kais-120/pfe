@@ -9,6 +9,8 @@ import {
   LuPhone, LuMail, LuGlobe, LuPackage, LuClock,
   LuLink, LuFacebook, LuInstagram, LuTag,
   LuTwitter,
+  LuImages,
+  LuPen,
 } from "react-icons/lu"
 import { useNavigate } from "react-router-dom"
 import { AxiosToken, imageURL } from "../../../../Api/Api"
@@ -17,20 +19,19 @@ import { toaster } from "../../../../components/ui/toaster"
 const IMAGE_BASE = `${imageURL}/services/`
 
 const AGENCY_STATUS = {
-  accept:{ colorScheme: "green",  label: "Approuvée"  },
-  refuse:{ colorScheme: "red",    label: "Refusée"    },
-  "En attente":{ colorScheme: "yellow", label: "En attente" },
+  accept: { colorScheme: "green", label: "Approuvée" },
+  refuse: { colorScheme: "red", label: "Refusée" },
+  "En attente": { colorScheme: "yellow", label: "En attente" },
 }
 
 const OFFER_TYPES = [
-  { value: "circuit",   label: "Circuit"   },
-  { value: "package",   label: "Package"   },
-  { value: "sejour",    label: "Séjour"    },
+  { value: "circuit", label: "Circuit" },
+  { value: "package", label: "Package" },
+  { value: "sejour", label: "Séjour" },
   { value: "croisiere", label: "Croisière" },
-  { value: "aventure",  label: "Aventure"  },
+  { value: "aventure", label: "Aventure" },
 ]
 
-/* ── Stat card ──────────────────────────────────────────────────── */
 function StatCard({ icon: Icon, label, value, color = "blue" }) {
   return (
     <Box bg="white" borderRadius="xl" p={4}
@@ -68,7 +69,7 @@ function SectionHeading({ children, action }) {
 
 
 function OfferCard({ offer, onEdit, onDelete }) {
-  const mainImg  = offer.imagesOffer?.[0]
+  const mainImg = offer.imagesOffer?.[0]
   const typeLabel = OFFER_TYPES.find(t => t.value === offer.type)?.label ?? offer.type
 
   return (
@@ -82,10 +83,10 @@ function OfferCard({ offer, onEdit, onDelete }) {
       <Box h="180px" bg="gray.100" position="relative">
         {mainImg
           ? <Image src={`${IMAGE_BASE}${mainImg?.image_url ?? mainImg}`}
-              w="100%" h="100%" objectFit="cover" />
+            w="100%" h="100%" objectFit="cover" />
           : <Flex h="100%" align="center" justify="center" color="gray.300">
-              <LuGlobe size={40} />
-            </Flex>
+            <LuGlobe size={40} />
+          </Flex>
         }
         {typeLabel && (
           <Badge position="absolute" top={2} left={2}
@@ -182,6 +183,82 @@ function OfferCard({ offer, onEdit, onDelete }) {
     </Box>
   )
 }
+function CircuitCard({ offer, onDelete,onEdit }) {
+  const mainImg = offer.imagesOffer?.[0]?.image_url
+    ? `${imageURL}/services/${offer.imagesOffer[0]?.image_url}`
+    : null
+
+  return (
+    <Box bg="white" borderRadius="2xl" overflow="hidden"
+      border="1px solid" borderColor="gray.100"
+      boxShadow="0 2px 12px rgba(0,0,0,0.06)"
+      transition="transform 0.2s, box-shadow 0.2s"
+      _hover={{ transform: "translateY(-3px)", boxShadow: "0 8px 28px rgba(0,0,0,0.1)" }}>
+
+      {/* Image */}
+      <Box position="relative" h="180px" bg="gray.100">
+        {mainImg ? (
+          <Box as="img" src={mainImg} w="100%" h="100%"
+            style={{ objectFit: "cover" }} />
+        ) : (
+          <Flex h="100%" align="center" justify="center" color="gray.300">
+            <LuImages size={36} />
+          </Flex>
+        )}
+        <HStack position="absolute" top={2} right={2}>
+        <Button size="xs"
+          variant="solid" bg="blackAlpha.600" color="white"
+          borderRadius="lg" _hover={{ bg: "red.500" }}
+          onClick={() => onDelete?.(offer.id)}>
+          <LuTrash2 size={12} />
+        </Button>
+        <Button size="xs"
+          variant="solid" bg="blackAlpha.600" color="white"
+          borderRadius="lg" _hover={{ bg: "blue.500" }}
+          onClick={onEdit}
+          >
+          <LuPen size={12} />
+        </Button>
+      </HStack>
+      </Box>
+
+      <Box p={4}>
+        <Text fontWeight={800} fontSize="md" color="gray.900" mb={1} noOfLines={1}>
+          {offer.title}
+        </Text>
+        <Flex align="center" gap={1.5} mb={3}>
+          <LuMapPin size={11} color="gray" />
+          <Text fontSize="xs" color="gray.500" noOfLines={1}>{offer.destination}</Text>
+        </Flex>
+        <Text fontSize="sm" color="gray.600" lineHeight="1.6" noOfLines={2} mb={3}>
+          {offer.description && offer.description.length < 25 ? offer.description : offer.description.slice(0,25) + "..."}
+        </Text>
+
+        <Grid templateColumns="1fr 1fr 1fr" gap={2} mb={3}>
+          <Box bg="gray.50" borderRadius="lg" p={2} textAlign="center">
+            <Text fontSize="xs" color="gray.400" mb={0.5}>Durée</Text>
+            <Text fontSize="sm" fontWeight={700} color="gray.700">
+              {offer.duration ? `${offer.duration}j` : "—"}
+            </Text>
+          </Box>
+          <Box bg="gray.50" borderRadius="lg" p={2} textAlign="center">
+            <Text fontSize="xs" color="gray.400" mb={0.5}>Packages</Text>
+            <Text fontSize="sm" fontWeight={700} color="gray.700">
+              {offer?.packages ? `${offer?.packages.length} pack.` : 0}
+            </Text>
+          </Box>
+          <Box bg="blue.50" borderRadius="lg" p={2} textAlign="center">
+            <Text fontSize="xs" color="gray.400" mb={0.5}>Prix</Text>
+            <Text fontSize="sm" fontWeight={800} color="blue.600">
+              {offer?.packages ? `${offer?.packages?.[0]?.price} TND` : "—"}
+            </Text>
+          </Box>
+        </Grid>
+
+      </Box>
+    </Box>
+  )
+}
 
 /* ── Page skeleton ──────────────────────────────────────────────── */
 function PageSkeleton() {
@@ -191,10 +268,10 @@ function PageSkeleton() {
         <Skeleton h="48px" w="300px" borderRadius="xl" />
         <Skeleton h="340px" borderRadius="2xl" />
         <Grid templateColumns="repeat(4, 1fr)" gap={3}>
-          {[1,2,3,4].map(i => <Skeleton key={i} h="80px" borderRadius="xl" />)}
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} h="80px" borderRadius="xl" />)}
         </Grid>
         <Grid templateColumns="repeat(3, 1fr)" gap={5}>
-          {[1,2,3].map(i => <Skeleton key={i} h="280px" borderRadius="2xl" />)}
+          {[1, 2, 3].map(i => <Skeleton key={i} h="280px" borderRadius="2xl" />)}
         </Grid>
       </VStack>
     </Container>
@@ -202,9 +279,9 @@ function PageSkeleton() {
 }
 
 const ServiceAgency = () => {
-  const [agency,     setAgency]     = useState(null)
-  const [loading,    setLoading]    = useState(true)
-  const [showMore,   setShowMore]   = useState(false)
+  const [agency, setAgency] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [showMore, setShowMore] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -266,11 +343,11 @@ const ServiceAgency = () => {
     : null
   const as = AGENCY_STATUS[agency.status] ?? { colorScheme: "gray", label: agency.status }
   console.log(agency)
-const XIcon = () => (
-  <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-    <path d="M18.244 2H21l-6.5 7.43L22 22h-6.828l-5.34-6.98L3.5 22H1l6.96-7.96L2 2h6.828l4.86 6.36L18.244 2z"/>
-  </svg>
-);
+  const XIcon = () => (
+    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+      <path d="M18.244 2H21l-6.5 7.43L22 22h-6.828l-5.34-6.98L3.5 22H1l6.96-7.96L2 2h6.828l4.86 6.36L18.244 2z" />
+    </svg>
+  );
   return (
     <Container maxW="6xl" py={8}>
 
@@ -360,7 +437,7 @@ const XIcon = () => (
         </Box>
 
         <Button colorScheme="blue" size="sm" borderRadius="xl" px={5} fontWeight={600}
-          onClick={() => navigate("edit")}>
+          onClick={() => navigate("agency/edit")}>
           <Flex align="center" gap={2}><LuPencil size={13} />Modifier l'agence</Flex>
         </Button>
       </Flex>
@@ -390,10 +467,10 @@ const XIcon = () => (
 
       {/* ── Stats ── */}
       <Grid templateColumns={{ base: "1fr 1fr", md: "repeat(4, 1fr)" }} gap={3} mb={8}>
-        <StatCard icon={LuPackage}  label="Total offres"       value={totalOffers}                              color="blue"   />
-        <StatCard icon={LuUsers}    label="Types d'offres"     value={new Set(offers.map(o => o.type)).size}   color="purple" />
-        <StatCard icon={LuTag}      label="Avec promotion"     value={withPromo}                                color="red"    />
-        <StatCard icon={LuBanknote} label="Prix min / pers."   value={minPrice ? `${Math.round(minPrice)} TND` : "—"} color="green" />
+        <StatCard icon={LuPackage} label="Total offres" value={totalOffers} color="blue" />
+        <StatCard icon={LuUsers} label="Types d'offres" value={new Set(offers.map(o => o.type)).size} color="purple" />
+        <StatCard icon={LuTag} label="Avec promotion" value={withPromo} color="red" />
+        <StatCard icon={LuBanknote} label="Prix min / pers." value={minPrice ? `${Math.round(minPrice)} TND` : "—"} color="green" />
       </Grid>
 
       <Box>
@@ -408,7 +485,7 @@ const XIcon = () => (
                 Ajouter une offre
               </Flex>
             </Button>
-          
+
           }
         >
           Offres de voyage ({totalOffers})
@@ -432,7 +509,7 @@ const XIcon = () => (
             templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }}
             gap={5}>
             {offers.map(o => (
-              <OfferCard key={o.id} offer={o}
+              <CircuitCard key={o.id} offer={o}
                 onEdit={() => navigate(`agency/offer/edit/${o.id}`)}
                 onDelete={handleDeleteOffer}
               />

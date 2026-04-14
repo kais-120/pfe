@@ -23,6 +23,11 @@ const sequelize = require("../configs/db");
       allowNull: false,
     },
 
+    duration: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+
     category: {
       type: DataTypes.ENUM("voyage","camping","désert","aventure","plage","montagne","culturel"),
       defaultValue: "voyage",
@@ -49,12 +54,12 @@ const sequelize = require("../configs/db");
             key:"id",
         }
     },
-    deleted_at:{
+    deletedAt:{
         type:DataTypes.DATE
     }
 },{
     tableName:"circuit",
     paranoid:true,
-    deletedAt:"deleted_at"
+    deletedAt:"deletedAt"
 });
 module.exports = Circuit;

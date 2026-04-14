@@ -1,42 +1,30 @@
 import {
     Container, Input, Button,
     VStack, Grid, Flex, Text, Box,
-    HStack, Textarea,
-    IconButton,
-    Portal,
-    createListCollection,
-    Select,
-    DatePicker,
-    parseDate,
+    HStack, IconButton, Portal,
+    createListCollection, Select,
+    DatePicker, parseDate,
 } from "@chakra-ui/react"
 import {
-    LuPlus, LuX,
-    LuPlaneTakeoff,
-    LuCalendar,
+    LuPlus, LuX, LuPlaneTakeoff, LuCalendar,
 } from "react-icons/lu"
 import React, { useState } from "react"
 import { useFormik } from "formik"
 import * as Yup from "yup"
 
-// ── Validation Schema ────────────────────────────────────────────────
 const validationSchema = Yup.object({
     title: Yup.string().trim().required("Le titre est requis"),
     month: Yup.string().required("Le mois est requis"),
     year: Yup.string().required("L'année est requise"),
     type: Yup.string().required("Le type de voyage est requis"),
-
     departureDate: Yup.string().required("La date de départ est requise"),
     returnDate: Yup.string()
         .required("La date de retour est requise")
-        .test(
-            "after-departure",
-            "La date de retour doit être après le départ",
-            function (value) {
-                const { departureDate } = this.parent
-                if (!departureDate || !value) return true
-                return new Date(value) > new Date(departureDate)
-            }
-        ),
+        .test("after-departure", "La date de retour doit être après le départ", function (value) {
+            const { departureDate } = this.parent
+            if (!departureDate || !value) return true
+            return new Date(value) > new Date(departureDate)
+        }),
     departureTime: Yup.string(),
     returnTime: Yup.string(),
     departureAirport: Yup.string(),
@@ -51,7 +39,6 @@ const validationSchema = Yup.object({
             rating: Yup.number().min(1).max(5),
         })
     ),
-
     price: Yup.number()
         .typeError("Le prix doit être un nombre")
         .min(1, "Le prix doit être supérieur à 0")
@@ -63,17 +50,25 @@ const validationSchema = Yup.object({
     installment: Yup.string(),
 })
 
-// ── Constants ────────────────────────────────────────────────────────
 const MONTHS = [
     "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
     "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
 ]
 
-const TRIP_TYPES = [
-    { value: "haj", label: "Haj / Umrah" },
+const TRIP_TYPES = {
+  purposes: [
+    { value: "haj", label: "Haj" },
+    { value: "Omra", label: "Omra" },
     { value: "tourisme", label: "Tourisme" },
     { value: "affaires", label: "Affaires" },
-]
+  ],
+  circuits: [
+    { value: "culturel", label: "Culturel" },
+    { value: "aventure", label: "Aventure" },
+    { value: "detente", label: "Détente" },
+    { value: "religieux", label: "Religieux" },
+  ],
+};
 
 const INSTALLMENTS = ["2X", "6X", "10X", "12X", "Non"]
 
@@ -81,14 +76,11 @@ const BLUE = "blue.500"
 const BLUE_DARK = "blue.700"
 const BLUE_GLOW = "blue.200"
 
-// ── Section Card ─────────────────────────────────────────────────────
 function SectionCard({ title, children }) {
     return (
-        <Box
-            bg="white" borderRadius="2xl" p={6} mb={5}
+        <Box bg="white" borderRadius="2xl" p={6} mb={5}
             border="1px solid" borderColor="gray.100"
-            boxShadow="0 1px 8px rgba(0,0,0,0.05)"
-        >
+            boxShadow="0 1px 8px rgba(0,0,0,0.05)">
             <Flex align="center" gap={2} mb={5}>
                 <Box w="4px" h="18px" bg={BLUE} borderRadius="2px" flexShrink={0} />
                 <Text fontSize="15px" fontWeight={700} color="gray.900">{title}</Text>
@@ -98,132 +90,73 @@ function SectionCard({ title, children }) {
     )
 }
 
-// ── Field wrapper with label + error ─────────────────────────────────
 function Field({ label, required, error, children }) {
     return (
         <VStack align="stretch" gap={1.5}>
-            <Text
-                fontSize="11px" fontWeight={700} color="gray.600"
-                textTransform="uppercase" letterSpacing="0.06em"
-            >
+            <Text fontSize="11px" fontWeight={700} color="gray.600"
+                textTransform="uppercase" letterSpacing="0.06em">
                 {label}
                 {required && <Text as="span" color="red.500" ml={0.5}>*</Text>}
             </Text>
             {children}
-            {error && (
-                <Text fontSize="11px" color="red.500" mt={0.5}>
-                    {error}
-                </Text>
-            )}
+            {error && <Text fontSize="11px" color="red.500" mt={0.5}>{error}</Text>}
         </VStack>
     )
 }
 
-// ── Star Rating ───────────────────────────────────────────────────────
 function StarRating({ value, onChange }) {
     return (
         <HStack gap={1}>
             {[1, 2, 3, 4, 5].map((s) => (
-                <Text
-                    key={s} fontSize="20px" cursor="pointer"
+                <Text key={s} fontSize="20px" cursor="pointer"
                     color={s <= value ? "#F59E0B" : "gray.200"}
                     onClick={() => onChange(s)}
                     transition="transform 0.1s"
                     _hover={{ transform: "scale(1.2)" }}
-                    lineHeight={1}
-                >
-                    ★
-                </Text>
+                    lineHeight={1}>★</Text>
             ))}
         </HStack>
     )
 }
 
-// ── Destination Row ───────────────────────────────────────────────────
 const DestinationRow = React.memo(function DestinationRow({
-  dest,
-  index,
-  onChange,
-  onRemove,
-  errors,
-  touched,
+    dest, index, onChange, onRemove, errors, touched,
 }) {
-  const nameError = touched?.name && errors?.name
-  const nightsError = touched?.nights && errors?.nights
-
-  return (
-    <Box
-      bg="gray.50"
-      borderRadius="xl"
-      p={4}
-      border="1px solid"
-      borderColor={nameError || nightsError ? "red.200" : "gray.100"}
-    >
-      <Grid
-        templateColumns={{ base: "1fr", md: "1fr auto auto auto" }}
-        gap={4}
-        alignItems="end"
-      >
-        {/* Name */}
-        <Field label="Hôtel / Destination" error={nameError}>
-          <Input
-            name={`destinations[${index}].name`}
-            value={dest.name}
-            onChange={(e) => onChange(index, "name", e.target.value)}
-            placeholder="ex: Swissotel Makkah 5*"
-            borderRadius="lg"
-            border="1.5px solid"
-            borderColor={nameError ? "red.300" : "gray.200"}
-            fontSize="sm"
-          />
-        </Field>
-
-        {/* Stars */}
-        <Field label="Étoiles">
-          <StarRating
-            value={dest.rating}
-            onChange={(val) => onChange(index, "rating", val)}
-          />
-        </Field>
-
-        {/* Nights */}
-        <Field label="Nuits" error={nightsError}>
-          <Input
-            name={`destinations[${index}].nights`}
-            value={dest.nights}
-            type="number"
-            min={1}
-            onChange={(e) => onChange(index, "nights", e.target.value)}
-            w="80px"
-            borderRadius="lg"
-            border="1.5px solid"
-            borderColor={nightsError ? "red.300" : "gray.200"}
-            fontSize="sm"
-            textAlign="center"
-          />
-        </Field>
-
-        {/* Delete */}
-        <IconButton
-          aria-label="Supprimer"
-          variant="outline"
-          size="sm"
-          borderRadius="lg"
-          borderColor="gray.200"
-          color="gray.400"
-          alignSelf="flex-end"
-          _hover={{ borderColor: "red.400", color: "red.500", bg: "red.50" }}
-          onClick={() => onRemove(index)}
-        >
-          <LuX size={14} />
-        </IconButton>
-      </Grid>
-    </Box>
-  )
+    const nameError = touched?.name && errors?.name
+    const nightsError = touched?.nights && errors?.nights
+    return (
+        <Box bg="gray.50" borderRadius="xl" p={4}
+            border="1px solid" borderColor={nameError || nightsError ? "red.200" : "gray.100"}>
+            <Grid templateColumns={{ base: "1fr", md: "1fr auto auto auto" }} gap={4} alignItems="end">
+                <Field label="Hôtel / Destination" error={nameError}>
+                    <Input name={`destinations[${index}].name`} value={dest.name}
+                        onChange={(e) => onChange(index, "name", e.target.value)}
+                        placeholder="ex: Swissotel Makkah 5*"
+                        borderRadius="lg" border="1.5px solid"
+                        borderColor={nameError ? "red.300" : "gray.200"} fontSize="sm" />
+                </Field>
+                <Field label="Étoiles">
+                    <StarRating value={dest.rating} onChange={(val) => onChange(index, "rating", val)} />
+                </Field>
+                <Field label="Nuits" error={nightsError}>
+                    <Input name={`destinations[${index}].nights`} value={dest.nights}
+                        type="number" min={1}
+                        onChange={(e) => onChange(index, "nights", e.target.value)}
+                        w="80px" borderRadius="lg" border="1.5px solid"
+                        borderColor={nightsError ? "red.300" : "gray.200"}
+                        fontSize="sm" textAlign="center" />
+                </Field>
+                <IconButton aria-label="Supprimer" variant="outline" size="sm"
+                    borderRadius="lg" borderColor="gray.200" color="gray.400" alignSelf="flex-end"
+                    _hover={{ borderColor: "red.400", color: "red.500", bg: "red.50" }}
+                    onClick={() => onRemove(index)}>
+                    <LuX size={14} />
+                </IconButton>
+            </Grid>
+        </Box>
+    )
 })
 
-
-// ── Shared input style ────────────────────────────────────────────────
 const inputStyle = (hasError) => ({
     borderRadius: "lg",
     border: "1.5px solid",
@@ -232,33 +165,32 @@ const inputStyle = (hasError) => ({
     _focus: { borderColor: "blue.400", boxShadow: "0 0 0 3px rgba(49,130,206,0.12)" },
 })
 
-// ── Main Component ────────────────────────────────────────────────────
-const AddPackage = ({ ontTab, onChange }) => {
+const DEFAULT_VALUES = {
+    title: "", month: "", year: "2026", type: "haj",
+    departureDate: "", departureTime: "11:40", departureAirport: "",
+    returnDate: "", returnTime: "06:25", returnAirport: "",
+    destinations: [], price: "", seats: "", installment: "6X",
+}
+
+const AddPackage = ({ ontTab, onChange, initialValues, isEditing,type }) => {
+    const trip_type = type === "circuit" ? TRIP_TYPES.circuits :  TRIP_TYPES.purposes
+   
     const formik = useFormik({
-        initialValues: {
-            title: "",
-            month: "",
-            year: "2026",
-            type: "haj",
-            departureDate: "",
-            departureTime: "11:40",
-            departureAirport: "",
-            returnDate: "",
-            returnTime: "06:25",
-            returnAirport: "",
-            destinations: [],
-            price: "",
-            seats: "",
-            installment: "6X",
-        },
+        initialValues: initialValues
+            ? { ...DEFAULT_VALUES, ...initialValues }
+            : DEFAULT_VALUES,
         validationSchema,
         onSubmit: async (values) => {
             try {
-                
-                onChange((prev) => [
-                    ...prev,
-                    { ...values, id: prev.length + 1 }
-                ])
+                if (isEditing) {
+                    // ✅ Update existing package in the list
+                    onChange((prev) =>
+                        prev.map((p) => p.id === values.id ? { ...values } : p)
+                    )
+                } else {
+                    // ✅ Add new package
+                    onChange((prev) => [...prev, { ...values, id: Date.now() }])
+                }
                 ontTab("list")
             } catch {
                 console.error("error")
@@ -266,7 +198,12 @@ const AddPackage = ({ ontTab, onChange }) => {
         },
     })
 
-    const { values, errors, touched, handleChange, handleBlur, setFieldValue, setFieldTouched, handleSubmit, isSubmitting } = formik
+    const {
+        values, errors, touched,
+        handleChange, handleBlur,
+        setFieldValue, setFieldTouched,
+        handleSubmit, isSubmitting,
+    } = formik
 
     const monthsCollection = createListCollection({
         items: [
@@ -285,13 +222,17 @@ const AddPackage = ({ ontTab, onChange }) => {
     }
     const year = Number(values.year)
     const monthIndex = monthsMap[values.month]
-    const minDate = monthIndex !== undefined ? parseDate(new Date(year, monthIndex, 1)) : undefined
-    const maxDate = monthIndex !== undefined ? parseDate(new Date(year, monthIndex + 1, 0)) : undefined
+    const minDate = monthIndex !== undefined
+        ? parseDate(new Date(year, monthIndex, 1)) : undefined
+    const maxDate = monthIndex !== undefined
+        ? parseDate(new Date(year, monthIndex + 1, 0)) : undefined
 
     const updateDest = (i, key, val) => {
         if (key === "__blur_name") { setFieldTouched(`destinations[${i}].name`, true); return }
         if (key === "__blur_nights") { setFieldTouched(`destinations[${i}].nights`, true); return }
-        const updated = values.destinations.map((d, idx) => idx === i ? { ...d, [key]: val } : d)
+        const updated = values.destinations.map((d, idx) =>
+            idx === i ? { ...d, [key]: val } : d
+        )
         setFieldValue("destinations", updated)
     }
 
@@ -310,26 +251,16 @@ const AddPackage = ({ ontTab, onChange }) => {
             <SectionCard title="Informations générales">
                 <VStack align="stretch" gap={4}>
                     <Field label="Titre du package" required error={touched.title && errors.title}>
-                        <Input
-                            name="title"
-                            value={values.title}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
+                        <Input name="title" value={values.title}
+                            onChange={handleChange} onBlur={handleBlur}
                             placeholder="ex: Umrah Premium - Medine & Makkah"
-                            {...inputStyle(touched.title && errors.title)}
-                        />
+                            {...inputStyle(touched.title && errors.title)} />
                     </Field>
 
                     <Grid templateColumns={{ base: "1fr", sm: "1fr 1fr" }} gap={4}>
                         <Field label="Mois" required error={touched.month && errors.month}>
-                            <Select.Root
-                                collection={monthsCollection}
-                                value={[values.month]}
-                                onValueChange={(e) => {
-                                    setFieldValue("month", e.value[0])
-
-                                }}
-                            >
+                            <Select.Root collection={monthsCollection} value={[values.month]}
+                                onValueChange={(e) => setFieldValue("month", e.value[0])}>
                                 <Select.HiddenSelect />
                                 <Select.Control>
                                     <Select.Trigger {...inputStyle(touched.month && errors.month)}>
@@ -342,8 +273,7 @@ const AddPackage = ({ ontTab, onChange }) => {
                                         <Select.Content>
                                             {monthsCollection.items.map((item) => (
                                                 <Select.Item item={item} key={item.value}>
-                                                    {item.label}
-                                                    <Select.ItemIndicator />
+                                                    {item.label}<Select.ItemIndicator />
                                                 </Select.Item>
                                             ))}
                                         </Select.Content>
@@ -353,13 +283,8 @@ const AddPackage = ({ ontTab, onChange }) => {
                         </Field>
 
                         <Field label="Année" required error={touched.year && errors.year}>
-                            <Select.Root
-                                collection={yearsCollection}
-                                value={[values.year]}
-                                onValueChange={(e) => {
-                                    setFieldValue("year", e.value[0])
-                                }}
-                            >
+                            <Select.Root collection={yearsCollection} value={[values.year]}
+                                onValueChange={(e) => setFieldValue("year", e.value[0])}>
                                 <Select.HiddenSelect />
                                 <Select.Control>
                                     <Select.Trigger {...inputStyle(touched.year && errors.year)}>
@@ -372,8 +297,7 @@ const AddPackage = ({ ontTab, onChange }) => {
                                         <Select.Content>
                                             {yearsCollection.items.map((item) => (
                                                 <Select.Item item={item} key={item.value}>
-                                                    {item.label}
-                                                    <Select.ItemIndicator />
+                                                    {item.label}<Select.ItemIndicator />
                                                 </Select.Item>
                                             ))}
                                         </Select.Content>
@@ -385,25 +309,15 @@ const AddPackage = ({ ontTab, onChange }) => {
 
                     <Field label="Type de voyage" required error={touched.type && errors.type}>
                         <HStack gap={3} flexWrap="wrap">
-                            {TRIP_TYPES.map((t) => (
-                                <Button
-                                    key={t.value}
-                                    size="sm"
-                                    borderRadius="xl"
-                                    border="1.5px solid"
+                            {type && trip_type.map((t) => (
+                                <Button key={t.value} size="sm" borderRadius="xl" border="1.5px solid"
                                     borderColor={values.type === t.value ? BLUE : "gray.200"}
                                     bg={values.type === t.value ? BLUE : "white"}
                                     color={values.type === t.value ? "white" : "gray.600"}
-                                    fontWeight={600}
-                                    fontSize="13px"
-                                    px={4}
+                                    fontWeight={600} fontSize="13px" px={4}
                                     _hover={{ borderColor: BLUE, color: values.type === t.value ? "white" : BLUE }}
                                     transition="all 0.15s"
-                                    onClick={() => {
-                                        setFieldValue("type", t.value)
-                                        setFieldTouched("type", true)
-                                    }}
-                                >
+                                    onClick={() => { setFieldValue("type", t.value); setFieldTouched("type", true) }}>
                                     {t.label}
                                 </Button>
                             ))}
@@ -416,25 +330,20 @@ const AddPackage = ({ ontTab, onChange }) => {
             <SectionCard title="Informations de vol">
                 <VStack align="stretch" gap={4}>
                     <Grid templateColumns={{ base: "1fr", md: "1fr 40px 1fr" }} gap={4} alignItems="start">
+
                         {/* Departure */}
                         <VStack align="stretch" gap={4}>
                             <Field label="Date de départ" required error={touched.departureDate && errors.departureDate}>
-                                <DatePicker.Root
-                                    locale="fr-FR"
-                                    min={minDate}
-                                    disabled={!values.month}
-                                    max={maxDate}
+                                <DatePicker.Root locale="fr-FR" min={minDate} disabled={!values.month} max={maxDate}
                                     value={values.departureDate ? [parseDate(values.departureDate)] : [minDate]}
                                     onValueChange={(details) => {
                                         const date = details.value?.[0]
                                         if (date) {
-                                            const jsDate = new Date(date.year, date.month - 1, date.day)
-                                            setFieldValue("departureDate", jsDate)
+                                            setFieldValue("departureDate", new Date(date.year, date.month - 1, date.day))
                                         } else {
                                             setFieldValue("departureDate", "")
                                         }
-                                    }}
-                                >
+                                    }}>
                                     <DatePicker.Control>
                                         <DatePicker.Input />
                                         <DatePicker.IndicatorGroup>
@@ -453,10 +362,12 @@ const AddPackage = ({ ontTab, onChange }) => {
                                 </DatePicker.Root>
                             </Field>
                             <Field label="Heure de départ">
-                                <Input type="time" name="departureTime" value={values.departureTime} onChange={handleChange} {...inputStyle(false)} />
+                                <Input type="time" name="departureTime" value={values.departureTime}
+                                    onChange={handleChange} {...inputStyle(false)} />
                             </Field>
                             <Field label="Aéroport départ">
-                                <Input name="departureAirport" value={values.departureAirport} onChange={handleChange} placeholder="ex: TUN-JED" {...inputStyle(false)} />
+                                <Input name="departureAirport" value={values.departureAirport}
+                                    onChange={handleChange} placeholder="ex: TUN-JED" {...inputStyle(false)} />
                             </Field>
                         </VStack>
 
@@ -468,10 +379,7 @@ const AddPackage = ({ ontTab, onChange }) => {
                         {/* Return */}
                         <VStack align="stretch" gap={4}>
                             <Field label="Date de retour" required error={touched.returnDate && errors.returnDate}>
-                                <DatePicker.Root
-                                    locale="fr-FR"
-                                    defaultMonth={minDate}
-                                    min={minDate}
+                                <DatePicker.Root locale="fr-FR" defaultMonth={minDate} min={minDate}
                                     disabled={!values.month}
                                     value={
                                         values.returnDate
@@ -483,13 +391,11 @@ const AddPackage = ({ ontTab, onChange }) => {
                                     onValueChange={(details) => {
                                         const date = details.value?.[0]
                                         if (date) {
-                                            const jsDate = new Date(date.year, date.month - 1, date.day)
-                                            setFieldValue("returnDate", jsDate)
+                                            setFieldValue("returnDate", new Date(date.year, date.month - 1, date.day))
                                         } else {
                                             setFieldValue("returnDate", "")
                                         }
-                                    }}
-                                >
+                                    }}>
                                     <DatePicker.Control>
                                         <DatePicker.Input />
                                         <DatePicker.IndicatorGroup>
@@ -508,10 +414,12 @@ const AddPackage = ({ ontTab, onChange }) => {
                                 </DatePicker.Root>
                             </Field>
                             <Field label="Heure de retour">
-                                <Input type="time" name="returnTime" value={values.returnTime} onChange={handleChange} {...inputStyle(false)} />
+                                <Input type="time" name="returnTime" value={values.returnTime}
+                                    onChange={handleChange} {...inputStyle(false)} />
                             </Field>
                             <Field label="Aéroport retour">
-                                <Input value={values.returnAirport} name="returnAirport" onChange={handleChange} placeholder="ex: JED-TUN" {...inputStyle(false)} />
+                                <Input value={values.returnAirport} name="returnAirport"
+                                    onChange={handleChange} placeholder="ex: JED-TUN" {...inputStyle(false)} />
                             </Field>
                         </VStack>
                     </Grid>
@@ -522,29 +430,17 @@ const AddPackage = ({ ontTab, onChange }) => {
             <SectionCard title="Destinations & Hôtels">
                 <VStack align="stretch" gap={3} mb={3}>
                     {values.destinations.map((dest, i) => (
-                        <DestinationRow
-                            key={i}
-                            dest={dest}
-                            index={i}
-                            onChange={updateDest}
-                            onRemove={removeDest}
+                        <DestinationRow key={i} dest={dest} index={i}
+                            onChange={updateDest} onRemove={removeDest}
                             errors={errors.destinations?.[i]}
-                            touched={touched.destinations?.[i]}
-                        />
+                            touched={touched.destinations?.[i]} />
                     ))}
                 </VStack>
-                <Button
-                    variant="outline"
-                    borderRadius="xl"
-                    borderStyle="dashed"
-                    borderColor="gray.300"
-                    color="gray.500"
-                    fontSize="13px"
-                    fontWeight={600}
+                <Button variant="outline" borderRadius="xl" borderStyle="dashed"
+                    borderColor="gray.300" color="gray.500" fontSize="13px" fontWeight={600}
                     leftIcon={<LuPlus size={14} />}
                     _hover={{ borderColor: BLUE, color: BLUE, bg: BLUE_GLOW }}
-                    onClick={addDest}
-                >
+                    onClick={addDest}>
                     Ajouter une destination
                 </Button>
             </SectionCard>
@@ -554,47 +450,30 @@ const AddPackage = ({ ontTab, onChange }) => {
                 <VStack align="stretch" gap={4}>
                     <Grid templateColumns={{ base: "1fr", sm: "1fr 1fr" }} gap={4}>
                         <Field label="Prix total (TND)" required error={touched.price && errors.price}>
-                            <Input
-                                type="number"
-                                name="price"
-                                value={values.price}
+                            <Input type="number" name="price" value={values.price}
                                 onChange={handleChange}
                                 onBlur={() => setFieldTouched("price", true)}
                                 placeholder="ex: 3500"
-                                {...inputStyle(touched.price && errors.price)}
-                            />
+                                {...inputStyle(touched.price && errors.price)} />
                         </Field>
                         <Field label="Nombre de places" error={touched.seats && errors.seats}>
-                            <Input
-                                type="number"
-                                name="seats"
-                                value={values.seats}
-                                onChange={handleChange}
-                                onBlur={handleBlur}
+                            <Input type="number" name="seats" value={values.seats}
+                                onChange={handleChange} onBlur={handleBlur}
                                 placeholder="ex: 30"
-                                {...inputStyle(touched.seats && errors.seats)}
-                            />
+                                {...inputStyle(touched.seats && errors.seats)} />
                         </Field>
                     </Grid>
-
                     <Field label="Facilité de paiement">
                         <HStack gap={2} flexWrap="wrap">
                             {INSTALLMENTS.map((inst) => (
-                                <Button
-                                    key={inst}
-                                    size="sm"
-                                    borderRadius="full"
-                                    border="1.5px solid"
+                                <Button key={inst} size="sm" borderRadius="full" border="1.5px solid"
                                     borderColor={values.installment === inst ? BLUE : "gray.200"}
                                     bg={values.installment === inst ? BLUE : "white"}
                                     color={values.installment === inst ? "white" : "gray.600"}
-                                    fontWeight={700}
-                                    fontSize="13px"
-                                    px={4}
+                                    fontWeight={700} fontSize="13px" px={4}
                                     _hover={{ borderColor: BLUE, color: values.installment === inst ? "white" : BLUE }}
                                     transition="all 0.15s"
-                                    onClick={() => setFieldValue("installment", inst)}
-                                >
+                                    onClick={() => setFieldValue("installment", inst)}>
                                     {inst}
                                 </Button>
                             ))}
@@ -603,18 +482,22 @@ const AddPackage = ({ ontTab, onChange }) => {
                 </VStack>
             </SectionCard>
 
-            {/* ── Submit Button ── */}
-            <Flex justify="flex-end" mt={2}>
-                <Button
-                    bg={BLUE} color="white" borderRadius="xl" fontWeight={700} fontSize="sm"
-                    px={8} py={5}
+            {/* ── Submit ── */}
+            <Flex justify="flex-end" gap={3} mt={2}>
+                <Button variant="outline" borderRadius="xl" px={6}
+                    color="gray.500" borderColor="gray.200"
+                    _hover={{ bg: "gray.50" }}
+                    onClick={() => ontTab("list")}>
+                    Annuler
+                </Button>
+                <Button bg={BLUE} color="white" borderRadius="xl" fontWeight={700}
+                    fontSize="sm" px={8} py={5}
                     _hover={{ bg: BLUE_DARK, transform: "translateY(-2px)", boxShadow: `0 4px 12px ${BLUE_GLOW}` }}
                     transition="all 0.2s"
                     onClick={handleSubmit}
                     isLoading={isSubmitting}
-                    loadingText="Ajouter..."
-                >
-                    Ajouter le package
+                    loadingText={isEditing ? "Modification..." : "Ajouter..."}>
+                    {isEditing ? "Enregistrer les modifications" : "Ajouter le package"}
                 </Button>
             </Flex>
 
