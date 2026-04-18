@@ -70,7 +70,7 @@ const TRIP_TYPES = {
   ],
 };
 
-const INSTALLMENTS = ["2X", "6X", "10X", "12X", "Non"]
+const INSTALLMENTS = ["2", "6", "10", "12", "Non"]
 
 const BLUE = "blue.500"
 const BLUE_DARK = "blue.700"
@@ -169,7 +169,7 @@ const DEFAULT_VALUES = {
     title: "", month: "", year: "2026", type: "haj",
     departureDate: "", departureTime: "11:40", departureAirport: "",
     returnDate: "", returnTime: "06:25", returnAirport: "",
-    destinations: [], price: "", seats: "", installment: "6X",
+    destinations: [], price: "", seats: "", installment: "6",
 }
 
 const AddPackage = ({ ontTab, onChange, initialValues, isEditing,type }) => {
@@ -474,7 +474,7 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing,type }) => {
                                     _hover={{ borderColor: BLUE, color: values.installment === inst ? "white" : BLUE }}
                                     transition="all 0.15s"
                                     onClick={() => setFieldValue("installment", inst)}>
-                                    {inst}
+                                    {inst !== "Non" ? inst+"X" : inst}
                                 </Button>
                             ))}
                         </HStack>

@@ -210,21 +210,21 @@ exports.ValidateStep = [
 
             if (step == 0) {
                 const existing = await PartnerFile.findOne({ where: { cin } })
-                if (existing && existing.partner_id !== Number(partner_id)) {
+                if (existing && existing.partner_id !== partner_id) {
                     errors.cin = "CIN déjà utilisé"
                 }
             }
 
             if (step == 1) {
                 const existing = await PartnerFile.findOne({ where: { matricule_fiscale } })
-                if (existing && existing.partner_id !== Number(partner_id)) {
+                if (existing && existing.partner_id !== partner_id) {
                     errors.matricule_fiscale = "Matricule fiscale déjà utilisé"
                 }
             }
 
             if (step == 2) {
                 const existing = await PartnerFile.findOne({ where: { rip } })
-                if (existing && existing.partner_id !== Number(partner_id)) {
+                if (existing && existing.partner_id !== partner_id) {
                     errors.rip = "Rip déjà utilisé"
                 }
             }
@@ -342,9 +342,11 @@ exports.AcceptFile = async (req, res) => {
         if (!partnerFiles) {
             return res.status(404).send({ message: "partner file not found" })
         }
-        const { email } = await User.findByPk(partnerFiles.partner_id);
+        const { email,name } = await User.findByPk(partnerFiles.partner_id);
         
         partnerFiles.update({ status: "accepté", accepted_by: userId});
+        partnerMail(email, name, null, "acceptée ");
+
         return res.send({ message: "partner file updated" })
 
     } catch (err){
@@ -369,8 +371,8 @@ exports.RefuseFile = [
             if (!partnerFiles) {
                 return res.status(404).send({ message: "partner file not found" })
             }
-            const { email, first_name } = await User.findByPk(partnerFiles.partner_id)
-            partnerMail(email, first_name, reasonData, "rejetée");
+            const { email, name } = await User.findByPk(partnerFiles.partner_id)
+            partnerMail(email, name, reasonData, "rejetée");
             partnerFiles.update({ status: "rejetée" });
             await RefuseReason.create({ message: reason, file_id: id, rejected_by: userId })
             return res.send({ message: "partner file updated" })

@@ -17,11 +17,14 @@ const CancelPayment = () => {
   const [loading,setLoading] = useState(true)
     const [searchParams] = useSearchParams()
     const session_id = searchParams.get("session_id") ?? ""
+    const booking_id = searchParams.get("booking") ?? ""
     useEffect(()=>{
+      if(!session_id || !booking_id) {setLoading(false);return}
       const dataUpdate = async () => {
       try{
         await Axios.put("/payment/verify",{
-          reference:session_id
+          reference:session_id,
+          booking_id
         })
       }catch{
         console.error("error")

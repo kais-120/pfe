@@ -28,7 +28,7 @@ const AgencyCard = () => {
                 align="center" justify="space-between" flexWrap="wrap" gap={2}>
                 <Flex align="center" gap={2}>
                     <Plane size={15} color="#7C3AED" />
-                    <Text fontSize="sm" fontWeight={700} color="gray.800">Mes circuits</Text>
+                    <Text fontSize="sm" fontWeight={700} color="gray.800">Mes offre</Text>
                 </Flex>
             </Flex>
             <Box overflowX="auto">

@@ -31,10 +31,13 @@ import {
   FaCheck,
 } from "react-icons/fa";
 import Header from "../../components/home/Header";
-import { Axios, imageURL } from "../../Api/Api";
+import { Axios, AxiosToken, imageURL } from "../../Api/Api";
 import { Helmet } from "react-helmet";
 import LoadingScreen from "../../components/LoadingScreen";
 import { LuCalendar, LuClock, LuBaggageClaim, LuShieldCheck } from "react-icons/lu";
+import Cookies from "universal-cookie";
+import { useProfile } from "../../Context/useProfile";
+import { Tooltip } from "../../components/ui/tooltip";
 
 const CATEGORY_LABELS = {
   economy: "Économique",
@@ -53,10 +56,10 @@ const FUEL_LABELS = {
 };
 
 const FEATURE_META = {
-  AC:        { Icon: FaSnowflake, label: "Climatisation" },
-  GPS:       { Icon: FaRoute,     label: "GPS"           },
-  Bluetooth: { Icon: FaBluetooth, label: "Bluetooth"     },
-  WiFi:      { Icon: FaWifi,      label: "Wi-Fi"         },
+  AC: { Icon: FaSnowflake, label: "Climatisation" },
+  GPS: { Icon: FaRoute, label: "GPS" },
+  Bluetooth: { Icon: FaBluetooth, label: "Bluetooth" },
+  WiFi: { Icon: FaWifi, label: "Wi-Fi" },
 };
 
 /* ── Image gallery ──────────────────────────────────────────────── */
@@ -198,18 +201,18 @@ function DateField({ label, value, onChange }) {
 
 /* ── Main ───────────────────────────────────────────────────────── */
 export default function CarDetail() {
-  const { id }       = useParams();
-  const navigate     = useNavigate();
-  const location     = useLocation();
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const [car, setCar]       = useState(null);
+  const [car, setCar] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState(null);
+  const [error, setError] = useState(null);
 
   const state = location.state || {};
   const [pickupDate, setPickupDate] = useState(state.pickupDate || "");
   const [returnDate, setReturnDate] = useState(state.returnDate || "");
-
+  const {user} = useProfile();
   useEffect(() => {
     const fetchCar = async () => {
       try {
@@ -232,18 +235,21 @@ export default function CarDetail() {
 
   const totalPrice = days > 0 ? car?.price_per_day * days : 0;
 
-  const handleBookNow = () => {
-    if (!pickupDate || !returnDate) {
-      alert("Veuillez sélectionner les dates de prise en charge et de retour.");
-      return;
+  const handleBookNow = async () => {
+    try {
+      const res = await AxiosToken.post(`/booking/location/${id}`, {
+        pickup_date: pickupDate,
+        return_date: returnDate,
+        total_price: totalPrice
+      });
+      window.location = res.data.url
+    } catch {
+      console.error("error")
     }
-    navigate("/payment", {
-      state: { carId: id, pickupDate, returnDate, totalPrice, car },
-    });
   };
 
   if (loading) return <LoadingScreen />;
-console.log(error)
+  console.log(error)
   if (error || !car) return (
     <>
       <Header />
@@ -405,7 +411,7 @@ console.log(error)
                   <Text color="gray.500" mt={1}>par jour</Text>
                 </Box>
 
-                
+
               </Flex>
 
               <Separator mb={8} />
@@ -485,6 +491,13 @@ console.log(error)
                 )}
 
                 {/* CTA */}
+                <Tooltip content={!user ?
+                "Vous devez vous connecter pour réserver"
+                : user?.role !== "client"
+                ? "Seuls les clients peuvent effectuer une réservation"
+                : undefined
+              
+              }>
                 <Button
                   colorScheme="blue"
                   size="lg"
@@ -493,7 +506,7 @@ console.log(error)
                   fontWeight={700}
                   borderRadius="2xl"
                   onClick={handleBookNow}
-                  isDisabled={!pickupDate || !returnDate}
+                  disabled={!pickupDate || !returnDate || !user || user?.role !== "client"}
                   mt={2}
                   _hover={{ transform: "translateY(-2px)", boxShadow: "lg" }}
                   transition="all 0.2s"
@@ -502,6 +515,7 @@ console.log(error)
                     ? `Réserver · ${totalPrice} TND`
                     : "Réserver maintenant"}
                 </Button>
+                </Tooltip>
 
                 <Text fontSize="xs" color="gray.500" textAlign="center" mt={1}>
                   Annulation gratuite jusqu'à 24h avant la prise en charge

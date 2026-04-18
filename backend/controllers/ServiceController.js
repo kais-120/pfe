@@ -697,7 +697,7 @@ exports.SearchVehicle = [
 
       const bookedCars = await CarRentalBookingDetails.findAll({
         where: {
-          car_id: { [Op.in]: vehicles.map(v => v.id) },
+          vehicle_id: { [Op.in]: vehicles.map(v => v.id) },
           deleted_at: null,
           [Op.or]: [
             { pickup_date: { [Op.between]: [pickupStart, returnEnd] } },
@@ -710,7 +710,7 @@ exports.SearchVehicle = [
         }
       });
 
-      const bookedCarIds = bookedCars.map(b => b.car_id);
+      const bookedCarIds = bookedCars.map(b => b.vehicle_id);
       vehicles = vehicles.filter(v => !bookedCarIds.includes(v.id));
 
       const images = await ImageService.findAll({
@@ -801,7 +801,7 @@ exports.checkAvailability = async (req, res) => {
 
     const conflict = await CarRentalBookingDetails.findOne({
       where: {
-        car_id: vehicle_id,
+        vehicle_id: vehicle_id,
 
         [Op.and]: [
           {
@@ -842,6 +842,7 @@ exports.checkAvailability = async (req, res) => {
     })
 
   } catch (error) {
+    console.log(error)
     return res.status(500).json({
       message: "Server error",
     })

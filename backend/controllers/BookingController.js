@@ -1,5 +1,5 @@
 const { body, validationResult } = require("express-validator");
-const { Room, Booking, Hotel, User, Flight, Compagnie, FlightBookingDetails, FlightClasses, Vehicle, Location, CarRentalBookingDetails, Circuit, Voyage, CircuitBookingDetails, Offer, Agence, OfferBookingDetails, Package, Destination, PartnerFile } = require("../models");
+const { Room, Booking, Hotel, User, Flight, Compagnie, FlightBookingDetails, FlightClasses, Vehicle, Location, CarRentalBookingDetails, Circuit, Voyage, CircuitBookingDetails, Offer, Agence, OfferBookingDetails, Package, Destination, PartnerFile, PaymentInstallments, Payment } = require("../models");
 const HotelBookingDetails = require("../models/HotelBookingDetails");
 const Notification = require("../models/Notification");
 const { getIO } = require("../initSocket");
@@ -100,8 +100,9 @@ exports.BookingHotel = [
 ]
 exports.BookingFlight = [
     body("seat_class").notEmpty().withMessage("seat class is required"),
-    body("price").notEmpty().withMessage("price is required"),
-    body("passenger_count").notEmpty().withMessage("passenger count is required"),
+    body("total_price").notEmpty().withMessage("total price is required"),
+    body("adult_passenger_count").notEmpty().withMessage("adult passenger count is required"),
+    body("children_passenger_count").notEmpty().withMessage("children passenger count is required"),
     , async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -109,7 +110,7 @@ exports.BookingFlight = [
         }
         try {
             const io = getIO()
-            const { seat_class, price, passenger_count } = req.body;
+            const { seat_class, total_price, adult_passenger_count,children_passenger_count } = req.body;
             const { id } = req.params;
             const client_id = req.userId
             const flight = await Flight.findByPk(id, {
@@ -118,29 +119,29 @@ exports.BookingFlight = [
                         model: Compagnie,
                         as: "compagnieFlight",
                         attributes: ["partner_id"]
-                    }
+                    },
                 ]
             });
             if (!flight) {
                 return res.status(442).send({ message: "flight not found" })
             }
-            if (flight.seats_available < passenger_count) {
-                return res.status(400).json({ message: "not enough seats" });
-            }
+
+            const passenger_count = children_passenger_count + adult_passenger_count;
 
             const flightClassesSeat = await FlightClasses.findOne({ where: { flight_id: id, class_name: seat_class } })
             if (flightClassesSeat.seats_available < passenger_count) {
                 return res.status(400).json({ message: "not enough seats" })
             }
 
-            const booking = await Booking.create({ total_price: price, type: "compagnies aériennes", client_id });
-            await FlightBookingDetails.create({ seat_class, passenger_count, booking_id: booking.id, flight_id: id })
+            const booking = await Booking.create({ total_price, type: "compagnies aériennes", client_id });
+            await FlightBookingDetails.create({ seat_class:seat_class.toLowerCase(), children_passenger_count,adult_passenger_count, booking_id: booking.id, flight_id: id })
             await flight.update({ seats_available: flight.seats_available - passenger_count })
             await flightClassesSeat.update({ seats_available: flightClassesSeat.seats_available - passenger_count })
             await Notification.create({ title: "Nouvelle réservation", message: "un client faire un réservation", type: "booking", user_id: flight.compagnieFlight.partner_id })
             io.to(`partner-${flight.compagnieFlight.partner_id}`).emit("newNotification");
             await Activity.create({ type: "booking", titre: `Réservation #RES-${booking.id} en cours` })
-            return res.send({ message: "booking create" })
+            const url = await CreatePayment(total_price, booking.id, client_id)
+            return res.send({ message: "booking create",url })
 
         } catch (err) {
             console.log(err)
@@ -153,8 +154,8 @@ exports.BookingLocation = [
         .isDate().withMessage("pickup date should be date"),
     body("return_date").notEmpty().withMessage("return date is required")
         .isDate().withMessage("return date should be date"),
-    body("price").notEmpty().withMessage("price is required")
-        .isNumeric().withMessage("price should be numeric")
+    body("total_price").notEmpty().withMessage("total price is required")
+        .isNumeric().withMessage("total price should be numeric")
     , async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -162,7 +163,7 @@ exports.BookingLocation = [
         }
         try {
             const io = getIO()
-            const { pickup_date, return_date, price } = req.body;
+            const { pickup_date, return_date, total_price } = req.body;
             const { id } = req.params;
             if (pickup_date >= return_date) {
                 return res.status(400).send({ message: "date invalid" });
@@ -178,13 +179,14 @@ exports.BookingLocation = [
                 return res.status(404).send({ message: "vehicle not found" })
             }
             const client_id = req.userId;
-            const booking = await Booking.create({ total_price: price, type: "location de voitures", client_id });
-            await CarRentalBookingDetails.create({ booking_id: booking.id, pickup_date, return_date, car_id: id })
+            const booking = await Booking.create({ total_price, type: "location de voitures", client_id });
+            await CarRentalBookingDetails.create({ booking_id: booking.id, pickup_date, return_date, vehicle_id: id })
 
             await Notification.create({ title: "Nouvelle réservation", message: "un client faire un réservation", type: "booking", user_id: vehicle.locationVehicle.partner_id })
             io.to(`partner-${vehicle.locationVehicle.partner_id}`).emit("newNotification");
             await Activity.create({ type: "booking", titre: `Réservation #RES-${booking.id} en cours` })
-            return res.send({ message: "booking create" })
+            const url = await CreatePayment(total_price, booking.id, client_id)
+            return res.send({ message: "booking create" ,url})
 
         } catch (err) {
             console.log(err)
@@ -195,6 +197,9 @@ exports.BookingLocation = [
 exports.BookingCircuit = [
     body("package_id").notEmpty().withMessage("package id is required")
         .isNumeric().withMessage("package id should be number"),
+        body("total_price").notEmpty().withMessage("price is required")
+        .isNumeric().withMessage("price should be numeric"),
+    body("payment_method").notEmpty().withMessage("price is required")
     , async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -202,7 +207,7 @@ exports.BookingCircuit = [
         }
         try {
             const io = getIO()
-            const { package_id } = req.body;
+            const { package_id, total_price, payment_method } = req.body;
             const { id } = req.params;
             const circuit = await Circuit.findByPk(id, {
                 include: [{
@@ -230,7 +235,19 @@ exports.BookingCircuit = [
             await Notification.create({ title: "Nouvelle réservation", message: "un client faire un réservation", type: "booking", user_id: circuit.voyagesCircuit.partner_id })
             io.to(`partner-${circuit.voyagesCircuit.partner_id}`).emit("newNotification");
             await Activity.create({ type: "booking", titre: `Réservation #RES-${booking.id} en cours` })
-            return res.send({ message: "booking create" })
+            
+            let url = "";
+            if(payment_method === "installment"){
+                const installmentCount = package.installment || 1;
+                const totalWithFee = total_price * 1.05;
+                const amount = Math.round(totalWithFee / installmentCount);
+                url = await CreatePayment(total_price, booking.id, client_id,package.installment,payment_method,amount)
+            }else{
+                url = await CreatePayment(total_price, booking.id, client_id)
+            }
+            
+            
+            return res.send({ message: "booking create" ,url})
 
         } catch (err) {
             console.log(err)
@@ -242,8 +259,9 @@ exports.BookingCircuit = [
 exports.BookingOffer = [
     body("package_id").notEmpty().withMessage("package is required")
         .isNumeric().withMessage("package should be numeric"),
-    body("price").notEmpty().withMessage("price is required")
-        .isNumeric().withMessage("price should be numeric")
+    body("total_price").notEmpty().withMessage("price is required")
+        .isNumeric().withMessage("price should be numeric"),
+    body("payment_method").notEmpty().withMessage("price is required")
     , async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -251,7 +269,7 @@ exports.BookingOffer = [
         }
         try {
             const io = getIO()
-            const { package_id, price } = req.body;
+            const { package_id, total_price, payment_method } = req.body;
             const { id } = req.params;
             const offer = await Offer.findByPk(id, {
                 include: [{
@@ -272,14 +290,25 @@ exports.BookingOffer = [
                 return res.status(400).send({ message: "the not place" })
             }
             const client_id = req.userId;
-            const booking = await Booking.create({ total_price: price, type: "agence de voyage", client_id });
-            await OfferBookingDetails.create({ booking_id: booking.id, offer_id: id, package_id })
+            const booking = await Booking.create({ total_price, type: "agence de voyage", client_id,payment_method });
+            
+            await OfferBookingDetails.create({ booking_id: booking.id,payment_method, offer_id: id, package_id })
             await package.update({ number_place: package.number_place - 1 })
-
             await Notification.create({ title: "Nouvelle réservation", message: "un client faire un réservation", type: "booking", user_id: offer.agencyOffer.partner_id })
             io.to(`partner-${offer.agencyOffer.partner_id}`).emit("newNotification");
             await Activity.create({ type: "booking", titre: `Réservation #RES-${booking.id} en cours` })
-            return res.send({ message: "booking create" })
+            
+            let url = "";
+            
+            if(payment_method === "installment"){
+                const installmentCount = package.installment || 1;
+                const totalWithFee = total_price * 1.05;
+                const amount = Math.round(totalWithFee / installmentCount);
+                url = await CreatePayment(total_price, booking.id, client_id,package.installment,payment_method,amount)
+            }else{
+                url = await CreatePayment(total_price, booking.id, client_id)
+            }
+            return res.send({ message: "booking create",url })
 
         } catch (err) {
             console.log(err)
@@ -524,6 +553,10 @@ exports.GetClientBooking = async (req, res) => {
                             ]
                         }
                     ]
+                },
+                {
+                    model:PaymentInstallments,
+                    as:"paymentInstallments"
                 }
             ]
         });

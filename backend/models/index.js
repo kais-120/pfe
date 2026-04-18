@@ -17,6 +17,7 @@ const Otp = require("./Otp");
 const Package = require("./Package");
 const PartnerFile = require("./PartnerFiles");
 const Payment = require("./Payment");
+const PaymentInstallments = require("./PaymentInstallments");
 const RefuseReason = require("./RefuseReason");
 const Reviews = require("./Reviews");
 const Room = require("./Room");
@@ -104,7 +105,7 @@ RefuseReason.belongsTo(PartnerFile, {
     as: "PartnerFileRefuseReason"
 })
 
-User.belongsTo(RefuseReason, {
+User.hasMany(RefuseReason, {
     foreignKey: "rejected_by",
     as: "rejectedBy"
 })
@@ -363,9 +364,18 @@ Payment.belongsTo(Booking,{
     as:"bookingPayment"
 })
 
+Booking.hasMany(PaymentInstallments,{
+    foreignKey:"booking_id",
+    as:"paymentInstallments"
+})
+PaymentInstallments.belongsTo(Booking,{
+    foreignKey:"booking_id",
+    as:"bookingPaymentInstallments"
+})
+
 
 module.exports = {  User, Otp,Agence,PartnerFile,Hotel,Compagnie,Voyage,
                     RefuseReason,Room,Booking,HotelBookingDetails,
                     Reviews,Location,Vehicle,Offer,Flight,FlightClasses,Circuit,
                     CarRentalBookingDetails,FlightBookingDetails,CircuitBookingDetails,
-                    OfferBookingDetails,Package,Destination,Payment};
+                    OfferBookingDetails,Package,Destination,Payment,PaymentInstallments};

@@ -1,10 +1,10 @@
-import { Badge, Box, Button, Flex, Grid, QrCode, Text, VStack, Spinner, IconButton, Dialog, Portal, CloseButton, Field, Textarea, RatingGroup } from "@chakra-ui/react"
+import { Badge, Box, Button, Flex, Grid, QrCode, Text, VStack, Spinner, IconButton, Dialog, Portal, CloseButton, Field, Textarea, RatingGroup, Tabs, Table } from "@chakra-ui/react"
 import { useState, useEffect } from "react"
 import { FaHotel, FaMapMarkerAlt, FaMoon, FaBed, FaCalendarAlt, FaEye, FaPlane, FaCar, FaRoute } from "react-icons/fa"
 import { AxiosToken } from "../../Api/Api"
-import { LuChevronLeft, LuScanLine, LuShieldAlert, LuClock, LuUsers, LuMapPin, LuRepeat2 } from "react-icons/lu"
+import { LuChevronLeft, LuScanLine, LuShieldAlert, LuClock, LuUsers, LuMapPin, LuRepeat2, LuCheck } from "react-icons/lu"
 import { Link } from "react-router-dom"
-import { Bus, MessageSquareCode, PlaneTakeoff, QrCode as QrCodeIcon, Send } from "lucide-react"
+import { Bus, MessageSquareCode, PlaneTakeoff, QrCode as QrCodeIcon, Send, CreditCard, LucideAlertCircle } from "lucide-react"
 import { Helmet } from "react-helmet"
 import { useFormik } from "formik"
 import * as Yup from "yup"
@@ -29,6 +29,7 @@ const STATUS_CONFIG = {
   "annulé": { label: "Annulé", color: "red" },
   "terminée": { label: "Terminée", color: "gray" },
   "programmé": { label: "Programmé", color: "blue" },
+  "payé": { label: "Payé", color: "green" },
 }
 
 const BOOKING_TYPES = {
@@ -321,7 +322,7 @@ function AddReviewModal({ type, id }) {
 }
 
 function BookingCard({ booking }) {
-  const { id, status, type, total_price } = booking
+  const { id, status, type, total_price, payment_method, paymentInstallments } = booking
   const statusLower = status.toLowerCase()
   const { label, color } = STATUS_CONFIG[statusLower] ?? STATUS_CONFIG["confirmée"]
   const bookingTypeInfo = BOOKING_TYPES[type] || { icon: FaHotel, label: type, color: "#666" }
@@ -361,12 +362,17 @@ function BookingCard({ booking }) {
 
           {/* Travel Circuit Booking */}
           {type === "voyages circuits" && booking.circuitBooking?.length > 0 && (
-            <CircuitBookingContent booking={booking} fmt={fmt} />
+            <CircuitBookingContent booking={booking} fmt={fmt} payment_method={payment_method} paymentInstallments={paymentInstallments} />
           )}
 
           {/* Travel Offer Booking */}
           {type === "agence de voyage" && booking.offerBooking?.length > 0 && (
-            <OfferBookingContent booking={booking} fmt={fmt} />
+            <OfferBookingContent booking={booking} fmt={fmt} payment_method={payment_method} paymentInstallments={paymentInstallments} />
+          )}
+
+          {/* Payment Method Section for Offer/Circuit */}
+          {(type === "agence de voyage" || type === "voyages circuits") && (
+            <PaymentMethodSection payment_method={payment_method} total_price={total_price} paymentInstallments={paymentInstallments} />
           )}
 
           {/* Footer with Price and Actions */}
@@ -387,6 +393,144 @@ function BookingCard({ booking }) {
         </Box>
       </Box>
     </>
+  )
+}
+
+function PaymentMethodSection({ payment_method, total_price, paymentInstallments }) {
+  const isInstallment = payment_method === "installment"
+
+  if (!isInstallment) {
+    return (
+      <Box mt={5} pt={5} borderTop="1px solid" borderColor="gray.100">
+        <Flex align="center" gap={2} mb={3}>
+          <Flex w="32px" h="32px" borderRadius="lg" bg="green.100" color="green.600" align="center" justify="center">
+            <LuCheck size={16} />
+          </Flex>
+          <Box>
+            <Text fontSize="sm" fontWeight={700} color="gray.800">Paiement Total</Text>
+            <Text fontSize="xs" color="gray.500">Montant entièrement payé</Text>
+          </Box>
+        </Flex>
+        <Box bg="green.50" borderRadius="xl" p={4} borderLeft="4px solid" borderColor="green.400">
+          <Text fontSize="sm" color="gray.600">
+            Montant: <Text as="span" fontWeight={800} color="green.600">{total_price} TND</Text>
+          </Text>
+        </Box>
+      </Box>
+    )
+  }
+
+  // Installment plan display
+  const totalPaid = paymentInstallments
+    ?.filter(inst => inst.status.toLowerCase() === "payé")
+    .reduce((sum, inst) => sum + inst.amount, 0) || 0
+
+  const totalRemaining = paymentInstallments
+    ?.filter(inst => inst.status.toLowerCase() !== "payé")
+    .reduce((sum, inst) => sum + inst.amount, 0) || 0
+
+  const paidPercentage = (totalPaid / total_price) * 100
+
+  return (
+    <Box mt={5} pt={5} borderTop="1px solid" borderColor="gray.100">
+      <Flex align="center" gap={2} mb={4}>
+        <Flex w="32px" h="32px" borderRadius="lg" bg="blue.100" color="blue.600" align="center" justify="center">
+          <CreditCard size={16} />
+        </Flex>
+        <Box flex={1}>
+          <Text fontSize="sm" fontWeight={700} color="gray.800">Plan de Paiement</Text>
+          <Text fontSize="xs" color="gray.500">{paymentInstallments?.length || 0} versements</Text>
+        </Box>
+      </Flex>
+
+      {/* Progress Bar */}
+      <Box mb={4}>
+        <Flex justify="space-between" mb={2}>
+          <Text fontSize="xs" color="gray.600" fontWeight={600}>Progression</Text>
+          <Text fontSize="xs" color="gray.600" fontWeight={700}>{Math.round(paidPercentage)}%</Text>
+        </Flex>
+        <Box w="full" h="8px" bg="gray.200" borderRadius="full" overflow="hidden">
+          <Box h="full" bg="green.500" w={`${paidPercentage}%`} transition="width 0.3s ease" />
+        </Box>
+        <Flex justify="space-between" mt={2} gap={2}>
+          <Box>
+            <Text fontSize="xs" color="gray.400">Payé</Text>
+            <Text fontSize="sm" fontWeight={800} color="green.600">{totalPaid} TND</Text>
+          </Box>
+          <Box textAlign="right">
+            <Text fontSize="xs" color="gray.400">Restant</Text>
+            <Text fontSize="sm" fontWeight={800} color="orange.600">{totalRemaining} TND</Text>
+          </Box>
+        </Flex>
+      </Box>
+
+      {/* Installments Table */}
+      {paymentInstallments && paymentInstallments.length > 0 && (
+        <Box overflowX="auto">
+          <Table.Root size="sm" variant="simple">
+            <Table.Header bg="gray.50" borderBottom="1px solid" borderColor="gray.200">
+              <Table.Row>
+                <Table.ColumnHeader fontSize="xs" fontWeight={700} color="gray.600" py={2.5}>N°</Table.ColumnHeader>
+                <Table.ColumnHeader fontSize="xs" fontWeight={700} color="gray.600" py={2.5}>Montant</Table.ColumnHeader>
+                <Table.ColumnHeader fontSize="xs" fontWeight={700} color="gray.600" py={2.5}>Date d'échéance</Table.ColumnHeader>
+                <Table.ColumnHeader fontSize="xs" fontWeight={700} color="gray.600" py={2.5}>Statut</Table.ColumnHeader>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {paymentInstallments.map((inst) => {
+                const isPaid = inst.status.toLowerCase() === "payé"
+                const isOverdue = new Date(inst.due_date) < new Date() && !isPaid
+                const statusLabel = isPaid ? "Payé" : isOverdue ? "En retard" : "En attente"
+
+                return (
+                  <Table.Row key={inst.id} borderColor="gray.100" _hover={{ bg: "gray.50" }}>
+                    <Table.Cell fontSize="sm" fontWeight={600} color="gray.700" py={3}>
+                      {inst.installment_number}
+                    </Table.Cell>
+                    <Table.Cell fontSize="sm" fontWeight={700} color="gray.800" py={3}>
+                      {inst.amount} TND
+                    </Table.Cell>
+                    <Table.Cell fontSize="sm" color="gray.600" py={3}>
+                      {new Date(inst.due_date).toLocaleDateString("fr-FR", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric"
+                      })}
+                    </Table.Cell>
+                    <Table.Cell py={3}>
+                      <Flex align="center" gap={1.5}>
+                        {isPaid ? (
+                          <Flex align="center" gap={1}>
+                            <Flex w="16px" h="16px" borderRadius="full" bg="green.100" align="center" justify="center">
+                              <LuCheck size={12} color="green" />
+                            </Flex>
+                            <Badge colorScheme="green" fontSize="xs" borderRadius="md">{statusLabel}</Badge>
+                          </Flex>
+                        ) : isOverdue ? (
+                          <Flex align="center" gap={1}>
+                            <Flex w="16px" h="16px" borderRadius="full" bg="red.100" align="center" justify="center">
+                              <LucideAlertCircle size={12} color="red" />
+                            </Flex>
+                            <Badge colorScheme="red" fontSize="xs" borderRadius="md">{statusLabel}</Badge>
+                          </Flex>
+                        ) : (
+                          <Flex align="center" gap={1}>
+                            <Flex w="16px" h="16px" borderRadius="full" bg="yellow.100" align="center" justify="center">
+                              <LuClock size={12} color="orange" />
+                            </Flex>
+                            <Badge colorScheme="yellow" fontSize="xs" borderRadius="md">{statusLabel}</Badge>
+                          </Flex>
+                        )}
+                      </Flex>
+                    </Table.Cell>
+                  </Table.Row>
+                )
+              })}
+            </Table.Body>
+          </Table.Root>
+        </Box>
+      )}
+    </Box>
   )
 }
 
@@ -446,7 +590,6 @@ function HotelBookingContent({ booking, fmt, today }) {
 function FlightBookingContent({ booking, fmt }) {
   const flight = booking.flightBooking[0]
   const details = flight?.detailsFlight
-  console.log(details)
 
   return (
     <Flex justify="space-between" align="flex-start" gap={4} flexWrap="wrap">

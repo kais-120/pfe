@@ -1,10 +1,11 @@
 const { body, validationResult } = require("express-validator");
-const { Payment, Booking, Users, Notification } = require("../models");
+const { Payment, Booking, Users, Notification, PaymentInstallments } = require("../models");
 const Activity = require("../models/Activity");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
-exports.CreatePayment = async (amount, booking_id, client_id) => {
+exports.CreatePayment = async (amount, booking_id, client_id, installment = 0, type = "total", part = 0) => {
     try {
+        console.log((type === "installment" ? part : amount) * 1000)
         const session = await stripe.checkout.sessions.create({
             mode: "payment",
             locale: "fr",
@@ -16,20 +17,41 @@ exports.CreatePayment = async (amount, booking_id, client_id) => {
                         product_data: {
                             name: `Booking #${booking_id}`
                         },
-                        unit_amount: amount * 1000
+                        unit_amount: (type === "installment" ? part : amount) * 1000
                     },
                     quantity: 1
                 }
             ],
-            success_url: `http://localhost:5173/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `http://localhost:5173/payment/cancel?session_id={CHECKOUT_SESSION_ID}`,
+            success_url: `http://localhost:5173/payment/success?booking=${booking_id}&session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `http://localhost:5173/payment/cancel?booking=${booking_id}&session_id={CHECKOUT_SESSION_ID}`,
 
             metadata: {
                 booking_id: booking_id
             }
         });
-        await Payment.create({ amount, client_id, booking_id,reference: session.id })
-
+        if (type === "installment") {
+            const totalWithFee = amount * 1.05;
+            await PaymentInstallments.create({
+                booking_id: booking_id,
+                amount: part,
+                installment_number: 1,
+                due_date: new Date(Date.now()),
+                status: "en attente",
+                reference: session.id
+            });
+            for (let i = 1; i < installment; i++) {
+                await PaymentInstallments.create({
+                    booking_id: booking_id,
+                    amount: part,
+                    installment_number: i + 1,
+                    due_date: new Date(Date.now() + i * 30 * 24 * 60 * 60 * 1000),
+                    status: "en attente"
+                });
+            }
+            await Payment.create({ amount: totalWithFee, client_id, booking_id })
+        } else {
+            await Payment.create({ amount, client_id, booking_id, reference: session.id })
+        }
         return session.url
 
     } catch (err) {
@@ -37,6 +59,9 @@ exports.CreatePayment = async (amount, booking_id, client_id) => {
         return "error";
     }
 }
+
+
+
 // exports.CreatePayment = [
 //     body("amount").notEmpty().withMessage("amount is required")
 //     .isInt().withMessage("amount should be integer"),
@@ -117,27 +142,54 @@ exports.CreatePayment = async (amount, booking_id, client_id) => {
 
 exports.VerifyPayment = [
     body("reference").notEmpty().withMessage("payment id is required"),
+    body("booking_id").notEmpty().withMessage("booking id is required"),
     async (req, res) => {
-        const error = validationResult(req);
-        if (!error.isEmpty()) {
-            return res.status(422).send({ message: error.array().map(err => err.message) })
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(422).json({ errors: errors.array().map(err => err.msg) });
         }
-        const { reference } = req.body
+        const { reference, booking_id } = req.body
         try {
-            const payment = await Payment.findOne({where: {reference}})
-            const booking = await Booking.findByPk(payment.booking_id);
-            const session = await stripe.checkout.sessions.retrieve(payment.reference);
+            const booking = await Booking.findByPk(booking_id);
+            if (!booking) {
+                return res.status(404).json({ message: "booking not found" })
+            }
+            if (booking.payment_method === "total") {
+                const payment = await Payment.findOne({ where: { reference } });
+                const session = await stripe.checkout.sessions.retrieve(reference);
                 if (session.payment_status === "paid") {
-                    await payment.update({status:"confirmée"})
-                    booking.update({status:"confirmée"})
-                    await Activity.create({type:"payment",titre:"paiement est confirmée"})
-                }else{
-                    await payment.update({status:"annulée"})
-                    booking.update({status:"annulée"})
-                    await Activity.create({type:"payment",titre:"paiement est annulée"})
-
+                    await payment.update({ status: "confirmée" })
+                    booking.update({ status: "confirmée" })
+                    await Activity.create({ type: "payment", titre: "paiement est confirmée" })
+                } else {
+                    await payment.update({ status: "annulée" })
+                    booking.update({ status: "annulée" })
+                    await Activity.create({ type: "payment", titre: "paiement est annulée" })
                 }
-            return res.send({ message: "payment updated"});
+            } else {
+                const payment = await PaymentInstallments.findOne({ where: { reference } });
+                const session = await stripe.checkout.sessions.retrieve(reference);
+                if (session.payment_status === "paid") {
+                    await payment.update({ status: "payé" })
+                    await Activity.create({ type: "payment", titre: "Paiement de tranche confirmé" })
+                    const allInstallments = await PaymentInstallments.findAll({
+                        where: { booking_id }
+                    })
+                    const allPaid = allInstallments.every(p => p.status === "payé")
+                    if (allPaid) {
+                        await booking.update({ status: "confirmée" })
+                        await Activity.create({
+                            type: "payment",
+                            titre: "Tous les paiements sont confirmés (réservation validée)"
+                        })
+                    }
+                } else {
+                    await payment.update({ status: "échoué" })
+                    await Activity.create({ type: "payment", titre: "Paiement de tranche annulé" })
+                }
+            }
+
+            return res.send({ message: "payment updated" });
 
         } catch (err) {
             return res.status(500).send({ message: err })

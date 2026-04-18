@@ -37,12 +37,14 @@ function OfferSlider({ images, offerId }) {
   return (
     <Box position="relative" h="220px" overflow="hidden" borderRadius="xl">
       <Image
-        src={`${imageURL}/travel/${images[idx].image_url}`}
-        alt={`offer-${offerId}`}
-        w="100%" h="100%" objectFit="cover"
-        transition="opacity 0.3s"
-        onError={e => { e.target.src = `${imageURL}/services/${images[idx].image_url}` }}
-      />
+  src={`${imageURL}/travel/${images[idx].image_url}`}
+  onError={(e) => {
+    if (!e.target.dataset.fallback) {
+      e.target.dataset.fallback = "true"
+      e.target.src = `${imageURL}/services/${images[idx].image_url}`
+    }
+  }}
+/>
       {images.length > 1 && (
         <>
           <Button size="xs" position="absolute" left={2} top="50%"

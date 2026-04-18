@@ -42,7 +42,7 @@ const Users = () => {
 
   const handleDelete = async (id) => {
     try {
-      await AxiosToken.delete(`/user/delete/${id}`)
+      await AxiosToken.delete(`/user/${id}`)
       setData(prev => prev.filter(u => u.id !== id))
     } catch {
       console.error("Delete failed")
@@ -176,7 +176,6 @@ const Users = () => {
                   <Table.Row>
                     <Table.Cell colSpan={5} px={5} py={16} textAlign="center">
                       <VStack gap={2}>
-                        <Text fontSize="2xl">👤</Text>
                         <Text fontWeight={600} color="gray.600">Aucun utilisateur trouvé</Text>
                         <Text fontSize="sm" color="gray.400">
                           {search ? "Essayez une autre recherche." : "Ajoutez votre premier utilisateur."}

@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom"
 import {
   Box, Button, Flex, Grid, Text, VStack,
   Badge, Skeleton, SkeletonText,
+  Link,
 } from "@chakra-ui/react"
 import {
   FaPlane, FaArrowLeft, FaWifi, FaUtensils,
@@ -14,8 +15,10 @@ import {
   LuMapPin,
 } from "react-icons/lu"
 import Header from "../../components/home/Header"
-import { Axios } from "../../Api/Api"
+import { Axios, AxiosToken } from "../../Api/Api"
 import { Helmet } from "react-helmet"
+import Cookies from "universal-cookie"
+import {Tooltip} from "../../components/ui/tooltip"
 
 /* ── Helpers ────────────────────────────────────────────────────── */
 const STATUS_META = {
@@ -147,6 +150,8 @@ export default function FlightDetail() {
   const [selectedClass, setSelectedClass] = useState(location?.state?.type || null)
   const [adults, setAdults] = useState(location?.state?.adults || 1)
   const [children, setChildren] = useState(location?.state?.children || 0)
+  const cookie = new Cookies()
+  const token = cookie.get("auth")
 
   /* Fetch */
   useEffect(() => {
@@ -165,7 +170,6 @@ export default function FlightDetail() {
     })()
   }, [id])
 
-  /* Auto-select cheapest class */
   useEffect(() => {
     if (flight?.flightClasses?.length > 0 && !selectedClass) {
       const cheapest = flight.flightClasses.reduce((min, c) =>
@@ -175,6 +179,22 @@ export default function FlightDetail() {
       setSelectedClass(cheapest)
     }
   }, [flight])
+  const handleBooking = async (selectedClass) => {
+    try{
+      if (selectedClass) {
+            const res = await AxiosToken.post(`/booking/flight/${id}`,{
+              seat_class:selectedClass.class_name,
+              total_price:totalPrice,
+              children_passenger_count:children,
+              adult_passenger_count:adults
+
+            })
+            window.location = res.data.url
+        }
+    }catch(err){
+      console.error("error")
+    }
+  }
 
   if (loading) return <><Header /><PageSkeleton /></>
   if (error || !flight) return (
@@ -351,7 +371,7 @@ export default function FlightDetail() {
                 </Box>
                 {flight.seats_available < 10 && (
                   <Text fontSize="xs" color="red.500" fontWeight={600} mt={2}>
-                    ⚠️ Plus que {flight.seats_available} place{flight.seats_available > 1 ? "s" : ""} !
+                  Plus que {flight.seats_available} place{flight.seats_available > 1 ? "s" : ""} !
                   </Text>
                 )}
               </Box>
@@ -584,15 +604,25 @@ export default function FlightDetail() {
                         <Counter
                           label="Adultes" sub={`${selectedClass.price_adult} TND / pers.`}
                           value={adults} min={1}
-                          max={selectedClass.seats_available}
-                          onInc={() => setAdults(a => a + 1)}
+                          max={Math.max(1, selectedClass.seats_available - children)}
+                          onInc={() => {
+                            const newAdults = adults + 1
+                            if (newAdults + children <= selectedClass.seats_available) {
+                              setAdults(newAdults)
+                            }
+                          }}
                           onDec={() => setAdults(a => Math.max(1, a - 1))}
                         />
                         <Counter
                           label="Enfants" sub={`${selectedClass.price_children} TND / pers. · 0–12 ans`}
                           value={children} min={0}
                           max={Math.max(0, selectedClass.seats_available - adults)}
-                          onInc={() => setChildren(c => c + 1)}
+                          onInc={() => {
+                            const newChildren = children + 1
+                            if (adults + newChildren <= selectedClass.seats_available) {
+                              setChildren(newChildren)
+                            }
+                          }}
                           onDec={() => setChildren(c => Math.max(0, c - 1))}
                         />
                       </Box>
@@ -634,18 +664,11 @@ export default function FlightDetail() {
                       </Box>
                     </>
                   )}
-
-                  {/* CTA */}
+                  <Tooltip content={"Vous devez vous connecter pour réserver"}>
                   <Button w="full" h="46px" colorScheme="blue"
                     borderRadius="xl" fontWeight={700}
-                    isDisabled={isDisabled || !selectedClass}
-                    onClick={() => {
-                      if (selectedClass) {
-                        navigate("/booking/flight", {
-                          state: { flight, airline, selectedClass, adults, children, totalPrice }
-                        })
-                      }
-                    }}>
+                    disabled={isDisabled || !selectedClass ||!token}
+                    onClick={() => {handleBooking(selectedClass)}}>
                     <Flex align="center" gap={2}>
                       <LuPlane size={15} />
                       {flight.status === "annulé" ? "Vol annulé"
@@ -654,6 +677,7 @@ export default function FlightDetail() {
                             : `Réserver · ${totalPrice} TND`}
                     </Flex>
                   </Button>
+                  </Tooltip>
 
                 </VStack>
               </Box>

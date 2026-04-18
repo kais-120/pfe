@@ -1,4 +1,4 @@
-import { Box, Text, VStack, Flex } from "@chakra-ui/react"
+import { Box, Text, VStack, Flex, Image, Link } from "@chakra-ui/react"
 import { Building, Building2, CalendarCheck2, Files, Gauge, User, LogOut, Car, Plane, TicketsPlane, Bus, ScanQrCode } from 'lucide-react';
 import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
@@ -47,7 +47,9 @@ const Sidebar = () => {
     >
       {/* Logo */}
       <Flex justify={"center"} align="center" gap={2.5} px={6} py={5} borderBottom="1px solid" borderColor="gray.100">
-      <img src={logo} />
+      <Link href="/">
+      <Image src={logo} />
+      </Link>
       </Flex>
 
       {/* Role label */}

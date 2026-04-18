@@ -5,6 +5,7 @@ import {
   Textarea, Text, Flex, Grid, VStack, Badge,
   Skeleton, SkeletonText, Drawer,
   HStack,
+  Timeline,
 } from "@chakra-ui/react"
 import { toaster } from "../../components/ui/toaster"
 import { useNavigate, useParams } from "react-router-dom"
@@ -18,9 +19,9 @@ import {
 import { BadgeCheck, BadgeX, LucideCheckCircle, LucideCheckCircle2, LucideXCircle } from "lucide-react"
 
 const STATUS_STYLE = {
-  "en attente": { colorScheme: "yellow", Icon: LuClock,       label: "En attente" },
-  "accepté":    { colorScheme: "green",  Icon: LucideCheckCircle, label: "Accepté"    },
-  "refusé":     { colorScheme: "red",    Icon: LucideXCircle,     label: "Refusé"     },
+  "en attente": { colorScheme: "yellow", Icon: LuClock, label: "En attente" },
+  "accepté": { colorScheme: "green", Icon: LucideCheckCircle, label: "Accepté" },
+  "refusé": { colorScheme: "red", Icon: LucideXCircle, label: "Refusé" },
 }
 
 const formatDate = (date) =>
@@ -181,15 +182,15 @@ function PageSkeleton() {
 /* ── Main component ─────────────────────────────────────────────── */
 const PartnerDocumentInfo = () => {
   const [partnerFiles, setPartnerFiles] = useState(null)
-  const [reason,       setReason]       = useState("")
-  const [loading,      setLoading]      = useState(true)
-  const [actioning,    setActioning]    = useState(false)
-  const [history,      setHistory]      = useState(null)
-  const [historyOpen,  setHistoryOpen]  = useState(false)
-  const [historyLoad,  setHistoryLoad]  = useState(false)
+  const [reason, setReason] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [actioning, setActioning] = useState(false)
+  const [history, setHistory] = useState(null)
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [historyLoad, setHistoryLoad] = useState(false)
 
-  const navigate  = useNavigate()
-  const { id }    = useParams()
+  const navigate = useNavigate()
+  const { id } = useParams()
 
   useEffect(() => {
     const fetchData = async () => {
@@ -241,13 +242,73 @@ const PartnerDocumentInfo = () => {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // BUILD TIMELINE EVENTS FROM HISTORY
+  // ═══════════════════════════════════════════════════════════════
+  const buildTimelineEvents = () => {
+    if (!history) return []
+
+    const events = []
+
+    // Add submission event (start)
+    events.push({
+      type: "submitted",
+      timestamp: history.createdAt || new Date().toISOString(),
+      icon: LuFileText,
+      color: "blue",
+      title: "Dossier soumis",
+      description: "Soumission initiale du dossier",
+      data: null,
+    })
+
+    // Add all rejection events (in reverse order from API - oldest to newest)
+    if (history.RefuseReason && Array.isArray(history.RefuseReason)) {
+      const sortedRefusals = [...history.RefuseReason].sort(
+        (a, b) => new Date(a.rejected_at) - new Date(b.rejected_at)
+      )
+      sortedRefusals.forEach((refusal, index) => {
+        events.push({
+          type: "rejected",
+          timestamp: refusal.rejected_at,
+          icon: LuX,
+          color: "red",
+          title: `Refus #${index + 1}`,
+          description: refusal.message,
+          data: refusal,
+          rejectedBy: refusal.responsibleRejected,
+        })
+      })
+    }
+
+    // Add final outcome
+    events.push({
+      type: history.status === "accepté" ? "accepted" : "rejected_final",
+      timestamp: history.finalizedAt || new Date().toISOString(),
+      icon: history.status === "accepté" ? LuCheck : LuX,
+      color: history.status === "accepté" ? "green" : "red",
+      title: history.status === "accepté" ? "Dossier approuvé" : "Dossier refusé définitivement",
+      description:
+        history.status === "accepté"
+          ? "Le compte partenaire a été activé avec succès."
+          : `Refusé après ${history.RefuseReason?.length || 0} tentatives`,
+      data: null,
+      acceptedBy:history.responsibleAccepted,
+
+    })
+
+    return events
+  }
+
+  const timelineEvents = buildTimelineEvents()
+  console.log(timelineEvents)
+
 
   if (loading) return <PageSkeleton />
 
-  const status      = partnerFiles?.status
+  const status = partnerFiles?.status
   const statusStyle = STATUS_STYLE[status] ?? { colorScheme: "gray", Icon: LuFileText, label: status }
-  const StatusIcon  = statusStyle.Icon
-  const isPending   = status === "en attente"
+  const StatusIcon = statusStyle.Icon
+  const isPending = status === "en attente"
 
   return (
     <Box maxW="860px" mx="auto">
@@ -269,11 +330,20 @@ const PartnerDocumentInfo = () => {
         <Portal>
           <Drawer.Backdrop />
           <Drawer.Positioner>
-            <Drawer.Content maxW="420px">
+            <Drawer.Content maxW="480px">
+              {/* Header */}
               <Drawer.Header borderBottom="1px solid" borderColor="gray.100" pb={4}>
                 <Flex align="center" gap={2.5}>
-                  <Flex w="30px" h="30px" borderRadius="lg" bg="blue.50"
-                    color="blue.500" align="center" justify="center" flexShrink={0}>
+                  <Flex
+                    w="30px"
+                    h="30px"
+                    borderRadius="lg"
+                    bg="blue.50"
+                    color="blue.500"
+                    align="center"
+                    justify="center"
+                    flexShrink={0}
+                  >
                     <LuHistory size={14} />
                   </Flex>
                   <Drawer.Title fontSize="md" fontWeight={700} color="gray.900">
@@ -285,6 +355,7 @@ const PartnerDocumentInfo = () => {
                 </Drawer.CloseTrigger>
               </Drawer.Header>
 
+              {/* Body - Timeline */}
               <Drawer.Body px={5} py={5}>
                 {historyLoad ? (
                   <VStack gap={4} align="stretch">
@@ -292,138 +363,165 @@ const PartnerDocumentInfo = () => {
                     <Skeleton h="120px" borderRadius="xl" />
                     <Skeleton h="80px" borderRadius="xl" />
                   </VStack>
-                ) : history ? (
-                  <VStack gap={4} align="stretch">
+                ) : (
+                  <Timeline.Root
+                    size="md"
+                    colorScheme="blue"
+                    variant="solid"
+                    gap={0}
+                    gapX={0}
+                    gapY={0}
+                  >
+                    {timelineEvents.map((event, index) => {
+                      const Icon = event.icon
+                      const isLast = index === timelineEvents.length - 1
 
-                    {/* Partner info */}
-                    <Box
-                      bg="gray.50" borderRadius="xl" p={4}
-                      border="1px solid" borderColor="gray.100"
-                    >
-                      <Text fontSize="xs" fontWeight={700} color="gray.400"
-                        textTransform="uppercase" letterSpacing="wider" mb={3}>
-                        responsable
-                      </Text>
-                      <Text fontSize="sm" fontWeight={700} color="gray.800">{history.responsibleAccepted?.name || history.RefuseReason[0]?.responsibleRejected?.name}</Text>
-                      <Text fontSize="xs" color="gray.500" mt={0.5}>{history.responsibleAccepted?.email || history.RefuseReason[0]?.responsibleRejected?.email}</Text>
-                      <Text fontSize="xs" color="gray.500">{history.responsibleAccepted?.phone || history.RefuseReason[0]?.responsibleRejected?.phone}</Text>
-                    </Box>
+                      // Determine colors
+                      let indicatorBg, indicatorColor, contentBg, contentBorder
+                      if (event.color === "blue") {
+                        indicatorBg = "blue.100"
+                        indicatorColor = "blue.600"
+                        contentBg = "blue.50"
+                        contentBorder = "blue.200"
+                      } else if (event.color === "red") {
+                        indicatorBg = "red.100"
+                        indicatorColor = "red.600"
+                        contentBg = "red.50"
+                        contentBorder = "red.200"
+                      } else if (event.color === "green") {
+                        indicatorBg = "green.100"
+                        indicatorColor = "green.600"
+                        contentBg = "green.50"
+                        contentBorder = "green.200"
+                      }
 
-                    {/* ── Timeline ── */}
-                    <Box>
-                      <Text fontSize="xs" fontWeight={700} color="gray.400"
-                        textTransform="uppercase" letterSpacing="wider" mb={3}>
-                        Chronologie
-                      </Text>
-
-                      <VStack gap={0} align="stretch" position="relative">
-
-                        {/* Vertical line */}
-                        <Box
-                          position="absolute" left="11px" top="24px"
-                          w="2px" bg="gray.100"
-                          h={`calc(100% - 24px)`}
-                          zIndex={0}
-                        />
-
-                        {/* Submission event */}
-                        <Flex gap={3} pb={4} position="relative" zIndex={1}>
-                          <Flex
-                            w="24px" h="24px" borderRadius="full" flexShrink={0}
-                            bg="blue.100" color="blue.500"
-                            align="center" justify="center"
-                          >
-                            <LuFileText size={11} />
-                          </Flex>
-                          <Box pt={0.5}>
-                            <Text fontSize="sm" fontWeight={600} color="gray.800">
-                              Dossier soumis
-                            </Text>
-                          </Box>
-                        </Flex>
-
-                        {/* Each refusal as a timeline event */}
-                        {history.RefuseReason?.map((r, i) => (
-                          <Flex key={r.id} gap={3} pb={4} position="relative" zIndex={1}>
-                            <Flex
-                              w="24px" h="24px" borderRadius="full" flexShrink={0}
-                              bg="red.100" color="red.500"
-                              align="center" justify="center"
+                      return (
+                        <Timeline.Item key={`${event.type}-${index}`}>
+                          <Timeline.Connector>
+                            <Timeline.Separator />
+                            <Timeline.Indicator
+                              bg={indicatorBg}
+                              color={indicatorColor}
+                              borderWidth={2}
+                              borderColor="white"
+                              boxShadow="0 0 0 3px"
+                              boxShadowColor={indicatorBg}
                             >
-                              <LucideXCircle size={11} />
+                              <Icon size={16} />
+                            </Timeline.Indicator>
+                          </Timeline.Connector>
+
+                          <Timeline.Content
+                            bg={contentBg}
+                            borderWidth="1px"
+                            borderColor={contentBorder}
+                            borderRadius="xl"
+                            p={4}
+                            mt={-1}
+                            mb={isLast ? 0 : 4}
+                            boxShadow="0 1px 4px rgba(0,0,0,0.04)"
+                          >
+                            {/* Title and Date */}
+                            <Flex justify="space-between" align="flex-start" gap={2} mb={2}>
+                              <Text fontSize="sm" fontWeight={700} color={`${event.color}.700`}>
+                                {event.title}
+                              </Text>
+                              <Text fontSize="xs" color="gray.500" whiteSpace="nowrap">
+                                {formatDate(event.timestamp)}
+                              </Text>
                             </Flex>
-                            <Box
-                              pt={0.5} flex={1}
-                              bg="white" borderRadius="xl" p={3} mt={-0.5}
-                              border="1px solid" borderColor="red.100"
-                              boxShadow="0 1px 4px rgba(0,0,0,0.04)"
-                            >
-                              <Flex justify="space-between" align="center" mb={1.5}>
-                                <Text fontSize="xs" fontWeight={700} color="red.500">
-                                  Refus #{i + 1}
-                                </Text>
-                                <Text fontSize="xs" color="gray.400">
-                                  {new Date(r.rejected_at).toLocaleDateString("fr-FR", {
-                                    day: "numeric", month: "short",
-                                    hour: "2-digit", minute: "2-digit"
-                                  })}
-                                </Text>
-                              </Flex>
-                              <Text fontSize="sm" color="gray.700" lineHeight="1.7"
-                                whiteSpace="pre-line">
-                                {r.message}
+
+                            {/* Main description */}
+                            {event.description && (
+                              <Text
+                                fontSize="sm"
+                                color="gray.700"
+                                lineHeight="1.6"
+                                whiteSpace="pre-line"
+                                mb={event.rejectedBy ? 2 : 0}
+                              >
+                                {event.description}
                               </Text>
+                            )}
+
+                            {/* Rejected by info - only for rejections */}
+                            {event.rejectedBy && (
+                              <Box
+                                bg="white"
+                                borderRadius="lg"
+                                p={2.5}
+                                borderLeft="3px"
+                                borderLeftColor={`${event.color}.300`}
+                                mt={2}
+                              >
+                                <Text fontSize="xs" fontWeight={600} color="gray.600" mb={1}>
+                                  Par: {event.rejectedBy.name}
+                                </Text>
+                                <VStack gap={0} align="flex-start">
+                                  <Text fontSize="xs" color="gray.500">
+                                    {event.rejectedBy.email}
+                                  </Text>
+                                  <Text fontSize="xs" color="gray.500">
+                                    {event.rejectedBy.phone}
+                                  </Text>
+                                </VStack>
+                              </Box>
+                            )}
+
+                            {/* Final status badge */}
+                            {event.type === "accepted" && (
+                              <Box
+                              bg="white"
+                                borderRadius="lg"
+                                p={2.5}
+                                borderLeft="3px"
+                                borderLeftColor={`${event.color}.300`}
+                                mt={2}
+                          
+                              >
+
+                                <Text fontSize="xs" fontWeight={600} color="gray.600" mb={1}>
+                                  Par: {event.acceptedBy.name}
+                                </Text>
+                                <VStack gap={0} align="flex-start">
+                                  <Text fontSize="xs" color="gray.500">
+                                    {event.acceptedBy.email}
+                                  </Text>
+                                  <Text fontSize="xs" color="gray.500">
+                                    {event.acceptedBy.phone}
+                                  </Text>
+                                </VStack>
+
+
+                              <Badge
+                                color="green"
+                                variant="subtle"
+                                fontSize="xs"
+                                mt={2}
+                                fontWeight={600}
+                              >
+                                <LuCheck/> Approuvé
+                              </Badge>
+                              
                             </Box>
-                          </Flex>
-                        ))}
-
-                        {/* Final outcome event */}
-                        <Flex gap={3} position="relative" zIndex={1}>
-                          <Flex
-                            w="24px" h="24px" borderRadius="full" flexShrink={0}
-                            bg={history.status === "accepté" ? "green.100" : "red.100"}
-                            color={history.status === "accepté" ? "green.500" : "red.500"}
-                            align="center" justify="center"
-                          >
-                            {history.status === "accepté"
-                              ? <LucideCheckCircle2 size={11} />
-                              : <LucideXCircle size={11} />
-                            }
-                          </Flex>
-                          <Box
-                            pt={0.5} flex={1}
-                            bg={history.status === "accepté" ? "green.50" : "red.50"}
-                            borderRadius="xl" p={3} mt={-0.5}
-                            border="1px solid"
-                            borderColor={history.status === "accepté" ? "green.200" : "red.200"}
-                          >
-                            <Text fontSize="xs" fontWeight={700}
-                              color={history.status === "accepté" ? "green.700" : "red.700"}
-                              textTransform="capitalize"
-                            >
-                              {history.status === "accepté"
-                                ?<HStack><BadgeCheck /><Text> Dossier approuvé</Text></HStack>
-                                :<HStack><BadgeX /><Text> Dossier refusé définitivement</Text></HStack>
-                              }
-                            </Text>
-                            {history.status === "accepté" && (
-                              <Text fontSize="xs" color="green.600" mt={0.5}>
-                                Le compte partenaire a été activé avec succès.
-                              </Text>
                             )}
-                            {history.status !== "accepté" && history.RefuseReason?.length > 0 && (
-                              <Text fontSize="xs" color="red.500" mt={0.5}>
-                                Après {history.RefuseReason.length} refus.
-                              </Text>
+                            {event.type === "rejected_final" && (
+                              <Badge
+                                colorScheme="red"
+                                variant="subtle"
+                                fontSize="xs"
+                                mt={2}
+                                fontWeight={600}
+                              >
+                                ✕ Refusé définitivement
+                              </Badge>
                             )}
-                          </Box>
-                        </Flex>
-
-                      </VStack>
-                    </Box>
-
-                  </VStack>
-                ) : null}
+                          </Timeline.Content>
+                        </Timeline.Item>
+                      )
+                    })}
+                  </Timeline.Root>
+                )}
               </Drawer.Body>
             </Drawer.Content>
           </Drawer.Positioner>
@@ -473,23 +571,23 @@ const PartnerDocumentInfo = () => {
 
         {/* Informations générales */}
         <SectionCard title="Informations générales" icon={LuUser} iconColor="blue">
-          <InfoRow label="Partenaire"       value={partnerFiles?.users?.name}         />
-          <InfoRow label="Email"            value={partnerFiles?.users?.email}        />
-          <InfoRow label="Numéro CIN"       value={partnerFiles?.cin}                 />
-          <InfoRow label="Matricule fiscal" value={partnerFiles?.matricule_fiscale}   />
-          <InfoRow label="RIP bancaire"     value={partnerFiles?.rip}                 />
-          <InfoRow label="Secteur"          value={partnerFiles?.sector}              />
+          <InfoRow label="Partenaire" value={partnerFiles?.users?.name} />
+          <InfoRow label="Email" value={partnerFiles?.users?.email} />
+          <InfoRow label="Numéro CIN" value={partnerFiles?.cin} />
+          <InfoRow label="Matricule fiscal" value={partnerFiles?.matricule_fiscale} />
+          <InfoRow label="RIP bancaire" value={partnerFiles?.rip} />
+          <InfoRow label="Secteur" value={partnerFiles?.sector} />
         </SectionCard>
 
         {/* Documents */}
         <SectionCard title="Documents soumis" icon={LuFileText} iconColor="purple">
           <Grid templateColumns={{ base: "1fr 1fr", md: "repeat(4, 1fr)" }} gap={4}>
-            <ImagePreview src={partnerFiles?.cin_recto}             label="CIN Recto"          />
-            <ImagePreview src={partnerFiles?.cin_verso}             label="CIN Verso"           />
+            <ImagePreview src={partnerFiles?.cin_recto} label="CIN Recto" />
+            <ImagePreview src={partnerFiles?.cin_verso} label="CIN Verso" />
             <ImagePreview src={partnerFiles?.matricule_fiscale_image} label="Matricule fiscal" />
-            <ImagePreview src={partnerFiles?.register_commerce}     label="Registre commerce"  />
+            <ImagePreview src={partnerFiles?.register_commerce} label="Registre commerce" />
             {partnerFiles?.autorisation_ontt && (
-              <ImagePreview src={partnerFiles?.autorisation_ontt}   label="Autorisation ONTT"  />
+              <ImagePreview src={partnerFiles?.autorisation_ontt} label="Autorisation ONTT" />
             )}
           </Grid>
         </SectionCard>
@@ -596,8 +694,10 @@ const PartnerDocumentInfo = () => {
                             rows={4}
                             border="1.5px solid" borderColor="gray.200"
                             borderRadius="xl" fontSize="sm"
-                            _focus={{ borderColor: "red.300",
-                              boxShadow: "0 0 0 3px rgba(245,101,101,0.12)" }}
+                            _focus={{
+                              borderColor: "red.300",
+                              boxShadow: "0 0 0 3px rgba(245,101,101,0.12)"
+                            }}
                             resize="vertical"
                           />
                         </Box>

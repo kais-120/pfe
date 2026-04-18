@@ -248,10 +248,12 @@ function FlightCard({ flight, airline }) {
   const s = STATUS_META[flight.status] ?? { color: "gray", label: flight.status }
   const pct = occup(flight.seats_total, flight.seats_available)
   const dur = calcDuration(flight.departure, flight.arrival)
+  console.log(flight.flightClasses)
 
   const cheapestClass = flight.flightClasses?.length
-    ? flight.flightClasses.reduce((min, c) => c.price < min.price ? c : min, flight.flightClasses[0])
+    ? flight.flightClasses.reduce((min, c) => c.price_adult < min.price_adult ? c : min, flight.flightClasses[0])
     : null
+    console.log(cheapestClass)
 
   return (
     <Box bg="white" borderRadius="2xl"
@@ -394,7 +396,7 @@ function FlightCard({ flight, airline }) {
               </Text>
               <Flex align="baseline" gap={1}>
                 <Text fontSize="xl" fontWeight={900} color="blue.600" lineHeight={1}>
-                  {cheapestClass.price}
+                  {cheapestClass.price_adult}
                 </Text>
                 <Text fontSize="xs" fontWeight={600} color="blue.400">TND</Text>
               </Flex>

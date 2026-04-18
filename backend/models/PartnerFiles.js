@@ -50,6 +50,10 @@ const PartnerFile = sequelize.define("partner_files",{
         },
         onDelete:"CASCADE"
     },
+    rip:{
+        type:DataTypes.STRING(20),
+        allowNull:true,
+    },
     accepted_by: {
             type: DataTypes.BIGINT,
             allowNull: true,

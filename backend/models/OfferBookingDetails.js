@@ -7,6 +7,9 @@ const OfferBookingDetails = sequelize.define("offer_booking_details",{
         autoIncrement:true,
         primaryKey:true
     },
+    method_payment:{
+        type:DataTypes.STRING,
+    },
     booking_id:{
         type:DataTypes.BIGINT,
         allowNull:false,

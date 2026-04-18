@@ -23,8 +23,9 @@ import { Check, Mail, X } from "lucide-react"
 import { FaXTwitter } from "react-icons/fa6"
 import BookingDialog from "./PackagesDialog"
 import { Helmet } from "react-helmet"
+import { useProfile } from "../../Context/useProfile"
+import { Tooltip } from "../../components/ui/tooltip"
 
-/* ── Helpers ────────────────────────────────────────────────────── */
 const TYPE_META = {
   circuit: { color: "blue", label: "Circuit" },
   excursion: { color: "green", label: "Excursion" },
@@ -33,7 +34,6 @@ const TYPE_META = {
   haj: { color: "blue", label: "Haj / Umrah" },
 }
 
-/* ── Gallery ────────────────────────────────────────────────────── */
 function Gallery({ images }) {
   const [active, setActive] = useState(0)
 
@@ -59,7 +59,6 @@ function Gallery({ images }) {
           src={src(images[active])}
           w="100%" h="100%" objectFit="cover"
           transition="opacity 0.3s"
-          onError={e => { e.target.src = `${imageURL}/partner_files/${images[active].image_url}` }}
         />
         <Badge position="absolute" bottom={4} right={4}
           bg="blackAlpha.700" color="white"
@@ -97,7 +96,6 @@ function Gallery({ images }) {
             onClick={() => setActive(i)}>
             <Image
               src={src(img)} w="100%" h="100%" objectFit="cover"
-              onError={e => { e.target.src = `${imageURL}/partner_files/${img.image_url}` }}
             />
           </Box>
         ))}
@@ -142,6 +140,7 @@ export default function OfferDetail() {
   const [error, setError] = useState(null)
   const [showMore, setShowMore] = useState(false)
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false)
+  const {user} = useProfile(); 
 
   useEffect(() => {
     const fetchData = async () => {
@@ -182,6 +181,7 @@ export default function OfferDetail() {
         isOpen={bookingDialogOpen}
         onClose={() => setBookingDialogOpen(false)}
         packageData={offerData?.offer?.packages}
+        type={"offer"}
       />
 
       <Box maxW="1100px" mx="auto" px={{ base: 4, md: 6 }} py={8}>
@@ -396,16 +396,24 @@ export default function OfferDetail() {
                     </Flex>
                   )}
                   <Box borderTop="1px solid" borderColor="gray.100" pt={3}>
+                    <Tooltip content={
+                      !user ? 
+                      "Vous devez vous connecter pour réserver"
+                      : user?.role !== "client"
+                      ? "Seuls les clients peuvent effectuer une réservation"
+                        : undefined
+                    }>
                     <Button w="full" h="46px" colorScheme="blue"
                       borderRadius="xl" fontWeight={700}
-                      disabled={offerData?.offer?.packages.length > 0 ? false : true}
+                      disabled={offerData?.offer?.packages.length === 0 || !user || user.role !== "client" }
                       onClick={() => setBookingDialogOpen(true)}
-                      isDisabled={!offer.packages?.length}>
+                      >
                       <Flex align="center" gap={2}>
                         <LuCompass size={15} />
                         Réserver maintenant
                       </Flex>
                     </Button>
+                    </Tooltip>
                     <Text fontSize="xs" color="gray.400" textAlign="center" mt={2}>
                       Contactez l'agence pour confirmer
                     </Text>

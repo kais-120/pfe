@@ -23,49 +23,52 @@ import { RiFirstAidKitFill } from "react-icons/ri";
 import { IoFlashlightSharp } from "react-icons/io5";
 import { Phone } from "lucide-react"
 import { Helmet } from "react-helmet"
+import PackagesDialog from "./PackagesDialog"
+import { useProfile } from "../../Context/useProfile"
+import { Tooltip } from "../../components/ui/tooltip"
 
 
 
 
 /* ── Helpers ────────────────────────────────────────────────────── */
 const CAT_META = {
-  "désert":{ color:"orange", label:"Désert"},
-  "desert":{ color: "orange", label: "Désert"},
-  "aventure":{ color: "red",    label: "Aventure"},
-  "camping":{ color: "green",  label: "Camping"},
-  "voyage":{ color: "blue",   label: "Voyage"},
-  "montagne":{ color: "purple", label: "Montagne"},
-  "plage":{ color: "teal",   label: "Plage"},
-  "culturel":{ color: "yellow", label: "Culturel"},
+  "désert": { color: "orange", label: "Désert" },
+  "desert": { color: "orange", label: "Désert" },
+  "aventure": { color: "red", label: "Aventure" },
+  "camping": { color: "green", label: "Camping" },
+  "voyage": { color: "blue", label: "Voyage" },
+  "montagne": { color: "purple", label: "Montagne" },
+  "plage": { color: "teal", label: "Plage" },
+  "culturel": { color: "yellow", label: "Culturel" },
 }
 
 const DIFF_META = {
-  "facile":{ color: "green",  label: "Facile"},
-  "modéré":{ color: "yellow", label: "Modéré"},
-  "difficile":{ color: "orange", label: "Difficile"},
-  "très difficile":{ color: "red",label: "Très difficile" },
+  "facile": { color: "green", label: "Facile" },
+  "modéré": { color: "yellow", label: "Modéré" },
+  "difficile": { color: "orange", label: "Difficile" },
+  "très difficile": { color: "red", label: "Très difficile" },
 }
 
 const EQUIP_ICONS = {
-  "Tente":LuTentTree,
-  "Sac de couchage":GiSleepingBag ,
-  "Lampe frontale":IoFlashlightSharp ,
+  "Tente": LuTentTree,
+  "Sac de couchage": GiSleepingBag,
+  "Lampe frontale": IoFlashlightSharp,
   "GPS": FaMapLocationDot,
   "Kit premiers secours": RiFirstAidKitFill,
-  "Gourde":FaBottleWater,
-  "Repas inclus":GiMeal,
+  "Gourde": FaBottleWater,
+  "Repas inclus": GiMeal,
 }
 
 const fmtDate = (d) => d
   ? new Date(d).toLocaleDateString("fr-FR", {
-      weekday: "long", day: "numeric", month: "long", year: "numeric"
-    })
+    weekday: "long", day: "numeric", month: "long", year: "numeric"
+  })
   : "—"
 
 const fmtDateShort = (d) => d
   ? new Date(d).toLocaleDateString("fr-FR", {
-      day: "numeric", month: "long", year: "numeric"
-    })
+    day: "numeric", month: "long", year: "numeric"
+  })
   : "—"
 
 /* ── Gallery ────────────────────────────────────────────────────── */
@@ -165,12 +168,12 @@ function PageSkeleton() {
     <Box maxW="1100px" mx="auto" px={6} py={10}>
       <Skeleton h="440px" borderRadius="2xl" mb={3} />
       <Flex gap={2} mb={8}>
-        {[1,2,3,4].map(i => <Skeleton key={i} w="80px" h="60px" borderRadius="lg" />)}
+        {[1, 2, 3, 4].map(i => <Skeleton key={i} w="80px" h="60px" borderRadius="lg" />)}
       </Flex>
       <Grid templateColumns={{ base: "1fr", lg: "1fr 360px" }} gap={10}>
         <VStack align="stretch" spacing={5}>
           <Grid templateColumns="1fr 1fr" gap={3}>
-            {[1,2,3,4].map(i => <Skeleton key={i} h="76px" borderRadius="xl" />)}
+            {[1, 2, 3, 4].map(i => <Skeleton key={i} h="76px" borderRadius="xl" />)}
           </Grid>
           <SkeletonText noOfLines={4} spacing={3} />
         </VStack>
@@ -180,26 +183,24 @@ function PageSkeleton() {
   )
 }
 
-/* ── Main ───────────────────────────────────────────────────────── */
 export default function CircuitDetail() {
-  const { id }   = useParams()
+  const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
 
-  const [circuit,  setCircuit]  = useState(location.state?.circuit  ?? null)
-  const [voyage,   setVoyage]   = useState(location.state?.voyage   ?? null)
-  const [loading,  setLoading]  = useState(!location.state?.circuit)
-  const [error,    setError]    = useState(null)
+  const [circuit, setCircuit] = useState(null)
+  const [voyage, setVoyage] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
   const [showMore, setShowMore] = useState(false)
-  const [selDate,  setSelDate]  = useState(null)
-  const [guests,   setGuests]   = useState(1)
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false)
+  const { user } = useProfile();
 
   useEffect(() => {
-    if (location.state?.circuit) return
-    ;(async () => {
+    ; (async () => {
       try {
         setLoading(true)
-        const res = await Axios.get(`/service/voyage/circuit/${id}`)
+        const res = await Axios.get(`/service/voyage/circuit/public/get/${id}`)
         setCircuit(res.data.circuit)
         setVoyage(res.data.circuit?.voyagesCircuit ?? null)
       } catch {
@@ -216,7 +217,6 @@ export default function CircuitDetail() {
     <>
       <Header />
       <Flex direction="column" align="center" justify="center" py={32} gap={3}>
-        <Text fontSize="3xl">🏜️</Text>
         <Text color="gray.500">{error ?? "Circuit introuvable."}</Text>
         <Button size="sm" colorScheme="orange" onClick={() => navigate(-1)}>Retour</Button>
       </Flex>
@@ -224,14 +224,21 @@ export default function CircuitDetail() {
   )
 
   const images = circuit.imagesCircuits ?? circuit.images ?? []
-  const cat  = CAT_META[circuit.category?.toLowerCase()] ?? { color: "orange", label: circuit.category }
-  const diff = DIFF_META[circuit.difficulty]              ?? { color: "gray", label: circuit.difficulty }
-  const totalPrice = guests * Number(circuit.price_per_person || 0)
+  const cat = CAT_META[circuit.category?.toLowerCase()] ?? { color: "orange", label: circuit.category }
+  const diff = DIFF_META[circuit.difficulty] ?? { color: "gray", label: circuit.difficulty }
 
   return (
     <>
       <Header />
-    <Helmet title={circuit.title}></Helmet>
+
+      <PackagesDialog
+        type={"circuit"}
+        isOpen={bookingDialogOpen}
+        onClose={() => setBookingDialogOpen(false)}
+        packageData={circuit?.packagesCircuit}
+      />
+
+      <Helmet title={circuit.title}></Helmet>
       <Box maxW="1100px" mx="auto" px={{ base: 4, md: 6 }} py={8}>
 
         {/* Back */}
@@ -275,7 +282,7 @@ export default function CircuitDetail() {
             <Text fontSize="xs" opacity={0.85} mb={0.5}>À partir de</Text>
             <Flex align="baseline" gap={1} justify="center">
               <Text fontSize="3xl" fontWeight={900} lineHeight={1}>
-                {Number(circuit.price_per_person).toFixed(0)}
+                {Math.min(...circuit.packagesCircuit.map(p => p.price)).toFixed(0)}
               </Text>
               <Text fontSize="sm" opacity={0.85}>TND</Text>
             </Flex>
@@ -371,7 +378,7 @@ export default function CircuitDetail() {
                     <Flex key={i} align="center" gap={2.5} p={3}
                       bg="orange.50" borderRadius="xl"
                       border="1px solid" borderColor="orange.100">
-                        <Icon as={EQUIP_ICONS[eq]}/>
+                      <Icon as={EQUIP_ICONS[eq] || LuCompass} />
                       {/* <Text fontSize="lg">{EQUIP_ICONS[eq] ?? "🎒"}</Text> */}
                       <Text fontSize="sm" fontWeight={600} color="orange.700">{eq}</Text>
                     </Flex>
@@ -391,118 +398,64 @@ export default function CircuitDetail() {
               <Box bg="white" borderRadius="2xl" overflow="hidden"
                 border="1px solid" borderColor="gray.100"
                 boxShadow="0 4px 24px rgba(0,0,0,0.08)">
-                <Box
-                  bg="linear-gradient(135deg,#2B6CB0,#3182CE,#63B3ED)"
-                  px={5} py={4}>
+                <Box bg="blue.600" px={5} py={4}>
                   <Text color="white" fontWeight={700} fontSize="md">
                     Réserver ce circuit
+
+
                   </Text>
-                  <Text color="orange.100" fontSize="xs" mt={0.5}>
-                    Max {circuit.max_people ?? "—"} personnes par départ
+                  <Text color="blue.100" fontSize="xs" mt={0.5}>
+                    {circuit.packagesCircuit?.length ? `${circuit.packagesCircuit.length} packages disponibles` : "À partir de"}
                   </Text>
                 </Box>
                 <VStack align="stretch" spacing={3} p={5}>
-
-                  {/* Guests selector */}
-                  <Box>
-                    <Text fontSize="xs" fontWeight={700} color="gray.600"
-                      textTransform="uppercase" letterSpacing="wider" mb={2}>
-                      Nombre de personnes
-                    </Text>
-                    <Flex align="center" gap={3}
-                      border="1.5px solid" borderColor="gray.200"
-                      borderRadius="xl" px={4} py={2.5}>
-                      <Box as="button"
-                        w="28px" h="28px" borderRadius="full"
-                        border="1px solid"
-                        borderColor={guests <= 1 ? "gray.200" : "orange.300"}
-                        color={guests <= 1 ? "gray.300" : "orange.500"}
-                        bg="white" display="flex" alignItems="center" justifyContent="center"
-                        cursor={guests <= 1 ? "not-allowed" : "pointer"}
-                        fontSize="lg" lineHeight={1} transition="all 0.15s"
-                        onClick={() => setGuests(g => Math.max(1, g - 1))}>–</Box>
-                      <Text flex={1} textAlign="center" fontSize="sm"
-                        fontWeight={700} color="gray.800">
-                        {guests} personne{guests > 1 ? "s" : ""}
-                      </Text>
-                      <Box as="button"
-                        w="28px" h="28px" borderRadius="full"
-                        border="1px solid" borderColor="orange.300"
-                        color="orange.500" bg="white"
-                        display="flex" alignItems="center" justifyContent="center"
-                        cursor="pointer" fontSize="lg" lineHeight={1}
-                        transition="all 0.15s"
-                        _hover={{ bg: "orange.50" }}
-                        onClick={() => setGuests(g =>
-                          Math.min(g + 1, circuit.max_people ?? 99))}>+</Box>
-                    </Flex>
-                  </Box>
-                  {circuit.available_dates?.length > 0 && (
-              <Box>
-                <SectionTitle>Dates de départ disponibles</SectionTitle>
-                <Flex gap={2} flexWrap="wrap">
-                  {circuit.available_dates.map((d, i) => {
-                    const isSel = selDate === d
-                    return (
-                      <Box key={i} as="button"
-                        px={4} py={2.5} borderRadius="xl" fontSize="sm" fontWeight={600}
-                        border="1.5px solid"
-                        borderColor={isSel ? "orange.400" : "gray.200"}
-                        bg={isSel ? "orange.50" : "white"}
-                        color={isSel ? "orange.600" : "gray.700"}
-                        cursor="pointer" transition="all 0.15s"
-                        _hover={{ borderColor: "orange.300", bg: "orange.50" }}
-                        onClick={() => setSelDate(isSel ? null : d)}>
-                        <Flex align="center" gap={2}>
-                          <LuCalendar size={12} />
-                          {fmtDateShort(d)}
-                          {isSel && <LuCheck size={12} />}
-                        </Flex>
-                      </Box>
-                    )
-                  })}
-                </Flex>
-              </Box>
-            )}
-
-                  {/* Price summary */}
-                  <Box bg="gray.50" borderRadius="xl" p={3}
-                    border="1px solid" borderColor="gray.100">
-                    <Flex justify="space-between" mb={1.5}>
-                      <Text fontSize="sm" color="gray.500">
-                        {Number(circuit.price_per_person).toFixed(0)} TND × {guests} pers.
-                      </Text>
-                      <Text fontSize="sm" fontWeight={600} color="gray.700">
-                        {totalPrice.toFixed(0)} TND
-                      </Text>
-                    </Flex>
-                    <Flex justify="space-between" align="center"
-                      borderTop="1px solid" borderColor="gray.200" pt={2}>
-                      <Text fontSize="sm" fontWeight={700} color="gray.700">Total</Text>
-                      <Flex align="baseline" gap={1}>
-                        <Text fontSize="2xl" fontWeight={900}
-                          color="blue.500" lineHeight={1}>
-                          {totalPrice.toFixed(0)}
+                  {circuit.packagesCircuit?.length > 0 && (
+                    <>
+                      <Flex justify="space-between" align="center">
+                        <Text fontSize="sm" color="gray.500">Prix min</Text>
+                        <Text fontSize="sm" fontWeight={700} color="gray.800">
+                          {Math.min(...circuit.packagesCircuit.map(p => p.price)).toFixed(0)} TND
                         </Text>
-                        <Text fontSize="xs" color="gray.500">TND</Text>
                       </Flex>
+                      <Flex justify="space-between" align="center">
+                        <Text fontSize="sm" color="gray.500">Prix max</Text>
+                        <Text fontSize="sm" fontWeight={700} color="gray.800">
+                          {Math.max(...circuit.packagesCircuit.map(p => p.price)).toFixed(0)} TND
+                        </Text>
+                      </Flex>
+                    </>
+                  )}
+                  {circuit.duration && (
+                    <Flex justify="space-between" align="center">
+                      <Text fontSize="sm" color="gray.500">Durée</Text>
+                      <Text fontSize="sm" fontWeight={700} color="gray.800">
+                        {circuit.duration} jour{circuit.duration > 1 ? "s" : ""}
+                      </Text>
                     </Flex>
+                  )}
+                  <Box borderTop="1px solid" borderColor="gray.100" pt={3}>
+                    <Tooltip content={
+                      !user ?
+                        "Vous devez vous connecter pour réserver"
+                        : user?.role !== "client"
+                          ? "Seuls les clients peuvent effectuer une réservation"
+                          : undefined
+                    }>
+                      <Button w="full" h="46px" colorScheme="blue"
+                        borderRadius="xl" fontWeight={700}
+                        disabled={circuit?.packagesCircuit?.length === 0 || !user || user?.role !== "client"}
+                        onClick={() => setBookingDialogOpen(true)}
+                      >
+                        <Flex align="center" gap={2}>
+                          <LuCompass size={15} />
+                          Réserver maintenant
+                        </Flex>
+                      </Button>
+                    </Tooltip>
+                    <Text fontSize="xs" color="gray.400" textAlign="center" mt={2}>
+                      Contactez l'agence pour confirmer
+                    </Text>
                   </Box>
-
-                  <Button
-                    h="46px" colorScheme="orange" borderRadius="xl" fontWeight={700}
-                    isDisabled={!selDate && circuit.available_dates?.length > 0}>
-                    <Flex align="center" gap={2}>
-                      <LuCompass size={15} />
-                      {circuit.available_dates?.length > 0 && !selDate
-                        ? "Choisissez une date"
-                        : "Réserver maintenant"}
-                    </Flex>
-                  </Button>
-
-                  <Text fontSize="xs" color="gray.400" textAlign="center">
-                    Confirmation par l'organisateur sous 24h
-                  </Text>
                 </VStack>
               </Box>
 
@@ -570,7 +523,7 @@ export default function CircuitDetail() {
                           border="1px solid" borderColor="gray.100"
                           _hover={{ bg: "orange.50", borderColor: "orange.100" }}
                           transition="all 0.15s">
-                          <Icon fontSize={"xs"}><FaPhone/> </Icon>
+                          <Icon fontSize={"xs"} as={FaPhone} />
                           <Text fontSize="sm" color="gray.600">{voyage.phone}</Text>
                         </Flex>
                       )}

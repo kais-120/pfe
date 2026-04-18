@@ -31,13 +31,12 @@ const User = sequelize.define("users",{
     verified_at:{
     type:DataTypes.DATE,
     },
-    deleted_at:{
+    deletedAt:{
         type:DataTypes.DATE,
-        allowNull:true
     }
 
 },{
     paranoid:true,
-    deletedAt:"deleted_at"
+    deletedAt:"deletedAt"
 })
 module.exports = User;

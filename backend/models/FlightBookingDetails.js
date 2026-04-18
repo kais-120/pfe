@@ -11,7 +11,11 @@ const FlightBookingDetails = sequelize.define("flight_booking_details",{
         type:DataTypes.ENUM("économique", "business", "premiére"),
         allowNull:false,
     },
-    passenger_count:{
+    adult_passenger_count:{
+        type:DataTypes.INTEGER,
+        allowNull:false,
+    },
+    children_passenger_count:{
         type:DataTypes.INTEGER,
         allowNull:false,
     },

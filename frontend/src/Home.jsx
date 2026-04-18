@@ -486,7 +486,6 @@ const Home = () => {
 
         {error && (
           <Flex direction="column" align="center" justify="center" py={20} gap={3}>
-            <Text fontSize="xl">😕</Text>
             <Text color="gray.500">{error}</Text>
             <Button size="sm" colorScheme="blue" onClick={() => window.location.reload()}>
               Réessayer
