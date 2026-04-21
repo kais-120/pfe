@@ -70,8 +70,13 @@ import EditAirline from "./dashboard/Partner/Service/Edit/EditAirline";
 import EditFlight from "./dashboard/Partner/Service/Edit/EditFlight";
 import EditAgency from "./dashboard/Partner/Service/Edit/EditAgency";
 import EditOffer from "./dashboard/Partner/Service/Edit/EditOffer";
+import { useColorMode } from "./components/ui/color-mode";
+import { useEffect } from "react";
+import ReviewsManagement from "./dashboard/Admin/ReviewsManagement";
 
 function App() {
+  const { setColorMode } = useColorMode()
+  useEffect(() => { setColorMode("light") }, [setColorMode])
   return (
     <>
   <Toaster />
@@ -154,6 +159,7 @@ function App() {
     <Route path="/dashboard" element={<HomeDashboard/>}>
       <Route index element={<Dashboard />} />
       <Route path="users" element={<Users />} />
+      <Route path="review" element={<ReviewsManagement />} />
       <Route path="users/create" element={<AddAgent />} />
       <Route path="document/partner" element={<PartnerDocument />} />
       <Route path="document/partner/:id" element={<PartnerDocumentInfo />} />

@@ -465,7 +465,6 @@ export default function SearchLocation() {
           pickupDate,
           returnDate
         })
-        console.log(res.data.vehicles)
         setAgencies(res.data.vehicles ?? [])
       } catch {
         setError("Impossible de charger les véhicules.")
@@ -519,7 +518,6 @@ const filtered = allVehicles.filter(v => {
       `&return=${returnDate}`
     )
   }
-console.log(filtered)
   const Filters = () => (
     <VStack align="stretch" spacing={6}>
 

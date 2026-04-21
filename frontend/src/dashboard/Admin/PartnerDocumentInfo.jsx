@@ -300,7 +300,6 @@ const PartnerDocumentInfo = () => {
   }
 
   const timelineEvents = buildTimelineEvents()
-  console.log(timelineEvents)
 
 
   if (loading) return <PageSkeleton />

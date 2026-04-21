@@ -1,5 +1,5 @@
 const { body, validationResult } = require("express-validator");
-const { Hotel, User, Booking, HotelBookingDetails, Reviews, Agence, Offer, Compagnie, Voyage, Circuit, CarRentalBookingDetails, PartnerFile } = require("../models");
+const { Hotel, User, Booking, HotelBookingDetails, Reviews, Agence, Offer, Compagnie, Voyage, Circuit, CarRentalBookingDetails, PartnerFile, Claim } = require("../models");
 const Room = require("../models/Room");
 const ImageService = require("../models/ImageServices");
 const Location = require("../models/Location");
@@ -25,6 +25,7 @@ exports.GetPublicHotel = async (req, res) => {
         {
           model: Reviews,
           as: "hotelReview",
+          where:{status:"approuvée"},
           include: [
             {
               model: User,
@@ -430,6 +431,11 @@ exports.GetHotel = async (req, res) => {
               model: User,
               as: "clientReview",
               attributes: ["name"]
+            },
+            {
+              model:Claim,
+              as:"claim",
+              attributes:["id","reason","message","status"]
             }
           ]
         }
@@ -440,7 +446,12 @@ exports.GetHotel = async (req, res) => {
     }
     const images = await ImageService.findAll({ where: { type: "hotel", service_id: hotel.id } })
     const data = { ...hotel.toJSON(), images }
-    return res.json({ message: "hotel found", hotel: data });
+    const review = await Reviews.findAll({where: 
+      {hotel_id:hotel.id,status:"approuvée"},
+      attributes:["rate"]
+    }
+  );
+    return res.json({ message: "hotel found", hotel: data, review });
   } catch (err) {
     console.log(err)
     return res.status(500).send({ message: "error server" })
@@ -509,6 +520,71 @@ exports.AddRoom = [
     }
   }
 ]
+
+exports.DeleteRoom =  async (req, res) => {
+    try {
+      const userId = req.userId;
+      const {id} = req.params;
+      const hotel = await Hotel.findOne({ where: { partner_id: userId } });
+      const room = await Room.findByPk(id);
+      if(!room){
+        return res.status(404).json({ message: "room not found" });
+      }
+      if (!hotel) {
+        return res.status(404).json({ message: "hotel not found" });
+      }
+      if(room.hotel_id !== hotel.id){
+        return res.status(403).json({ message: "you don't have the access to delete this room" });
+      }
+      const existingBooking = await HotelBookingDetails.findOne({
+      where: { room_id: id },
+      include: [
+        {
+          model: Booking,
+          as:"HotelDetailsBooking",
+          where: {
+            status: ["en attente", "confirmée"], 
+            deleted_at: null
+          }
+        }
+      ]
+    });
+
+    if (existingBooking) {
+      return res.status(400).json({
+        message: "Impossible de supprimer cette chambre, elle a des réservations en cours"
+      });
+    }
+      await room.destroy();
+      return res.json({ message: "hotel created" });
+    } catch(err) {
+      console.log(err)
+      return res.status(500).send({ message: "error server" })
+    }
+}
+
+exports.VisibilityRoom =  async (req, res) => {
+    try {
+      const userId = req.userId;
+      const {id} = req.params;
+      const hotel = await Hotel.findOne({ where: { partner_id: userId } });
+      const room = await Room.findByPk(id);
+      if(!room){
+        return res.status(404).json({ message: "room not found" });
+      }
+      if (!hotel) {
+        return res.status(404).json({ message: "hotel not found" });
+      }
+      if(room.hotel_id !== hotel.id){
+        return res.status(403).json({ message: "you don't have the access to delete this room" });
+      }
+      const status = room.status === "active" ? "inactive" : "active"
+      await room.update({status});
+      return res.json({ message: "room is change there visibility" });
+    } catch {
+      return res.status(500).send({ message: "error server" })
+    }
+}
 
 exports.GetRoom = async (req, res) => {
   try {
@@ -1214,6 +1290,7 @@ exports.GetOfferById = async (req, res) => {
     return res.status(500).send({ message: "Server error" });
   }
 };
+
 
 exports.GetAgency = async (req, res) => {
   try {
@@ -2047,6 +2124,28 @@ exports.DeleteCircuit = async (req,res) => {
   }
 }
 
+exports.DeleteOffer = async (req,res) => {
+  try{
+    const {id} = req.params;
+    const partner_id = req.userId;
+    const offer = await Offer.findByPk(id,{
+      include:{
+        model:Agence,
+        as:"agencyOffer"
+      }
+    });
+    if(!offer){
+      return res.status(404).json({message:"offer not found"})
+    }
+    if(offer.agencyOffer.partner_id != partner_id){
+      return res.status(403).json({message:"you don't have access to this offer"})
+    }
+    await offer.destroy();
+      return res.json({message:"offer deleted"})
+  }catch{
+    return res.status(500).json({message:"error service"})
+  }
+}
 exports.AddCircuit = [
   body("title").notEmpty().withMessage("Title is required"),
   body("location").notEmpty().withMessage("Location is required"),

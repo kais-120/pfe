@@ -376,7 +376,6 @@ const EditOffer = () => {
   const [allPackages, setAllPackages] = useState([])
   const [loading, setLoading] = useState(true)
   
-  console.log(existingImages)
   const formik = useFormik({
     initialValues: {
       title: "", type: "", destination: "",
@@ -434,7 +433,6 @@ const EditOffer = () => {
     return arr.join(", ")
   }
 
-  // ── Fetch offer ──
   useEffect(() => {
     const fetchOffer = async () => {
       try {
@@ -470,7 +468,6 @@ const EditOffer = () => {
     fetchOffer()
   }, [id])
 
-  // ── Image handlers ──
   const removeExistingImage = (imgId) => {
     setRemovedImageIds((prev) => [...prev, imgId])
     setExistingImages((prev) => prev.filter((img) => img.id !== imgId))

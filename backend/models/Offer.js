@@ -61,9 +61,14 @@ const Offer = sequelize.define(
       type: DataTypes.ENUM("pending", "accepted", "rejected"),
       defaultValue: "pending",
     },
+    deletedAt: {
+      type: DataTypes.DATE,
+    }
   },
   {
     tableName: "offers",
+    paranoid:true,
+    deletedAt:"deletedAt",
     timestamps: true,
   }
 );

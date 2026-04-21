@@ -1,5 +1,5 @@
 import { Box, Text, VStack, Flex, Image, Link } from "@chakra-ui/react"
-import { Building, Building2, CalendarCheck2, Files, Gauge, User, LogOut, Car, Plane, TicketsPlane, Bus, ScanQrCode } from 'lucide-react';
+import { Building, Building2, CalendarCheck2, Files, Gauge, User, LogOut, Car, Plane, TicketsPlane, Bus, ScanQrCode, MessageCircle } from 'lucide-react';
 import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { AxiosToken, socketBaseURL } from "../../Api/Api";
@@ -15,6 +15,14 @@ const Sidebar = () => {
     { icon: User,label: "Utilisateurs",link: "users",end: false },
     { icon: Files,label: "Documents partenaires",link: "document/partner",end: false },
     { icon: Building2,label: "Services",link: "service",end: false },
+    { icon: MessageCircle,label: "Avis",link: "review",end: false },
+
+  ]
+  const agentList = [
+    { icon: User,label: "Partenaires",link: "users",end: false },
+    { icon: Files,label: "Documents partenaires",link: "document/partner",end: false },
+    { icon: Building2,label: "Services",link: "service",end: false },
+    { icon: MessageCircle,label: "Avis",link: "review",end: false },
   ]
   const partnerSector = user?.partnerInfo?.[0]?.sector;
   const partnerLabel = partnerSector === "hôtel" ? "Mon hôtel" : partnerSector === "agence de voyage" ? "Mon agence"
@@ -30,7 +38,10 @@ const Sidebar = () => {
     { icon: CalendarCheck2, label: "Réservations",link: "bookings",end: false },
   ]
 
-  const sideBarList = user && user.role === "admin" ? adminList : partnerList;
+  const sideBarList = user && user?.role === "admin" ? adminList 
+  : user?.role === "agent" ?
+    agentList
+  : partnerList;
 
   return (
     <Box
@@ -57,7 +68,7 @@ const Sidebar = () => {
         <Box px={6} pt={5} pb={2}>
           <Text fontSize="9px" fontWeight={700} color="gray.400"
             textTransform="uppercase" letterSpacing="widest">
-            {user.role === "admin" ? "Administration" : "Espace partenaire"}
+            {user.role === "admin" ? "Administration" : user.role === "agent" ? "Espace agent"  : "Espace partenaire"}
           </Text>
         </Box>
       )}

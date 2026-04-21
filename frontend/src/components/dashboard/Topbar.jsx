@@ -83,8 +83,8 @@ const Topbar = () => {
 
   const handleLogout = () => {
     cookie.remove("auth");
-    navigate("/login");
-    window.location.reload(); 
+      navigate("/login");
+      window.location.reload(); 
   }
   const initials = user?.name?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
 

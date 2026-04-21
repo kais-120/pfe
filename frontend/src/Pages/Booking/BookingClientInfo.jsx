@@ -136,8 +136,9 @@ function QrCodeModal({ value }) {
       <Dialog.Trigger asChild>
         <Button
           size="sm" variant="ghost"
-          color="blue.500" borderRadius="lg"
-          _hover={{ bg: "blue.50", color: "blue.600" }}
+          color="white" borderRadius="lg"
+          _hover={{ bg: "blackAlpha.700", }}
+          bg={"black"}
           fontWeight={600}
         >
           QR Code
@@ -177,32 +178,36 @@ function QrCodeModal({ value }) {
   )
 }
 
-function AddReviewModal({ type, id }) {
+function AddReviewModal({ id }) {
+  const [open,setOpen] = useState(false)
   const formik = useFormik({
     initialValues: {
       review: "",
       rate: null,
-      type_service: type
     },
     validationSchema,
     onSubmit: async (values) => {
       try {
-        // API call to submit review
-        console.log("Review submitted:", values)
+        await AxiosToken.post(`/review/add/${id}`,values)
+        formik.resetForm();
+        setOpen(false)
+
       } catch {
         console.error("error")
-      }
+      } 
     }
   })
 
   return (
-    <Dialog.Root>
+    <Dialog.Root open={open} onOpenChange={(e) => setOpen(e.open)}>
       <Dialog.Trigger asChild>
         <Button
           variant="ghost"
           size="sm" colorScheme="blue"
           fontWeight={600}
-          _hover={{ bg: "blue.50" }}
+          _hover={{ bg: "blue.700" }}
+          bg={"blue.600"}
+          color={"white"}
         >
           Ajouter avis
         </Button>
@@ -376,6 +381,7 @@ function BookingCard({ booking }) {
           )}
 
           {/* Footer with Price and Actions */}
+          {type !== "hotel" &&
           <Flex justify="flex-end" align="center" mt={5} pt={5} borderTop="1px solid" borderColor="gray.100" gap={3}>
             <Box textAlign="right" flex={1}>
               <Text fontSize="xs" color="gray.400" fontWeight={600}>Total</Text>
@@ -383,13 +389,14 @@ function BookingCard({ booking }) {
               <Text fontSize="xs" color="gray.400">TND</Text>
             </Box>
             <VStack spacing={2} align="stretch" minW="140px">
-              <Button size="sm" colorScheme="blue" borderRadius="lg" fontWeight={600}>Annuler</Button>
+              <Button size="sm" colorScheme="blue" bg={"red.500"} _hover={{bg:"red.600"}} borderRadius="lg" fontWeight={600}>Annuler</Button>
               <QrCodeModal value={`${type}-${id}`} />
               {type === "hotel" &&
-                <AddReviewModal id={id} type={type} />
+                <AddReviewModal id={id} />
               }
             </VStack>
           </Flex>
+          }
         </Box>
       </Box>
     </>
@@ -582,6 +589,19 @@ function HotelBookingContent({ booking, fmt, today }) {
             </Flex>
           ))}
         </VStack>
+        <Flex justify="flex-end" align="center" mt={5} pt={5} borderTop="1px solid" borderColor="gray.100" gap={3}>
+            <Box textAlign="right" flex={1}>
+              <Text fontSize="xs" color="gray.400" fontWeight={600}>Total</Text>
+              <Text fontSize="2xl" fontWeight={900} color="blue.600">{booking.total_price}</Text>
+              <Text fontSize="xs" color="gray.400">TND</Text>
+            </Box>
+            <VStack spacing={2} align="stretch" minW="140px">
+              <Button size="sm" colorScheme="blue" bg={"red.500"} _hover={{bg:"red.600"}} borderRadius="lg" fontWeight={600}>Annuler</Button>
+              <QrCodeModal  />
+                <AddReviewModal id={booking.bookingHotelDetails[0].RoomHotelBooking.id} />
+              
+            </VStack>
+          </Flex>
       </Box>
     </Flex>
   )
@@ -695,11 +715,11 @@ function CircuitBookingContent({ booking, fmt }) {
         <Grid templateColumns="1fr 1fr" gap={3} mb={4}>
           <Box bg="orange.50" borderRadius="xl" p={3}>
             <Text fontSize="xs" color="orange.400" fontWeight={600} mb={0.5}>Début</Text>
-            <Text fontSize="sm" fontWeight={700} color="gray.700">{fmt(circuit?.start_date)}</Text>
+            <Text fontSize="sm" fontWeight={700} color="gray.700">{fmt(details?.packagesCircuit[0].departureDate)}</Text>
           </Box>
           <Box bg="orange.50" borderRadius="xl" p={3}>
             <Text fontSize="xs" color="orange.400" fontWeight={600} mb={0.5}>Fin</Text>
-            <Text fontSize="sm" fontWeight={700} color="gray.700">{fmt(circuit?.end_date)}</Text>
+            <Text fontSize="sm" fontWeight={700} color="gray.700">{fmt(details?.packagesCircuit[0].returnDate)}</Text>
           </Box>
         </Grid>
 
@@ -716,7 +736,6 @@ function CircuitBookingContent({ booking, fmt }) {
             <LuUsers size={14} color="gray" />
             <Text fontSize="sm" color="gray.600"><Text as="span" fontWeight={700}>{circuit?.number_of_participants}</Text> participant{circuit?.number_of_participants > 1 ? "s" : ""}</Text>
           </Flex>
-          <Text fontSize="xs" color="gray.600" lineHeight="1.5">{details?.description}</Text>
         </VStack>
       </Box>
     </Flex>

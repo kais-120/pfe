@@ -1,13 +1,13 @@
 const express = require("express");
 const AuthenticateToken = require("../middlewares/AuthenticateToken");
 const AuthenticatePartner = require("../middlewares/AuthenticatePartner");
-const { AddHotel, AddRoom, GetAllServices, GetAllHotel, GetHotel, GetPublicHotel, GetSearchHotels, AddLocation, GetLocation, AddVehicle, AddAgency, GetAgency, AddOffer, AddAirline, GetAirline, AddFlight, AddVoyage, GetVoyage, AddCircuit, GetPublicLocation, checkAvailability, GetVehicleById, GetPublicAgency, GetOfferById, municipalities, GetPublicAirline, GetFlightById, GetPublicVoyage, GetCircuitById, GetSearchRooms, GetSearchAirline, SearchVehicle, DeleteService, GetRoom, UpdateHotel, UpdateVehicle, UpdateCircuit, DeleteCircuit } = require("../controllers/ServiceController");
+const { AddHotel, AddRoom, GetAllServices, GetAllHotel, GetHotel, GetPublicHotel, GetSearchHotels, AddLocation, GetLocation, AddVehicle, AddAgency, GetAgency, AddOffer, AddAirline, GetAirline, AddFlight, AddVoyage, GetVoyage, AddCircuit, GetPublicLocation, checkAvailability, GetVehicleById, GetPublicAgency, GetOfferById, municipalities, GetPublicAirline, GetFlightById, GetPublicVoyage, GetCircuitById, GetSearchRooms, GetSearchAirline, SearchVehicle, DeleteService, GetRoom, UpdateHotel, UpdateVehicle, UpdateCircuit, DeleteCircuit, DeleteRoom, VisibilityRoom, DeleteOffer } = require("../controllers/ServiceController");
 const upload = require("../middlewares/Uploads");
 const AuthenticateAgent = require("../middlewares/AuthenticateAgent");
 const router = express.Router();
 
 router.get("/get",[AuthenticateToken,AuthenticateAgent],GetAllServices);
-router.delete("/:type/:id",[AuthenticateToken,AuthenticateAgent],DeleteService)
+router.delete("delete/:type/:id",[AuthenticateToken,AuthenticateAgent],DeleteService)
 
 router.get("/get/hotels",GetAllHotel);
 router.post("/get/hotels/search",GetSearchHotels);
@@ -17,6 +17,8 @@ router.get("/hotel/get",[AuthenticateToken,AuthenticatePartner],GetHotel);
 router.post("/hotel/add",[AuthenticateToken,AuthenticatePartner,upload.fields([{name:"service_doc",maxCount:15}])],AddHotel);
 router.post("/hotel/room/add",[AuthenticateToken,AuthenticatePartner],AddRoom);
 router.get("/hotel/get/room/:id",[AuthenticateToken,AuthenticatePartner],GetRoom);
+router.delete("/hotel/room/:id",[AuthenticateToken,AuthenticatePartner],DeleteRoom);
+router.put("/hotel/room/:id",[AuthenticateToken,AuthenticatePartner],VisibilityRoom);
 router.post("/hotel/update",[AuthenticateToken,AuthenticatePartner,upload.fields([{name:"service_doc",maxCount:15}])],UpdateHotel);
 
 router.post("/location/add",[AuthenticateToken,AuthenticatePartner],AddLocation);
@@ -31,6 +33,7 @@ router.delete("/vehicle/:id",[AuthenticateToken,AuthenticatePartner] ,UpdateVehi
 
 router.post("/agency/add",[AuthenticateToken,AuthenticatePartner,upload.fields([{name:"service_doc",maxCount:1}])],AddAgency);
 router.get("/agency/get",[AuthenticateToken,AuthenticatePartner],GetAgency);
+router.delete("/offer/:id",[AuthenticateToken,AuthenticatePartner],DeleteOffer);
 router.get("/agency/public/get",GetPublicAgency);
 router.get("/offer/get/:id",GetOfferById);
 router.post("/agency/offer/add",[AuthenticateToken,AuthenticatePartner,upload.fields([{name:"service_doc",maxCount:15}])],AddOffer)
@@ -45,8 +48,9 @@ router.post("/airline/flight/add",[AuthenticateToken,AuthenticatePartner],AddFli
 router.post("/voyage/add",[AuthenticateToken,AuthenticatePartner],AddVoyage);
 router.get("/voyage/get",[AuthenticateToken,AuthenticatePartner],GetVoyage);
 router.get("/voyage/public/get",GetPublicVoyage);
-router.delete("/voyage/circuit/:id",DeleteCircuit);
+router.delete("/voyage/circuit/:id",[AuthenticateToken,AuthenticatePartner],DeleteCircuit);
 router.get("/voyage/circuit/public/get/:id",GetCircuitById);
+router.delete("/circuit/:id",DeleteCircuit);
 router.post("/voyage/circuit/add",[AuthenticateToken,AuthenticatePartner,upload.fields([{name:"service_doc",maxCount:15}])],AddCircuit);
 router.post("/voyage/circuit/update/:id",[AuthenticateToken,AuthenticatePartner,upload.fields([{name:"service_doc",maxCount:15}])],UpdateCircuit);
 

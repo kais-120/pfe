@@ -26,8 +26,8 @@ const SuccessPayment = () => {
         booking_id
       })
     }catch{
-      console.error("error"),
-      window.location = "/payment/cancel"
+      console.error("error")
+      // window.location = "/payment/cancel"
     }
     finally{
       setLoading(false)

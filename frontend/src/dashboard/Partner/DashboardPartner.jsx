@@ -296,7 +296,7 @@ const DashboardPartner = () => {
     month: "long",
     year: "numeric",
   });
-
+console.log(reviews)
   return (
     <>
       <Helmet title="Tableau de bord partenaire" />
@@ -355,7 +355,7 @@ const DashboardPartner = () => {
               <Text fontSize="xs" color="gray.400">· {reviews.totalReview} avis</Text>
             </Flex>
           </Flex>
-          {reviews ?
+          {reviews && reviews.length === 0 ?
             <Flex
               b={"white"}
               py={"20"}
@@ -371,7 +371,7 @@ const DashboardPartner = () => {
             </Flex>
             : <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={0}>
 
-              {reviews.map((r, i) => (
+              {reviews.reviews.map((r, i) => (
                 <Box key={i} px={5} py={4}
                   borderRight={{ md: i % 2 === 0 ? "1px solid" : "none" }}
                   borderBottom={i < reviews.length - 2 ? "1px solid" : { base: i < reviews.length - 1 ? "1px solid" : "none", md: "none" }}
@@ -380,20 +380,19 @@ const DashboardPartner = () => {
                     <Flex align="center" gap={2}>
                       <Flex w="26px" h="26px" borderRadius="full" bg="#FFFBEB" color="#F59E0B"
                         align="center" justify="center" fontSize="9px" fontWeight={800} flexShrink={0}>
-                        {r?.reviews?.clientReview?.name?.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                        {r?.clientReview?.name?.split(" ").map(w => w[0]).join("").slice(0, 2)}
                       </Flex>
                       <Box>
-                        <Text fontSize="xs" fontWeight={700} color="gray.800">{r.client}</Text>
-                        <Text fontSize="10px" color="gray.400">{r?.room || ""}</Text>
+                        <Text fontSize="xs" fontWeight={700} color="gray.800">{r?.clientReview?.name}</Text>
                       </Box>
                     </Flex>
                     <Flex direction="column" align="flex-end" gap={0.5}>
                       <Stars rating={r.rate} />
-                      <Text fontSize="10px" color="gray.400">{r.time}</Text>
+                      <Text fontSize="10px" color="gray.400">{new Date(r.createdAt).toLocaleDateString()}</Text>
                     </Flex>
                   </Flex>
                   <Text fontSize="xs" color="gray.600" mt={1} fontStyle="italic">
-                    "{r.comment}"
+                    "{r.review}"
                   </Text>
                 </Box>
               ))}

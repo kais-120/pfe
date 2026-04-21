@@ -249,7 +249,6 @@ export default function CarDetail() {
   };
 
   if (loading) return <LoadingScreen />;
-  console.log(error)
   if (error || !car) return (
     <>
       <Header />

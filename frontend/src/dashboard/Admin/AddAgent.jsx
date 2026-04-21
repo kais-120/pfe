@@ -94,7 +94,7 @@ const AddAgent = () => {
       try {
         setEmailError(false)
         const name = `${values.firstName} ${values.lastName}`
-        await AxiosToken.post("/auth/register", { ...values, name })
+        await AxiosToken.post("/user/add/agent", { ...values, name })
         navigate(-1)
       } catch(err) {
         if(err.status === 422) {

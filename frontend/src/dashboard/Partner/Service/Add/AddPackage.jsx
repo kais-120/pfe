@@ -56,18 +56,18 @@ const MONTHS = [
 ]
 
 const TRIP_TYPES = {
-  purposes: [
-    { value: "haj", label: "Haj" },
-    { value: "Omra", label: "Omra" },
-    { value: "tourisme", label: "Tourisme" },
-    { value: "affaires", label: "Affaires" },
-  ],
-  circuits: [
-    { value: "culturel", label: "Culturel" },
-    { value: "aventure", label: "Aventure" },
-    { value: "detente", label: "Détente" },
-    { value: "religieux", label: "Religieux" },
-  ],
+    purposes: [
+        { value: "haj", label: "Haj" },
+        { value: "Omra", label: "Omra" },
+        { value: "tourisme", label: "Tourisme" },
+        { value: "affaires", label: "Affaires" },
+    ],
+    circuits: [
+        { value: "culturel", label: "Culturel" },
+        { value: "aventure", label: "Aventure" },
+        { value: "detente", label: "Détente" },
+        { value: "religieux", label: "Religieux" },
+    ],
 };
 
 const INSTALLMENTS = ["2", "6", "10", "12", "Non"]
@@ -172,9 +172,9 @@ const DEFAULT_VALUES = {
     destinations: [], price: "", seats: "", installment: "6",
 }
 
-const AddPackage = ({ ontTab, onChange, initialValues, isEditing,type }) => {
-    const trip_type = type === "circuit" ? TRIP_TYPES.circuits :  TRIP_TYPES.purposes
-   
+const AddPackage = ({ ontTab, onChange, initialValues, isEditing, type }) => {
+    const trip_type = type === "circuit" ? TRIP_TYPES.circuits : TRIP_TYPES.purposes
+
     const formik = useFormik({
         initialValues: initialValues
             ? { ...DEFAULT_VALUES, ...initialValues }
@@ -220,12 +220,17 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing,type }) => {
         Janvier: 0, Février: 1, Mars: 2, Avril: 3, Mai: 4, Juin: 5,
         Juillet: 6, Août: 7, Septembre: 8, Octobre: 9, Novembre: 10, Décembre: 11,
     }
+    
     const year = Number(values.year)
     const monthIndex = monthsMap[values.month]
+    
+    // ✅ FIX: Convert Date to ISO string BEFORE parsing
     const minDate = monthIndex !== undefined
-        ? parseDate(new Date(year, monthIndex, 1)) : undefined
+        ? parseDate(new Date(year, monthIndex, 1).toISOString().split('T')[0]) 
+        : undefined
     const maxDate = monthIndex !== undefined
-        ? parseDate(new Date(year, monthIndex + 1, 0)) : undefined
+        ? parseDate(new Date(year, monthIndex + 1, 0).toISOString().split('T')[0]) 
+        : undefined
 
     const updateDest = (i, key, val) => {
         if (key === "__blur_name") { setFieldTouched(`destinations[${i}].name`, true); return }
@@ -334,16 +339,21 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing,type }) => {
                         {/* Departure */}
                         <VStack align="stretch" gap={4}>
                             <Field label="Date de départ" required error={touched.departureDate && errors.departureDate}>
-                                <DatePicker.Root locale="fr-FR" min={minDate} disabled={!values.month} max={maxDate}
-                                    value={values.departureDate ? [parseDate(values.departureDate)] : [minDate]}
+                                <DatePicker.Root
+                                    locale="fr-FR"
+                                    min={minDate}
+                                    disabled={!values.month}
+                                    max={maxDate}
+                                    value={values.departureDate ? [parseDate(values.departureDate)] : (minDate ? [minDate] : [])}
                                     onValueChange={(details) => {
                                         const date = details.value?.[0]
                                         if (date) {
-                                            setFieldValue("departureDate", new Date(date.year, date.month - 1, date.day))
+                                            setFieldValue("departureDate", `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`)
                                         } else {
                                             setFieldValue("departureDate", "")
                                         }
-                                    }}>
+                                    }}
+                                >
                                     <DatePicker.Control>
                                         <DatePicker.Input />
                                         <DatePicker.IndicatorGroup>
@@ -379,23 +389,21 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing,type }) => {
                         {/* Return */}
                         <VStack align="stretch" gap={4}>
                             <Field label="Date de retour" required error={touched.returnDate && errors.returnDate}>
-                                <DatePicker.Root locale="fr-FR" defaultMonth={minDate} min={minDate}
+                                <DatePicker.Root 
+                                    locale="fr-FR" 
+                                    min={minDate}
                                     disabled={!values.month}
-                                    value={
-                                        values.returnDate
-                                            ? [parseDate(values.returnDate)]
-                                            : minDate
-                                                ? [parseDate(new Date(minDate.year, minDate.month - 1, minDate.day + 1))]
-                                                : []
-                                    }
+                                    max={maxDate}
+                                    value={values.returnDate ? [parseDate(values.returnDate)] : (minDate ? [minDate] : [])}
                                     onValueChange={(details) => {
                                         const date = details.value?.[0]
                                         if (date) {
-                                            setFieldValue("returnDate", new Date(date.year, date.month - 1, date.day))
+                                            setFieldValue("returnDate", `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`)
                                         } else {
                                             setFieldValue("returnDate", "")
                                         }
-                                    }}>
+                                    }}
+                                >
                                     <DatePicker.Control>
                                         <DatePicker.Input />
                                         <DatePicker.IndicatorGroup>
@@ -474,7 +482,7 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing,type }) => {
                                     _hover={{ borderColor: BLUE, color: values.installment === inst ? "white" : BLUE }}
                                     transition="all 0.15s"
                                     onClick={() => setFieldValue("installment", inst)}>
-                                    {inst !== "Non" ? inst+"X" : inst}
+                                    {inst !== "Non" ? inst + "X" : inst}
                                 </Button>
                             ))}
                         </HStack>

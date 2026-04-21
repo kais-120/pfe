@@ -1,13 +1,20 @@
 import { Box, Container, Heading, Table, Text, Badge, Flex, Grid, Skeleton, SkeletonText, VStack } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { AxiosToken } from "../../../../Api/Api";
-import { LuCalendarDays, LuMapPin, LuHash, LuTrendingUp, LuUser, LuClock } from "react-icons/lu";
+import { LuCalendarDays, LuMapPin, LuHash, LuTrendingUp, LuUser, LuClock, LuCheck, LuCreditCard } from "react-icons/lu";
 import { FaCheckCircle, FaHourglassHalf, FaTimesCircle } from "react-icons/fa";
 
 const formatDate = (d) => {
-    if (!d) return "—"
-    const [day, month, year] = d.split("/")
-    return new Date(`${year}-${month}-${day}`).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })
+  if (!d) return "—"
+
+  const date = new Date(d)
+
+  return date.toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC"
+  })
 }
 
 function StatusBadge({ status }) {
@@ -15,6 +22,7 @@ function StatusBadge({ status }) {
         confirmée: { color: "green", Icon: FaCheckCircle, label: "Confirmé" },
         confirmed: { color: "green", Icon: FaCheckCircle, label: "Confirmé" },
         pending: { color: "yellow", Icon: FaHourglassHalf, label: "En attente" },
+        "en attente": { color: "yellow", Icon: FaHourglassHalf, label: "En attente" },
         cancelled: { color: "red", Icon: FaTimesCircle, label: "Annulé" },
     }
     const s = map[status?.toLowerCase()] ?? map.pending
@@ -38,6 +46,198 @@ function StatCard({ icon: Icon, label, value, color = "blue" }) {
                     <Text fontSize="lg" fontWeight={800} color="gray.800" lineHeight={1.2}>{value}</Text>
                 </Box>
             </Flex>
+        </Box>
+    )
+}
+
+function PaymentMethodSection({ payment_method, total_price, paymentInstallments }) {
+    const isInstallment = payment_method === "installment"
+
+    if (!isInstallment) {
+        return (
+            <Box mt={5} pt={5} borderTop="1px solid" borderColor="gray.100">
+                <Flex align="center" gap={2} mb={3}>
+                    <Flex w="32px" h="32px" borderRadius="lg" bg="green.100" color="green.600" align="center" justify="center">
+                        <LuCheck size={16} />
+                    </Flex>
+                    <Box>
+                        <Text fontSize="sm" fontWeight={700} color="gray.800">Paiement Total</Text>
+                        <Text fontSize="xs" color="gray.500">Montant entièrement payé</Text>
+                    </Box>
+                </Flex>
+                <Box bg="green.50" borderRadius="xl" p={4} borderLeft="4px solid" borderColor="green.400">
+                    <Text fontSize="sm" color="gray.600">
+                        Montant: <Text as="span" fontWeight={800} color="green.600">{total_price} TND</Text>
+                    </Text>
+                </Box>
+            </Box>
+        )
+    }
+
+    if (!paymentInstallments || paymentInstallments.length === 0) {
+        return null
+    }
+
+    // Sort installments by installment_number
+    const sortedInstallments = [...paymentInstallments].sort((a, b) => a.installment_number - b.installment_number)
+    const totalInstallments = sortedInstallments.length
+    const paidInstallments = sortedInstallments.filter(i => i.status === "payé").length
+    const pendingInstallments = totalInstallments - paidInstallments
+
+    const formatInstallmentDate = (dateString) => {
+        const date = new Date(dateString)
+        return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })
+    }
+
+    const isTodayPaymentDay = (dateString) => {
+        const dueDate = new Date(dateString)
+        const today = new Date()
+        return (
+            dueDate.getDate() === today.getDate() &&
+            dueDate.getMonth() === today.getMonth() &&
+            dueDate.getFullYear() === today.getFullYear()
+        )
+    }
+
+    const getInstallmentStatusColor = (status) => {
+        const statusMap = {
+            "payé": { color: "green", label: "Payé", Icon: FaCheckCircle },
+            "en attente": { color: "yellow", label: "En attente", Icon: FaHourglassHalf },
+            "retard": { color: "red", label: "Retard", Icon: FaTimesCircle }
+        }
+        return statusMap[status?.toLowerCase()] || statusMap["en attente"]
+    }
+
+    const handlePayment = (installmentId) => {
+        console.log(`Processing payment for installment ${installmentId}`)
+        // Add your payment logic here
+    }
+
+    return (
+        <Box mt={5} pt={5} borderTop="1px solid" borderColor="gray.100">
+            <Flex align="center" gap={2} mb={4}>
+                <Flex w="32px" h="32px" borderRadius="lg" bg="blue.100" color="blue.600" align="center" justify="center">
+                    <LuCreditCard size={16} />
+                </Flex>
+                <Box>
+                    <Text fontSize="sm" fontWeight={700} color="gray.800">Plan de Paiement</Text>
+                    <Text fontSize="xs" color="gray.500">{paidInstallments} sur {totalInstallments} versements payés</Text>
+                </Box>
+            </Flex>
+
+            {/* Progress bar */}
+            <Box mb={4}>
+                <Flex align="center" justify="space-between" mb={2}>
+                    <Text fontSize="xs" fontWeight={600} color="gray.600">Progression</Text>
+                    <Text fontSize="xs" fontWeight={700} color="blue.600">{Math.round((paidInstallments / totalInstallments) * 100)}%</Text>
+                </Flex>
+                <Box h="8px" bg="gray.100" borderRadius="full" overflow="hidden">
+                    <Box
+                        h="100%"
+                        bg="blue.500"
+                        transition="width 0.3s ease"
+                        width={`${(paidInstallments / totalInstallments) * 100}%`}
+                    />
+                </Box>
+            </Box>
+
+            {/* Summary stats */}
+            <Grid templateColumns={{ base: "1fr 1fr", sm: "repeat(3, 1fr)" }} gap={3} mb={4}>
+                <Box bg="blue.50" borderRadius="lg" p={3}>
+                    <Text fontSize="xs" fontWeight={600} color="blue.600" textTransform="uppercase" letterSpacing="wider" mb={1}>Montant/versement</Text>
+                    <Text fontSize="sm" fontWeight={700} color="gray.800">{sortedInstallments[0]?.amount || "—"} TND</Text>
+                </Box>
+                <Box bg="green.50" borderRadius="lg" p={3}>
+                    <Text fontSize="xs" fontWeight={600} color="green.600" textTransform="uppercase" letterSpacing="wider" mb={1}>Payés</Text>
+                    <Text fontSize="sm" fontWeight={700} color="gray.800">{paidInstallments}</Text>
+                </Box>
+                <Box bg="yellow.50" borderRadius="lg" p={3}>
+                    <Text fontSize="xs" fontWeight={600} color="yellow.600" textTransform="uppercase" letterSpacing="wider" mb={1}>En attente</Text>
+                    <Text fontSize="sm" fontWeight={700} color="gray.800">{pendingInstallments}</Text>
+                </Box>
+            </Grid>
+
+            {/* Installments table */}
+            <Box border="1px solid" borderColor="gray.100" borderRadius="xl" overflow="hidden">
+                <Table.Root size="sm">
+                    <Table.Header>
+                        <Table.Row bg="gray.50">
+                            <Table.ColumnHeader px={4} py={3} fontSize="xs" fontWeight={700} color="gray.500" textTransform="uppercase" letterSpacing="wider">N°</Table.ColumnHeader>
+                            <Table.ColumnHeader px={4} py={3} fontSize="xs" fontWeight={700} color="gray.500" textTransform="uppercase" letterSpacing="wider">Montant</Table.ColumnHeader>
+                            <Table.ColumnHeader px={4} py={3} fontSize="xs" fontWeight={700} color="gray.500" textTransform="uppercase" letterSpacing="wider">Date d'échéance</Table.ColumnHeader>
+                            <Table.ColumnHeader px={4} py={3} fontSize="xs" fontWeight={700} color="gray.500" textTransform="uppercase" letterSpacing="wider">Statut</Table.ColumnHeader>
+                            <Table.ColumnHeader px={4} py={3} fontSize="xs" fontWeight={700} color="gray.500" textTransform="uppercase" letterSpacing="wider">Action</Table.ColumnHeader>
+                        </Table.Row>
+                    </Table.Header>
+                    <Table.Body>
+                        {sortedInstallments.map((inst) => {
+                            const statusInfo = getInstallmentStatusColor(inst.status)
+                            const StatusIcon = statusInfo.Icon
+                            const isPaymentDay = isTodayPaymentDay(inst.due_date)
+                            const isPaid = inst.status === "payé"
+                            const canPay = isPaymentDay && !isPaid
+
+                            return (
+                                <Table.Row key={inst.id} _hover={{ bg: "gray.50" }} borderTop="1px solid" borderColor="gray.100">
+                                    <Table.Cell px={4} py={3}>
+                                        <Text fontSize="sm" fontWeight={700} color="gray.700">#{inst.installment_number}</Text>
+                                    </Table.Cell>
+                                    <Table.Cell px={4} py={3}>
+                                        <Text fontSize="sm" fontWeight={600} color="gray.700">{inst.amount} TND</Text>
+                                    </Table.Cell>
+                                    <Table.Cell px={4} py={3}>
+                                        <Flex align="center" gap={1}>
+                                            <Text fontSize="sm" color="gray.700">{formatInstallmentDate(inst.due_date)}</Text>
+                                            {isPaymentDay && <Badge colorScheme="purple" borderRadius="full" px={2} py={0.5} fontSize="xs" fontWeight={600}>Aujourd'hui</Badge>}
+                                        </Flex>
+                                    </Table.Cell>
+                                    <Table.Cell px={4} py={3}>
+                                        <Flex align="center" gap={1.5}>
+                                            <StatusIcon size={12} color={`var(--chakra-colors-${statusInfo.color}-500)`} />
+                                            <Badge
+                                                colorScheme={statusInfo.color}
+                                                borderRadius="full"
+                                                px={2}
+                                                py={0.5}
+                                                fontSize="xs"
+                                                fontWeight={600}
+                                            >
+                                                {statusInfo.label}
+                                            </Badge>
+                                        </Flex>
+                                    </Table.Cell>
+                                    <Table.Cell px={4} py={3}>
+                                        <button
+                                            onClick={() => handlePayment(inst.id)}
+                                            disabled={!canPay}
+                                            style={{
+                                                padding: "6px 12px",
+                                                fontSize: "12px",
+                                                fontWeight: 600,
+                                                borderRadius: "6px",
+                                                border: "none",
+                                                cursor: canPay ? "pointer" : "not-allowed",
+                                                backgroundColor: canPay ? "#3182CE" : "#E2E8F0",
+                                                color: canPay ? "white" : "#A0AEC0",
+                                                transition: "all 0.2s",
+                                                opacity: canPay ? 1 : 0.6
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                if (canPay) e.target.style.backgroundColor = "#2C5AA0"
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                if (canPay) e.target.style.backgroundColor = "#3182CE"
+                                            }}
+                                        >
+                                            {isPaid ? "Payé" : canPay ? "Payer" : "Non disponible"}
+                                        </button>
+                                    </Table.Cell>
+                                </Table.Row>
+                            )
+                        })}
+                    </Table.Body>
+                </Table.Root>
+            </Box>
         </Box>
     )
 }
@@ -92,12 +292,12 @@ function BookingCard({ booking, index }) {
                     <Box bg="gray.50" borderRadius="xl" p={3}>
                         <Flex align="center" gap={1.5} mb={1}><LuClock size={11} color="gray" />
                             <Text fontSize="9px" fontWeight={700} color="gray.500" textTransform="uppercase" letterSpacing="wider">Durée</Text></Flex>
-                        <Text fontSize="sm" fontWeight={700} color="gray.800">{firstPkg?.duration ? `${firstPkg.duration} jours` : "—"}</Text>
+                        <Text fontSize="sm" fontWeight={700} color="gray.800">{circuits[0].circuitDetails.duration ? `${circuits[0].circuitDetails.duration} jours` : "—"}</Text>
                     </Box>
                     <Box bg="gray.50" borderRadius="xl" p={3}>
                         <Flex align="center" gap={1.5} mb={1}><LuHash size={11} color="gray" />
-                            <Text fontSize="9px" fontWeight={700} color="gray.500" textTransform="uppercase" letterSpacing="wider">Acompte</Text></Flex>
-                        <Text fontSize="sm" fontWeight={700} color="gray.800">{firstPkg?.installment ? `${firstPkg.installment}%` : "—"}</Text>
+                            <Text fontSize="9px" fontWeight={700} color="gray.500" textTransform="uppercase" letterSpacing="wider">Tranche</Text></Flex>
+                        <Text fontSize="sm" fontWeight={700} color="gray.800">{firstPkg?.installment ? `${firstPkg.installment}` : "—"}</Text>
                     </Box>
                 </Grid>
 
@@ -132,7 +332,15 @@ function BookingCard({ booking, index }) {
                     </Table.Root>
                 </Box>
 
-                <Flex justify="flex-end" align="center" gap={3}>
+                {/* Payment method section */}
+                <PaymentMethodSection
+                    payment_method={booking.payment_method}
+                    total_price={booking.total_price}
+                    paymentInstallments={booking.paymentInstallments}
+                />
+
+                {/* Total price footer */}
+                <Flex justify="flex-end" align="center" gap={3} mt={5}>
                     <Text fontSize="sm" color="gray.400">Prix total</Text>
                     <Flex align="baseline" gap={1}>
                         <Text fontSize="2xl" fontWeight={900} color="blue.600" lineHeight={1}>{booking.total_price}</Text>

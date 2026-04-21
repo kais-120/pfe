@@ -32,6 +32,10 @@ const Reviews = sequelize.define("Reviews",{
     review:{
         type:DataTypes.STRING,
         allowNull:false
+    },
+    status: { 
+        type: DataTypes.ENUM("approuvée","rejetée"), 
+        defaultValue:"approuvée",
     }
 },{
     tableName:"reviews"

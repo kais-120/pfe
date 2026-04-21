@@ -302,7 +302,7 @@ const ServiceAgency = () => {
 
   const handleDeleteOffer = async (id) => {
     try {
-      await AxiosToken.delete(`/service/agency/offer/${id}`)
+      await AxiosToken.delete(`/service/offer/${id}`)
       setAgency(prev => ({
         ...prev,
         offers: prev.offers.filter(o => o.id !== id),
@@ -342,7 +342,6 @@ const ServiceAgency = () => {
     ? Math.min(...offers.map(o => Number(o.price || 0)))
     : null
   const as = AGENCY_STATUS[agency.status] ?? { colorScheme: "gray", label: agency.status }
-  console.log(agency)
   const XIcon = () => (
     <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
       <path d="M18.244 2H21l-6.5 7.43L22 22h-6.828l-5.34-6.98L3.5 22H1l6.96-7.96L2 2h6.828l4.86 6.36L18.244 2z" />

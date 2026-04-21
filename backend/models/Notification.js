@@ -23,6 +23,7 @@ const sequelize = require("../configs/db");
         "booking",
         "document",
         "payment",
+        "claim",
       ),
       allowNull: false,
     },

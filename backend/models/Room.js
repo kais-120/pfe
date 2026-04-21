@@ -42,9 +42,14 @@ const Room = sequelize.define("room", {
         },
         onDelete:"CASCADE"
     },
+    deletedAt:{
+      type:DataTypes.DATE
+    }
 
 }, {
   tableName: "rooms",
+  paranoid:true,
+  deletedAt:"deletedAt"
 });
 
 module.exports = Room;

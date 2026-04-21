@@ -296,7 +296,7 @@ const ServiceVoyage = () => {
 
   const handleDeleteCircuit = async (id) => {
     try {
-      await AxiosToken.delete(`/service/voyage/circuit/${id}`)
+      await AxiosToken.delete(`/service/circuit/${id}`)
       setDeleted(prev => prev + 1)
       toaster.create({ description: "Circuit supprimé.", type: "info", closable: true })
     } catch {

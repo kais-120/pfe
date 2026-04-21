@@ -9,6 +9,7 @@ const sequelize = require("./configs/db");
 require("./models/index");
 const path = require("path");
 const { initSocket } = require("./initSocket");
+const bookingFinish = require("./util/corn/bookingFinish");
 
 const app = express();
 const server = http.createServer(app);
@@ -29,7 +30,8 @@ app.use(cors());
 
 app.use("/api/v1", AuthenticateAPI, appStart);
 
-initSocket(server)
+initSocket(server);
+// bookingFinish()
 
 server.listen(port, () => {
   console.log(`Server started on port ${port}`);

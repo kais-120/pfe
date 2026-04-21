@@ -839,6 +839,7 @@ exports.GetPartnerDashboardStats = async (req, res) => {
         }
       })
       const sumNote = await Reviews.sum("rate", {
+        where : {status:"approuvée"},
         include: [
           {
             model: Hotel,
@@ -849,7 +850,7 @@ exports.GetPartnerDashboardStats = async (req, res) => {
         ]
       }) || 0
       const reviewThisMonth = await Reviews.count({
-        where: { createdAt: { [Op.gte]: startOfMonth } },
+        where: { createdAt: { [Op.gte]: startOfMonth , status:"approuvée"} },
         include: [
           {
             model: Hotel,
@@ -862,6 +863,7 @@ exports.GetPartnerDashboardStats = async (req, res) => {
 
       const reviewLastMonth = await Reviews.count({
         where: {
+          status:"approuvée",
           createdAt: {
             [Op.gte]: startOfPrevMonth,
             [Op.lt]: endOfPrevMonth,
@@ -979,8 +981,8 @@ exports.getRevenueChart = async (req, res) => {
       order: [literal(`MIN("payments"."createdAt") ASC`)]
     });
 
-    const labels = monthlyData.map(d => d.get("month"));
-    const monthly = monthlyData.map(d => parseFloat(d.get("total")));
+    const labels = monthlyData.map(d => d.month);
+    const monthly = monthlyData.map(d => parseFloat(d.total));
     const weekly = monthly.map(v => Math.round(v / 4));
     const daily = monthly.map(v => Math.round(v / 30));
 
@@ -1144,6 +1146,7 @@ exports.getLastReviews = async (req, res) => {
   try {
     const partner_id = req.userId;
     const totalReview = await Reviews.count({
+      where : {status:"approuvée"},
       include: [
         {
           model: Hotel,
@@ -1154,6 +1157,7 @@ exports.getLastReviews = async (req, res) => {
       ]
     })
     const sumRate = await Reviews.sum("rate", {
+      where : {status:"approuvée"},
       include: [
         {
           model: Hotel,
@@ -1165,6 +1169,7 @@ exports.getLastReviews = async (req, res) => {
     }) || 0;
     const reviewScore = totalReview === 0 ? 0 : sumRate / totalReview;
     const reviews = await Reviews.findAll({
+      where : {status:"approuvée"},
       limit: 4,
       include: [{
         model: User,

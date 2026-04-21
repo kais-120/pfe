@@ -232,8 +232,6 @@ function HotelCardSkeleton() {
 
 
 const Home = () => {
-  const { setColorMode } = useColorMode()
-  useEffect(() => { setColorMode("light") }, [setColorMode])
   const today = new Date().toISOString().split("T")[0]
   const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0]
 

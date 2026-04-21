@@ -9,7 +9,7 @@ import {
   LuBanknote, LuFileText, LuActivity,
 } from "react-icons/lu"
 import { FaHotel, FaPlane, FaCar, FaRoute } from "react-icons/fa"
-import { LucideAlertCircle, LucideCheckCircle } from "lucide-react"
+import { CircleAlert, LucideAlertCircle, LucideCheckCircle } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import Chart from 'chart.js/auto'
 import { AxiosToken } from "../../Api/Api"
@@ -120,6 +120,7 @@ const mergedStats = STATS_CONFIG.map((stat) => {
     service: { Icon: LuActivity, color: "#38A169" },
     payment: { Icon: LuBanknote, color: "#319795" },
     review: { Icon: LucideCheckCircle, color: "#D69E2E" },
+    claim: { Icon: CircleAlert, color: "#EF4444" },
   }
 
   /* ── Chart.js Revenue and Reservations Chart ── */

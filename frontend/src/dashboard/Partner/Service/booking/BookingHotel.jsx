@@ -307,7 +307,7 @@ export default function BookingHotel() {
         const fetchData = async () => {
             try {
                 setLoading(true)
-                const response = await AxiosToken.get("/booking/get/partner/booking/hotel")
+                const response = await AxiosToken.get("/booking/get/partner/hotel")
                 setBookings(response.data.booking ?? [])
             } catch {
                 setError("Impossible de charger les réservations.")

@@ -210,7 +210,6 @@ function PackageCard({ pkg, onBook,type }) {
   const [isProcessing, setIsProcessing] = useState(false)
 
   const handlePaymentConfirm = async (paymentMethod) => {
-    console.log(paymentMethod)
     setIsProcessing(true)
     try {
       const url =

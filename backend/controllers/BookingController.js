@@ -228,7 +228,7 @@ exports.BookingCircuit = [
                 return res.status(400).json({ message: "there no place" })
             }
             const client_id = req.userId;
-            const booking = await Booking.create({ total_price: package.price, type: "voyages circuits", client_id });
+            const booking = await Booking.create({ total_price: package.price, type: "voyages circuits", client_id,payment_method });
             await CircuitBookingDetails.create({ booking_id: booking.id, package_id, circuit_id: id });
             package.update({ number_place: package.number_place - 1 })
 
@@ -324,6 +324,48 @@ exports.GetPartnerBookingHotel = async (req, res) => {
             order: [["createdAt", "DESC"]],
             include: [
                 {
+                    model: HotelBookingDetails,
+                    as: "bookingHotelDetails",
+                    required: true,
+                    include: [
+                        {
+                            model: Room,
+                            as: "RoomHotelBooking",
+                            required: true,
+                            include: [
+                                {
+                                    model: Hotel,
+                                    as: "hotelRoom",
+                                    where: { partner_id },
+                                    required: true,
+                                    attributes: []
+                                },
+                                
+                            ]
+                        }
+                    ]
+                },
+                {
+                    model: User,
+                    as: "userBooking"
+                }
+            ]
+        });
+        return res.send({ booking: bookings })
+
+    } catch (err) {
+        console.log(err)
+        return res.status(500).send({ message: "error server" })
+    }
+}
+
+exports.GetPartnerBookingCircuit = async (req, res) => {
+    try {
+        const partner_id = req.userId;
+        const bookings = await Booking.findAll({
+            order: [["createdAt", "DESC"]],
+            include: [
+                {
                     model: CircuitBookingDetails,
                     as: "circuitBooking",
                     required: true,
@@ -331,7 +373,7 @@ exports.GetPartnerBookingHotel = async (req, res) => {
                         {
                             model: Circuit,
                             as: "circuitDetails",
-                            attributes: ["category", "difficulty", "location", "title"],
+                            attributes: ["category", "difficulty", "location", "title","duration"],
                             required: true,
                             include: [
                                 {
@@ -351,7 +393,16 @@ exports.GetPartnerBookingHotel = async (req, res) => {
                 },
                 {
                     model: User,
-                    as: "userBooking"
+                    as: "userBooking",
+                    attributes:["name","id","email","phone"]
+                },
+                {
+                    model:Payment,
+                    as:"payment"
+                },
+                {
+                    model:PaymentInstallments,
+                    as:"paymentInstallments"
                 }
             ]
         });
@@ -461,6 +512,7 @@ exports.GetClientBooking = async (req, res) => {
         const client_id = req.userId;
         const bookings = await Booking.findAll({
             where: { client_id },
+            order:[["createdAt","DESC"]],
             include: [
                 {
                     model: HotelBookingDetails,
@@ -523,6 +575,9 @@ exports.GetClientBooking = async (req, res) => {
                                 {
                                     model: Voyage,
                                     as: "voyagesCircuit"
+                                },{
+                                    model:Package,
+                                    as:"packagesCircuit"
                                 }
                             ]
                         }

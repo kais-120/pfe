@@ -3,6 +3,7 @@ const Booking = require("./Booking");
 const CarRentalBookingDetails = require("./CarRentalBookingDetails");
 const Circuit = require("./Circuit");
 const CircuitBookingDetails = require("./CircuitBookingDetails");
+const Claim = require("./Claim");
 const Compagnie = require("./Compagnie");
 const Destination = require("./Destination");
 const Flight = require("./Flight");
@@ -160,11 +161,11 @@ Reviews.belongsTo(User,{
 })
 
 Hotel.hasMany(Reviews,{
-    foreignKey:"service_id",
+    foreignKey:"hotel_id",
     as:"hotelReview"
 }),
 Reviews.belongsTo(Hotel,{
-    foreignKey:"client_id",
+    foreignKey:"hotel_id",
     as:"reviewHotel"
 })
 
@@ -373,9 +374,27 @@ PaymentInstallments.belongsTo(Booking,{
     as:"bookingPaymentInstallments"
 })
 
+Reviews.hasOne(Claim,{
+    foreignKey:"review_id",
+    as:"claim"
+})
+Claim.belongsTo(Reviews,{
+    foreignKey:"review_id",
+    as:"reviewsClaim"
+})
+
+User.hasMany(Claim,{
+    foreignKey:"partner_id",
+    as:"claims"
+})
+Claim.belongsTo(User,{
+    foreignKey:"partner_id",
+    as:"partnerClaims"
+})
+
 
 module.exports = {  User, Otp,Agence,PartnerFile,Hotel,Compagnie,Voyage,
                     RefuseReason,Room,Booking,HotelBookingDetails,
                     Reviews,Location,Vehicle,Offer,Flight,FlightClasses,Circuit,
                     CarRentalBookingDetails,FlightBookingDetails,CircuitBookingDetails,
-                    OfferBookingDetails,Package,Destination,Payment,PaymentInstallments};
+                    OfferBookingDetails,Package,Destination,Payment,PaymentInstallments,Claim};

@@ -4,14 +4,33 @@ import {
   Badge, Stack, Flex, Button, IconButton, HStack,
   VStack, Grid, Carousel,
   Icon,
+  Dialog,
+  Portal,
+  CloseButton,
+  Select,
+  createListCollection,
+  Field,
+  Textarea,
 } from "@chakra-ui/react";
-import { LuChevronLeft, LuChevronRight, LuPencil, LuTrash2, LuPlus, LuBed, LuUsers, LuBanknote, LuHash } from "react-icons/lu";
-import { FaStar, FaRegStar, FaWifi, FaParking, FaSwimmingPool, FaSpa, FaDumbbell, FaUtensils, FaSnowflake } from "react-icons/fa";
+import { LuChevronLeft, LuChevronRight, LuPencil, LuTrash2, LuPlus, LuBed, LuUsers, LuBanknote, LuHash, LuWholeWord, LuEarth, LuEarthLock, LuShieldAlert } from "react-icons/lu";
+import { FaStar, FaRegStar, FaWifi, FaParking, FaSwimmingPool, FaSpa, FaDumbbell, FaUtensils, FaSnowflake, FaMinusCircle } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { AxiosToken, imageURL } from "../../../../Api/Api";
-import { Bed, MessageCircle } from "lucide-react";
+import { BadgeMinus, Bed, MessageCircle } from "lucide-react";
+import { toaster } from "../../../../components/ui/toaster";
+import { FaLess } from "react-icons/fa6";
+import * as Yup from "yup";
+import { useFormik } from "formik";
 
-/* ── Equipment icon map ─────────────────────────────────────────── */
+const validationSchema = Yup.object().shape({
+  reason: Yup.string()
+    .required("Le motif est obligatoire"),
+
+  message: Yup.string()
+    .max(255, "Le message ne doit pas dépasser 255 caractères")
+    .nullable()
+});
+
 const EQUIP_META = {
   wifi: { Icon: FaWifi, label: "Wi-Fi" },
   piscine: { Icon: FaSwimmingPool, label: "Piscine" },
@@ -22,7 +41,6 @@ const EQUIP_META = {
   climatisation: { Icon: FaSnowflake, label: "Climatisation" },
 }
 
-/* ── Star display ───────────────────────────────────────────────── */
 function Stars({ rating, size = 13 }) {
   return (
     <Flex align="center" gap="2px">
@@ -76,7 +94,7 @@ function StatCard({ icon: Icon, label, value, color = "blue" }) {
 }
 
 /* ── Room card ──────────────────────────────────────────────────── */
-function RoomCard({ room, onEdit, onDelete }) {
+function RoomCard({ room, onEdit, onDelete, onVisibility,open,setOpen }) {
   return (
     <Box
       bg="white" borderRadius="xl" p={5}
@@ -130,14 +148,92 @@ function RoomCard({ room, onEdit, onDelete }) {
           >
             <LuPencil size={13} />
           </IconButton>
+          <Dialog.Root open={open} onOpenChange={setOpen}>
+            <Dialog.Trigger asChild>
+              <IconButton
+              size="sm" variant="outline" borderRadius="lg"
+              color="red.400" borderColor="red.200"
+              _hover={{ bg: "red.50" }}
+              aria-label="Supprimer"
+              >
+                <LuTrash2 size={13} />
+              </IconButton>
+            </Dialog.Trigger>
+            <Portal>
+              <Dialog.Backdrop />
+              <Dialog.Positioner>
+                <Dialog.Content borderRadius="2xl" overflow="hidden">
+                  {/* Dialog header */}
+                  <Box bg="red.50" px={6} py={5}
+                    borderBottom="1px solid" borderColor="red.100">
+                    <Flex align="center" gap={3}>
+                      <Flex w="36px" h="36px" borderRadius="xl"
+                        bg="red.100" color="red.500"
+                        align="center" justify="center" flexShrink={0}>
+                        <LuShieldAlert size={16} />
+                      </Flex>
+                      <Dialog.Title fontSize="md" fontWeight={700} color="gray.900">
+                        Supprimer la chambre
+                      </Dialog.Title>
+                    </Flex>
+                  </Box>
+
+                  <Dialog.Body px={6} py={5}>
+                    <Text fontSize="sm" color="gray.600" lineHeight="1.7">
+                      Vous êtes sur le point de supprimer{" "}
+                      <Text as="span" fontWeight={700} color="gray.800">
+                        {room.name}
+                      </Text>
+                      . Cette action est <Text as="span" color="red.500" fontWeight={600}>irréversible</Text> — toutes les données associées seront définitivement perdues.
+                    </Text>
+                  </Dialog.Body>
+
+                  <Dialog.Footer
+                    px={6} py={4}
+                    borderTop="1px solid" borderColor="gray.100"
+                    gap={3}
+                  >
+                    <Dialog.ActionTrigger asChild>
+                      <Button variant="outline" borderRadius="xl"
+                        size="sm" color="gray.500">
+                        Annuler
+                      </Button>
+                    </Dialog.ActionTrigger>
+                    <Button
+                      colorScheme="red" borderRadius="xl"
+                      size="sm" fontWeight={700}
+                      onClick={onDelete}
+                    >
+                      <Flex align="center" gap={1.5}>
+                        <LuTrash2 size={13} />
+                        Supprimer définitivement
+                      </Flex>
+                    </Button>
+                  </Dialog.Footer>
+
+                  <Dialog.CloseTrigger asChild>
+                    <CloseButton size="sm" position="absolute" top={3} right={3} />
+                  </Dialog.CloseTrigger>
+                </Dialog.Content>
+              </Dialog.Positioner>
+            </Portal>
+          </Dialog.Root>
+
+
+
+
           <IconButton
             size="sm" variant="outline" borderRadius="lg"
-            color="red.400" borderColor="red.200"
-            _hover={{ bg: "red.50" }}
-            aria-label="Supprimer"
-            onClick={() => onDelete?.(room.id)}
+            color="green.400" borderColor="green.200"
+            _hover={{ bg: "green.50" }}
+            aria-label="visibilité"
+            onClick={onVisibility}
           >
-            <LuTrash2 size={13} />
+            {room.status === "active" ?
+              <LuEarth size={13} />
+              :
+              <LuEarthLock size={13} />
+            }
           </IconButton>
         </VStack>
       </Flex>
@@ -145,38 +241,202 @@ function RoomCard({ room, onEdit, onDelete }) {
   )
 }
 
-/* ── Review card ────────────────────────────────────────────────── */
-function ReviewCard({ review, index }) {
+function ReviewCard({ review }) {
+  const [open, setOpen] = useState(false)
+
   const initials = review?.clientReview?.name?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
+
+  const claimReasons = createListCollection({
+  items: [
+    { label: "Faux avis", value: "faux avis" },
+    { label: "Contenu inapproprié", value: "contenu inapproprié" },
+    { label: "Conflit d'intérêt", value: "conflit d'intérêt" },
+    { label: "Mauvais établissement", value: "mauvais établissement" },
+    { label: "Autre", value: "autre" },
+  ],
+})
+  const formik = useFormik({
+    initialValues:{
+      reason:"",
+      message:""
+    },
+    validationSchema,
+    onSubmit: async(values) => {
+      try {
+      await AxiosToken.post(`/review/partner/add/claim/${review.id}`, values)
+      toaster.create({ description: "Réclamation envoyée avec succès.", type: "success", closable: true })
+      setOpen(false)
+      formik.resetForm()
+    } catch(err) {
+      toaster.create({ description: "Erreur lors de l'envoi.", type: "error", closable: true })
+    }
+    }
+  })
+
+  const isRemoved = review.claim?.status === "approuvée"
+
   return (
-    <Box
-      bg="white" borderRadius="xl" p={4}
-      border="1px solid" borderColor="gray.100"
-      boxShadow="0 1px 6px rgba(0,0,0,0.04)"
-    >
+    <Box bg={isRemoved ? "gray.50" : "white"} borderRadius="xl" p={4} border="1px solid" borderColor={isRemoved ? "gray.200" : "gray.100"} boxShadow={isRemoved ? "none" : "0 1px 6px rgba(0,0,0,0.04)"} opacity={isRemoved ? 0.75 : 1}>
       <Flex align="center" gap={3} mb={3}>
-        <Flex
-          w="36px" h="36px" borderRadius="full"
-          bg="blue.100" color="blue.700"
-          align="center" justify="center"
-          fontSize="xs" fontWeight={700} flexShrink={0}
-        >
+        <Flex w="36px" h="36px" borderRadius="full" bg={isRemoved ? "gray.300" : "blue.100"} color={isRemoved ? "gray.600" : "blue.700"}
+          align="center" justify="center" fontSize="xs" fontWeight={700} flexShrink={0}>
           {initials}
         </Flex>
         <Box flex={1}>
-          <Text fontWeight={600} fontSize="sm" color="gray.800">{review?.clientReview?.name}</Text>
+          <Text fontWeight={600} fontSize="sm" color={isRemoved ? "gray.500" : "gray.800"}>{review?.clientReview?.name}</Text>
           <Stars rating={review.rate} size={11} />
         </Box>
-        <Badge
-          colorScheme={review.rate >= 4 ? "green" : review.rating >= 3 ? "yellow" : "red"}
-          borderRadius="full" px={2} fontSize="xs"
-        >
-          {review.rate}/5
-        </Badge>
+        <Flex gap={2} align="center">
+          {isRemoved && (
+            <Badge colorScheme="gray" borderRadius="full" px={2} fontSize="xs" fontWeight={600}>
+              <FaMinusCircle />
+              Supprimé
+            </Badge>
+          )}
+          {!isRemoved && (
+            <Badge colorScheme={review.rate >= 4 ? "green" : review.rate >= 3 ? "yellow" : "red"}
+              borderRadius="full" px={2} fontSize="xs">
+              {review.rate}/5
+            </Badge>
+          )}
+        </Flex>
       </Flex>
-      <Text fontSize="sm" color="gray.600" lineHeight="1.7" fontStyle="italic">
-        "{review.review}"
-      </Text>
+
+      {isRemoved ? (
+        <Box bg="gray.100" borderRadius="lg" p={3} mb={3}>
+          <Text fontSize="sm" color="gray.600" fontWeight={500}>
+            Cet avis a été supprimé suite à une réclamation acceptée.
+          </Text>
+          {review.claim?.reason && (
+            <Text fontSize="xs" color="gray.500" mt={1}>
+              Motif: <strong>{review.claim.reason}</strong>
+            </Text>
+          )}
+        </Box>
+      ) : (
+        <Text fontSize="sm" color="gray.600" lineHeight="1.7" fontStyle="italic" mb={3}>
+          "{review.review}"
+        </Text>
+      )}
+
+      {/* Claim trigger */}
+      {!isRemoved && (
+        <Dialog.Root open={open} onOpenChange={(e) => setOpen(e.open)}>
+          <Dialog.Trigger asChild>
+            <Button size="xs" variant="outline" colorScheme="orange" borderRadius="lg"
+            disabled={review.claim ? true : false}
+              leftIcon={<LuShieldAlert size={11} />}>
+              {review.claim ? "Déjà signalé" : "Signaler" }
+            </Button>
+          </Dialog.Trigger>
+
+          <Portal>
+            <Dialog.Backdrop />
+            <Dialog.Positioner>
+              <Dialog.Content borderRadius="2xl" overflow="hidden">
+              <form onSubmit={formik.handleSubmit}>
+                {/* Header */}
+                <Box bg="orange.50" px={6} py={5} borderBottom="1px solid" borderColor="orange.100">
+                  <Flex align="center" gap={3}>
+                    <Flex w="36px" h="36px" borderRadius="xl" bg="orange.100" color="orange.500"
+                      align="center" justify="center" flexShrink={0}>
+                      <LuShieldAlert size={16} />
+                    </Flex>
+                    <Dialog.Title fontSize="md" fontWeight={700} color="gray.900">
+                      Signaler cet avis
+                    </Dialog.Title>
+                  </Flex>
+                </Box>
+
+                {/* Body */}
+
+                <Dialog.Body px={6} py={5} display="flex" flexDirection="column" gap={4}>
+                  {/* Reason select */}
+                  <Field.Root invalid={formik.errors.reason}>
+                    <Text fontSize="sm" fontWeight={600} color="gray.700" mb={2}>
+                      Motif <Text as="span" color="red.400">*</Text>
+                    </Text>
+                    <Select.Root name="reason" collection={claimReasons} value={[formik.values.reason]} onValueChange={(e) => formik.setFieldValue("reason",e.value[0])}>
+                    <Select.HiddenSelect />
+
+                    <Select.Label>Sélectionner un motif…</Select.Label>
+
+                    <Select.Control>
+                      <Select.Trigger>
+                        <Select.ValueText placeholder="Sélectionner un motif…" />
+                      </Select.Trigger>
+
+                      <Select.IndicatorGroup>
+                        <Select.Indicator />
+                        <Select.ClearTrigger />
+                      </Select.IndicatorGroup>
+                    </Select.Control>
+
+                    <Select.Positioner>
+                      <Select.Content>
+                        {claimReasons.items.map((r) => (
+                          <Select.Item key={r.value} item={r}>
+                            {r.label}
+                          </Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Positioner>
+                  </Select.Root>
+                  <Field.ErrorText>
+                    {formik.errors.reason}
+                  </Field.ErrorText>
+                  </Field.Root>
+
+                  {/* Message textarea */}
+                  <Box>
+                    <Text fontSize="sm" fontWeight={600} color="gray.700" mb={2}>
+                      Message{" "}
+                      <Text as="span" fontWeight={400} color="gray.400">(optionnel)</Text>
+                    </Text>
+                    <Textarea
+                      placeholder="Donnez plus de détails sur votre réclamation…"
+                      value={formik.values.message}
+                      name="message"
+                      onChange={formik.handleChange}
+                      maxLength={255}
+                      rows={3}
+                      style={{
+                        width: "100%", padding: "8px 12px",
+                        borderRadius: "8px", border: "1px solid #E2E8F0",
+                        fontSize: "14px", resize: "vertical",
+                        fontFamily: "inherit", boxSizing: "border-box",
+                      }}
+                    />
+                    <Text fontSize="xs" color="gray.400" mt={1}>{formik.values.message.length}/255</Text>
+                  </Box>
+                </Dialog.Body>
+
+                {/* Footer */}
+                <Dialog.Footer px={6} py={4} borderTop="1px solid" borderColor="gray.100" gap={3}>
+                  <Dialog.ActionTrigger asChild>
+                    <Button variant="outline" borderRadius="xl" size="sm" color="gray.500"
+                      >
+                      Annuler
+                    </Button>
+                  </Dialog.ActionTrigger>
+                  <Button type="submit" colorScheme="orange" borderRadius="xl" size="sm" fontWeight={700}
+                    >
+                    <Flex align="center" gap={1.5}>
+                      <LuShieldAlert size={13} />
+                      Envoyer la réclamation
+                    </Flex>
+                  </Button>
+                </Dialog.Footer>
+
+                <Dialog.CloseTrigger asChild>
+                  <CloseButton size="sm" position="absolute" top={3} right={3} />
+                </Dialog.CloseTrigger>
+              </form>
+              </Dialog.Content>
+            </Dialog.Positioner>
+          </Portal>
+        </Dialog.Root>
+      )}
     </Box>
   )
 }
@@ -190,7 +450,7 @@ function EmptyState({ icon, title, subtitle }) {
       bg="gray.50" borderRadius="xl"
       border="1px dashed" borderColor="gray.200"
     >
-      <Icon as={icon} fontSize="2xl"/>
+      <Icon as={icon} fontSize="2xl" />
       <Text fontWeight={600} color="gray.600" fontSize="sm">{title}</Text>
       {subtitle && <Text fontSize="xs" color="gray.400">{subtitle}</Text>}
     </Flex>
@@ -200,7 +460,9 @@ function EmptyState({ icon, title, subtitle }) {
 
 const ServiceHotel = () => {
   const [hotel, setHotel] = useState(null)
+  const [review, setReview] = useState(null)
   const [showMore, setShowMore] = useState(false)
+  const [open, setOpen] = useState(false);
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -208,12 +470,33 @@ const ServiceHotel = () => {
       try {
         const response = await AxiosToken.get("/service/hotel/get")
         setHotel(response.data.hotel)
+        setReview(response.data.review)
       } catch (err) {
         console.error(err)
       }
     }
     fetchData()
   }, [])
+  const handleDelete = async (id) => {
+    try {
+      await AxiosToken.delete(`service/hotel/room/${id}`);
+            toaster.create({ description: "La chambre est supprimer avec succès.", type: "success", closable: true })
+            setOpen(false)
+    } catch(err) {
+      if(err.status === 400){
+        toaster.create({ description: "Impossible de supprimer cette chambre, elle a des réservations en cours.", type: "error", closable: true })
+      setOpen(false)
+      }
+      console.error("error")
+    }
+  }
+  const handleVisibilityRoom = async (id) => {
+    try {
+      await AxiosToken.put(`/service/hotel/room/${id}`);
+    } catch {
+      console.error("error")
+    }
+  }
 
   if (!hotel) {
     return (
@@ -235,14 +518,13 @@ const ServiceHotel = () => {
     )
   }
 
-  const avgRating = hotel.hotelReview?.length
-    ? (hotel.hotelReview.reduce((s, r) => s + r.rate, 0) / hotel.hotelReview.length).toFixed(1)
+  const avgRating = review?.length
+    ? (review.reduce((s, r) => s + r.rate, 0) / review.length).toFixed(1)
     : null
 
   const minPrice = hotel.rooms?.length
     ? Math.min(...hotel.rooms.map(r => r.price_by_day))
     : null
-  console.log(hotel)
 
   return (
     <Container maxW="6xl" py={8}>
@@ -271,7 +553,7 @@ const ServiceHotel = () => {
         <Button
           colorScheme="blue" borderRadius="xl" leftIcon={<LuPencil size={13} />}
           size="sm" px={5}
-          onClick={()=>navigate(`hotel/edit`)}
+          onClick={() => navigate(`hotel/edit`)}
         >
           Modifier l'hôtel
         </Button>
@@ -425,7 +707,10 @@ const ServiceHotel = () => {
                 key={room.id}
                 room={room}
                 onEdit={(r) => navigate(`hotel/room/edit/${r.id}`)}
-                onDelete={(id) => console.log("delete", id)}
+                onDelete={() => handleDelete(room.id)}
+                onVisibility={() => handleVisibilityRoom(room.id)}
+                open={open}
+                setOpen={setOpen}
               />
             ))}
           </Stack>
@@ -450,11 +735,11 @@ const ServiceHotel = () => {
                 <Box textAlign="center">
                   <Text fontSize="4xl" fontWeight={900} color="gray.800" lineHeight={1}>{avgRating}</Text>
                   <Stars rating={parseFloat(avgRating)} size={14} />
-                  <Text fontSize="xs" color="gray.400" mt={1}>{hotel.hotelReview.length} avis</Text>
+                  <Text fontSize="xs" color="gray.400" mt={1}>{review.length} avis</Text>
                 </Box>
                 <Box flex={1} minW="180px">
                   {[5, 4, 3, 2, 1].map(star => {
-                    const count = hotel.hotelReview.filter(r => r.rate === star).length
+                    const count = review.filter(r => r.rate === star).length
                     const pct = hotel.hotelReview.length ? (count / hotel.hotelReview.length) * 100 : 0
                     return (
                       <Flex key={star} align="center" gap={3} mb={1.5}>

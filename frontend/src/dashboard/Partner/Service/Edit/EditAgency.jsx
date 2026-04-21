@@ -115,7 +115,6 @@ const EditAgency = () => {
     }
     agencyData()
   }, [])
-  console.log(agency)
 
   const formik = useFormik({
     enableReinitialize: true,

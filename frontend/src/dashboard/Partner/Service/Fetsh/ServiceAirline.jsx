@@ -296,7 +296,6 @@ const ServiceAirline = () => {
     }
     fetchData()
   }, [])
-  console.log(airline)
 
   const handleDeleteFlight = async (id) => {
     try {

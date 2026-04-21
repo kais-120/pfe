@@ -331,7 +331,6 @@ const PackagesList = () => {
   })
 
   const handleBook = (pkg) => {
-    console.log("Booking:", pkg)
     // TODO: Navigate to booking page or show modal
   }
 

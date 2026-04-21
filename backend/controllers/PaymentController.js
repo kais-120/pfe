@@ -5,7 +5,6 @@ const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 exports.CreatePayment = async (amount, booking_id, client_id, installment = 0, type = "total", part = 0) => {
     try {
-        console.log((type === "installment" ? part : amount) * 1000)
         const session = await stripe.checkout.sessions.create({
             mode: "payment",
             locale: "fr",
@@ -192,7 +191,8 @@ exports.VerifyPayment = [
             return res.send({ message: "payment updated" });
 
         } catch (err) {
-            return res.status(500).send({ message: err })
+            console.log(err)
+            return res.status(500).send({ message: "error server" })
         }
     }
 ];

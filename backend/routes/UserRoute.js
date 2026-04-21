@@ -8,7 +8,7 @@ const AuthenticateAgent = require("../middlewares/AuthenticateAgent");
 const router = express.Router();
 
 router.post("/add/agent",[AuthenticateToken,AuthenticateAdmin],AddAgent);
-router.get("/all",[AuthenticateToken,AuthenticateAdmin,AuthenticateAgent],Users);
+router.get("/all",[AuthenticateToken,AuthenticateAgent],Users);
 router.get("/user/:id",[AuthenticateToken,AuthenticateAdmin,AuthenticateAgent],GetUser);
 router.delete("/:id",[AuthenticateToken,AuthenticateAgent],DeleteUser);
 
