@@ -106,12 +106,12 @@ const EditRoom = () => {
   const formik = useFormik({
     enableReinitialize: true,
     initialValues: {
-      name: room.name || "",
-      capacity: room.capacity || "",
-      price_by_day: room.price_by_day || "",
-      price_by_adult: room.price_by_adult || "",
-      price_by_children: room.price_by_children || "",
-      count: room.count || "",
+      name: room?.name || "",
+      capacity: room?.capacity || "",
+      price_by_day: room?.price_by_day || "",
+      price_by_adult: room?.price_by_adult || "",
+      price_by_children: room?.price_by_children || "",
+      count: room?.count || "",
     },
     validationSchema,
     onSubmit: async (values) => {

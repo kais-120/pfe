@@ -135,6 +135,7 @@ function Pill({ label, active, color = "blue", onClick }) {
 
 // ── PackageRow ─────────────────────────────────────────────────────────
 function PackageRow({ pkg, onSelect, selected }) {
+  console.log(pkg)
   return (
     <Box borderRadius="xl" border="1.5px solid"
       borderColor={selected ? "pink.400" : "gray.100"}
@@ -195,7 +196,7 @@ function PackageRow({ pkg, onSelect, selected }) {
 }
 
 // ── PackagesPanel ──────────────────────────────────────────────────────
-function PackagesPanel({ selectedPackages, onSelectionChange, allPackages, setAllPackages }) {
+function PackagesPanel({ selectedPackages, onSelectionChange, allPackages, setAllPackages,setRemovedPackageIds,removedPackageIds }) {
   const [tab, setTab] = useState("list")
   const [search, setSearch] = useState("")
   const [editingPkg, setEditingPkg] = useState(null)
@@ -226,6 +227,9 @@ function PackagesPanel({ selectedPackages, onSelectionChange, allPackages, setAl
 
   const handleDeleteSelected = () => {
     const ids = new Set(selectedPackages.map((p) => p.id))
+    ids.forEach((id)=>{
+      setRemovedPackageIds(prev => [...prev,id])
+    })
     setAllPackages((prev) => prev.filter((p) => !ids.has(p.id)))
     onSelectionChange([])
   }
@@ -361,7 +365,6 @@ function PackagesPanel({ selectedPackages, onSelectionChange, allPackages, setAl
   )
 }
 
-// ── EditOffer ──────────────────────────────────────────────────────────
 const EditOffer = () => {
   const navigate = useNavigate()
   const { id } = useParams()
@@ -374,6 +377,7 @@ const EditOffer = () => {
   
   const [selectedPackages, setSelectedPackages] = useState([])
   const [allPackages, setAllPackages] = useState([])
+  const [removedPackageIds, setRemovedPackageIds] = useState([])
   const [loading, setLoading] = useState(true)
   
   const formik = useFormik({
@@ -399,8 +403,8 @@ const EditOffer = () => {
           fd.append("not_included", JSON.stringify(formatToArray(values.not_included)))
 
         // Linked packages
-        if (selectedPackages.length > 0)
-          fd.append("packages", JSON.stringify(selectedPackages))
+        if (allPackages.length > 0)
+          fd.append("packages", JSON.stringify(allPackages))
 
         // New images only if user selected some
         newFiles.forEach((file) => fd.append("service_doc", file))
@@ -409,9 +413,13 @@ const EditOffer = () => {
         if (removedImageIds.length > 0)
           fd.append("removed_images", JSON.stringify(removedImageIds))
 
+        if (removedPackageIds.length > 0){
+          fd.append("removed_package", JSON.stringify(removedPackageIds))
+        }
+
         await AxiosToken.put(`/service/agency/offer/update/${id}`, fd)
         toaster.create({ description: "Offre modifiée avec succès.", type: "success", closable: true })
-        setTimeout(() => navigate(-1), 1800)
+        // setTimeout(() => navigate(-1), 1800)
       } catch {
         toaster.create({ description: "Une erreur est survenue.", type: "error", closable: true })
       }
@@ -623,6 +631,8 @@ const EditOffer = () => {
               setAllPackages={setAllPackages}
               selectedPackages={selectedPackages}
               onSelectionChange={setSelectedPackages}
+              setRemovedPackageIds={setRemovedPackageIds}
+              removedPackageIds={removedPackageIds}
             />
           </Box>
 

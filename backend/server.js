@@ -22,7 +22,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 sequelize.sync({ alter: true });
 
 sequelize.authenticate()
-  .then(() => console.log("Postg Connected"))
+  .then(() => console.log("postgresql Connected"))
   .catch(err => console.error("DB Error:", err));
 
 app.use(express.json());

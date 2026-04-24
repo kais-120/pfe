@@ -11,12 +11,12 @@ import {
 import React, { useState } from "react"
 import { useFormik } from "formik"
 import * as Yup from "yup"
+import { Helmet } from "react-helmet"
 
 const validationSchema = Yup.object({
     title: Yup.string().trim().required("Le titre est requis"),
     month: Yup.string().required("Le mois est requis"),
     year: Yup.string().required("L'année est requise"),
-    type: Yup.string().required("Le type de voyage est requis"),
     departureDate: Yup.string().required("La date de départ est requise"),
     returnDate: Yup.string()
         .required("La date de retour est requise")
@@ -55,20 +55,6 @@ const MONTHS = [
     "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
 ]
 
-const TRIP_TYPES = {
-    purposes: [
-        { value: "haj", label: "Haj" },
-        { value: "Omra", label: "Omra" },
-        { value: "tourisme", label: "Tourisme" },
-        { value: "affaires", label: "Affaires" },
-    ],
-    circuits: [
-        { value: "culturel", label: "Culturel" },
-        { value: "aventure", label: "Aventure" },
-        { value: "detente", label: "Détente" },
-        { value: "religieux", label: "Religieux" },
-    ],
-};
 
 const INSTALLMENTS = ["2", "6", "10", "12", "Non"]
 
@@ -166,14 +152,13 @@ const inputStyle = (hasError) => ({
 })
 
 const DEFAULT_VALUES = {
-    title: "", month: "", year: "2026", type: "haj",
+    title: "", month: "", year: "2026",
     departureDate: "", departureTime: "11:40", departureAirport: "",
     returnDate: "", returnTime: "06:25", returnAirport: "",
     destinations: [], price: "", seats: "", installment: "6",
 }
 
 const AddPackage = ({ ontTab, onChange, initialValues, isEditing, type }) => {
-    const trip_type = type === "circuit" ? TRIP_TYPES.circuits : TRIP_TYPES.purposes
 
     const formik = useFormik({
         initialValues: initialValues
@@ -183,12 +168,10 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing, type }) => {
         onSubmit: async (values) => {
             try {
                 if (isEditing) {
-                    // ✅ Update existing package in the list
                     onChange((prev) =>
                         prev.map((p) => p.id === values.id ? { ...values } : p)
                     )
                 } else {
-                    // ✅ Add new package
                     onChange((prev) => [...prev, { ...values, id: Date.now() }])
                 }
                 ontTab("list")
@@ -204,7 +187,6 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing, type }) => {
         setFieldValue, setFieldTouched,
         handleSubmit, isSubmitting,
     } = formik
-
     const monthsCollection = createListCollection({
         items: [
             { label: "Sélectionner un mois", value: "" },
@@ -224,9 +206,8 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing, type }) => {
     const year = Number(values.year)
     const monthIndex = monthsMap[values.month]
     
-    // ✅ FIX: Convert Date to ISO string BEFORE parsing
     const minDate = monthIndex !== undefined
-        ? parseDate(new Date(year, monthIndex, 1).toISOString().split('T')[0]) 
+        ? parseDate(`${year}-${String(monthIndex + 1).padStart(2, "0")}-01`) 
         : undefined
     const maxDate = monthIndex !== undefined
         ? parseDate(new Date(year, monthIndex + 1, 0).toISOString().split('T')[0]) 
@@ -249,7 +230,13 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing, type }) => {
         setFieldValue("destinations", values.destinations.filter((_, idx) => idx !== i))
     }
 
+    const dataFormal = (data) => {
+    return new Date(values.departureDate).toISOString().split('T')[0]
+    } 
+
     return (
+        <>
+        <Helmet title="Ajouter Offre"></Helmet>
         <Container maxW="860px" py={8} px={{ base: 4, md: 8 }}>
 
             {/* ── Section 1: Informations générales ── */}
@@ -258,7 +245,7 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing, type }) => {
                     <Field label="Titre du package" required error={touched.title && errors.title}>
                         <Input name="title" value={values.title}
                             onChange={handleChange} onBlur={handleBlur}
-                            placeholder="ex: Umrah Premium - Medine & Makkah"
+                            placeholder="ex: Pkg 1"
                             {...inputStyle(touched.title && errors.title)} />
                     </Field>
 
@@ -312,22 +299,7 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing, type }) => {
                         </Field>
                     </Grid>
 
-                    <Field label="Type de voyage" required error={touched.type && errors.type}>
-                        <HStack gap={3} flexWrap="wrap">
-                            {type && trip_type.map((t) => (
-                                <Button key={t.value} size="sm" borderRadius="xl" border="1.5px solid"
-                                    borderColor={values.type === t.value ? BLUE : "gray.200"}
-                                    bg={values.type === t.value ? BLUE : "white"}
-                                    color={values.type === t.value ? "white" : "gray.600"}
-                                    fontWeight={600} fontSize="13px" px={4}
-                                    _hover={{ borderColor: BLUE, color: values.type === t.value ? "white" : BLUE }}
-                                    transition="all 0.15s"
-                                    onClick={() => { setFieldValue("type", t.value); setFieldTouched("type", true) }}>
-                                    {t.label}
-                                </Button>
-                            ))}
-                        </HStack>
-                    </Field>
+                   
                 </VStack>
             </SectionCard>
 
@@ -344,7 +316,7 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing, type }) => {
                                     min={minDate}
                                     disabled={!values.month}
                                     max={maxDate}
-                                    value={values.departureDate ? [parseDate(values.departureDate)] : (minDate ? [minDate] : [])}
+                                    value={values.departureDate ? [parseDate(dataFormal(values.departureDate))] : (minDate ? [minDate] : [])}
                                     onValueChange={(details) => {
                                         const date = details.value?.[0]
                                         if (date) {
@@ -375,10 +347,12 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing, type }) => {
                                 <Input type="time" name="departureTime" value={values.departureTime}
                                     onChange={handleChange} {...inputStyle(false)} />
                             </Field>
+                            {type === "offer" &&
                             <Field label="Aéroport départ">
                                 <Input name="departureAirport" value={values.departureAirport}
                                     onChange={handleChange} placeholder="ex: TUN-JED" {...inputStyle(false)} />
                             </Field>
+                            }
                         </VStack>
 
                         {/* Arrow divider */}
@@ -393,8 +367,7 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing, type }) => {
                                     locale="fr-FR" 
                                     min={minDate}
                                     disabled={!values.month}
-                                    max={maxDate}
-                                    value={values.returnDate ? [parseDate(values.returnDate)] : (minDate ? [minDate] : [])}
+                                    value={values.returnDate ? [parseDate(dataFormal(values.returnDate))] : (minDate ? [minDate] : [])}
                                     onValueChange={(details) => {
                                         const date = details.value?.[0]
                                         if (date) {
@@ -425,10 +398,12 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing, type }) => {
                                 <Input type="time" name="returnTime" value={values.returnTime}
                                     onChange={handleChange} {...inputStyle(false)} />
                             </Field>
+                            {type === "offer" && 
                             <Field label="Aéroport retour">
                                 <Input value={values.returnAirport} name="returnAirport"
                                     onChange={handleChange} placeholder="ex: JED-TUN" {...inputStyle(false)} />
                             </Field>
+                            }
                         </VStack>
                     </Grid>
                 </VStack>
@@ -510,6 +485,7 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing, type }) => {
             </Flex>
 
         </Container>
+        </>
     )
 }
 

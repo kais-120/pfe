@@ -8,6 +8,7 @@ import { Bus, MessageSquareCode, PlaneTakeoff, QrCode as QrCodeIcon, Send, Credi
 import { Helmet } from "react-helmet"
 import { useFormik } from "formik"
 import * as Yup from "yup"
+import { toaster } from "../../components/ui/toaster"
 
 const validationSchema = Yup.object({
   review: Yup.string()
@@ -405,6 +406,23 @@ function BookingCard({ booking }) {
 
 function PaymentMethodSection({ payment_method, total_price, paymentInstallments }) {
   const isInstallment = payment_method === "installment"
+  const handlePayment = async (id,amount) => {
+    try{
+      const res = await AxiosToken.put(`/payment/${id}`,{amount})
+      window.location = res.data.url;
+    }catch{
+        toaster.create({ description: "erreur en paiment.", type: "error", closable: true })
+    }
+  }
+  const isTodayPaymentDay = (dateString) => {
+  const dueDate = new Date(dateString);
+  const today = new Date();
+
+  dueDate.setHours(0,0,0,0);
+  today.setHours(0,0,0,0);
+
+  return dueDate < today;
+};
 
   if (!isInstallment) {
     return (
@@ -481,6 +499,7 @@ function PaymentMethodSection({ payment_method, total_price, paymentInstallments
                 <Table.ColumnHeader fontSize="xs" fontWeight={700} color="gray.600" py={2.5}>Montant</Table.ColumnHeader>
                 <Table.ColumnHeader fontSize="xs" fontWeight={700} color="gray.600" py={2.5}>Date d'échéance</Table.ColumnHeader>
                 <Table.ColumnHeader fontSize="xs" fontWeight={700} color="gray.600" py={2.5}>Statut</Table.ColumnHeader>
+                <Table.ColumnHeader fontSize="xs" fontWeight={700} color="gray.600" py={2.5}>Action</Table.ColumnHeader>
               </Table.Row>
             </Table.Header>
             <Table.Body>
@@ -488,6 +507,9 @@ function PaymentMethodSection({ payment_method, total_price, paymentInstallments
                 const isPaid = inst.status.toLowerCase() === "payé"
                 const isOverdue = new Date(inst.due_date) < new Date() && !isPaid
                 const statusLabel = isPaid ? "Payé" : isOverdue ? "En retard" : "En attente"
+                const isPaymentDay = isTodayPaymentDay(inst.due_date)
+                const isPaide = inst.status === "payé"
+                const canPay = isPaymentDay && !isPaid
 
                 return (
                   <Table.Row key={inst.id} borderColor="gray.100" _hover={{ bg: "gray.50" }}>
@@ -530,6 +552,32 @@ function PaymentMethodSection({ payment_method, total_price, paymentInstallments
                         )}
                       </Flex>
                     </Table.Cell>
+                     <Table.Cell px={4} py={3}>
+                    <button
+                      onClick={() => handlePayment(inst.id,inst.amount)}
+                      disabled={!canPay}
+                      style={{
+                        padding: "6px 12px",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        borderRadius: "6px",
+                        border: "none",
+                        cursor: canPay ? "pointer" : "not-allowed",
+                        backgroundColor: canPay ? "#3182CE" : "#E2E8F0",
+                        color: canPay ? "white" : "#A0AEC0",
+                        transition: "all 0.2s",
+                        opacity: canPay ? 1 : 0.6
+                      }}
+                      onMouseEnter={(e) => {
+                        if (canPay) e.target.style.backgroundColor = "#2C5AA0"
+                      }}
+                      onMouseLeave={(e) => {
+                        if (canPay) e.target.style.backgroundColor = "#3182CE"
+                      }}
+                    >
+                      {isPaide ? "Payé" : canPay ? "Payer" : "Non disponible"}
+                    </button>
+                  </Table.Cell>
                   </Table.Row>
                 )
               })}
@@ -596,7 +644,7 @@ function HotelBookingContent({ booking, fmt, today }) {
               <Text fontSize="xs" color="gray.400">TND</Text>
             </Box>
             <VStack spacing={2} align="stretch" minW="140px">
-              <Button size="sm" colorScheme="blue" bg={"red.500"} _hover={{bg:"red.600"}} borderRadius="lg" fontWeight={600}>Annuler</Button>
+              <Button  size="sm" colorScheme="blue" bg={"red.500"} _hover={{bg:"red.600"}} borderRadius="lg" fontWeight={600}>Annuler</Button>
               <QrCodeModal  />
                 <AddReviewModal id={booking.bookingHotelDetails[0].RoomHotelBooking.id} />
               

@@ -285,3 +285,54 @@ exports.cashPayment = async (req, res) => {
         return res.status(500).send({ message: "error server" })
     }
 }
+
+exports.PaymentInstallments = [
+    body("amount").notEmpty().withMessage("amount is required")
+    .isInt().withMessage("amount should be integer"),
+    async(req,res)=>{
+        const error = validationResult(req);
+            if(!error.isEmpty()){
+              return res.status(422).send({message:error.array().map(err => err.msg)})
+            }
+        const { amount } = req.body
+        const { id } = req.params;
+        const payment = await PaymentInstallments.findByPk(id)
+            if(!payment){
+            return res.status(404).send({ message:"payment not found" })
+            }
+            if(payment.status === "payé"){
+            return res.status(400).send({ message:"payment is already payed" })
+            }
+
+        try {
+            const session = await stripe.checkout.sessions.create({
+            mode: "payment",
+            locale: "fr",
+
+            line_items: [
+                {
+                    price_data: {
+                        currency: "tnd",
+                        product_data: {
+                            name: `Booking #${payment.booking_id}`
+                        },
+                        unit_amount: amount * 1000
+                    },
+                    quantity: 1
+                }
+            ],
+            success_url: `http://localhost:5173/payment/success?booking=${payment.booking_id}&session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `http://localhost:5173/payment/cancel?booking=${payment.booking_id}&session_id={CHECKOUT_SESSION_ID}`,
+
+            metadata: {
+                booking_id: payment.booking_id
+            }
+        });
+            payment.update({reference:session.id})
+            return res.send({ message:"payment url", url:session.url })
+
+        } catch (err) {
+            return res.status(500).send({ message: "error server" })
+        }
+}
+]

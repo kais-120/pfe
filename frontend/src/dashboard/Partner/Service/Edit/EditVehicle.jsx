@@ -257,7 +257,7 @@ const EditVehicle = () => {
       }
 
       try {
-        await AxiosToken.post(`/service/vehicle/update/${id}`, fd)
+        await AxiosToken.put(`/service/vehicle/update/${id}`, fd)
         toaster.create({
           description: "Véhicule modifié avec succès.",
           type: "success", closable: true,

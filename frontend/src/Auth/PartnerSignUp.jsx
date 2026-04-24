@@ -11,6 +11,7 @@ import * as yup from "yup"
 import {
   LuUser, LuMail, LuPhone, LuLock, LuBuilding2,
   LuChevronRight, LuCheck,
+  LuChevronLeft,
 } from "react-icons/lu"
 import {
   FaPlane, FaCar, FaHotel, FaGlobe, FaRoute,
@@ -192,7 +193,13 @@ const PartnerSignUp = () => {
         {/* ── Right panel — form ── */}
         <Flex flex={1} align="center" justify="center" px={{ base: 4, md: 8 }} py={10}>
           <Box w="full" maxW="480px">
-
+          <Flex as={Link} to="/" align="center" gap={1.5}
+                    color="gray.400" fontSize="sm" mb={8}
+                    _hover={{ color: "blue.500" }} transition="color 0.15s"
+                    display="inline-flex">
+                    <LuChevronLeft size={14} />
+                    Retour à la accueil
+                  </Flex>
             {/* Mobile logo */}
             <Flex align="center" gap={2} mb={8} display={{ base: "flex", lg: "none" }}>
               <Flex w="32px" h="32px" borderRadius="lg"

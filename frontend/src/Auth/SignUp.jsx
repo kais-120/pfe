@@ -8,6 +8,7 @@ import { useState } from "react"
 import {
   LuUser, LuMail, LuLock, LuPhone, LuChevronRight
   , LuCheck, LuMapPin, LuStar,
+  LuChevronLeft,
 } from "react-icons/lu"
 import { FaHotel } from "react-icons/fa"
 import { LucideAlertCircle } from "lucide-react"
@@ -164,7 +165,15 @@ const SignUp = () => {
         </Box>
 
         <Flex flex={1} align="center" justify="center" px={{ base: 4, md: 8 }} py={10}>
+          
           <Box w="full" maxW="460px">
+            <Flex as={Link} to="/" align="center" gap={1.5}
+                    color="gray.400" fontSize="sm" mb={8}
+                    _hover={{ color: "blue.500" }} transition="color 0.15s"
+                    display="inline-flex">
+                    <LuChevronLeft size={14} />
+                    Retour à la accueil
+                  </Flex>
 
             <Flex align="center" gap={2} mb={8} display={{ base: "flex", lg: "none" }}>
               <Flex w="32px" h="32px" borderRadius="lg"

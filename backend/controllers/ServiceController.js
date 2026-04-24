@@ -12,6 +12,8 @@ const Package = require("../models/Package");
 const Destination = require("../models/Destination");
 const sequelize = require("../configs/db");
 const Activity = require("../models/Activity");
+const path = require("path")
+const fs = require("fs")
 
 exports.GetPublicHotel = async (req, res) => {
   try {
@@ -25,7 +27,7 @@ exports.GetPublicHotel = async (req, res) => {
         {
           model: Reviews,
           as: "hotelReview",
-          where:{status:"approuvée"},
+          where: { status: "approuvée" },
           include: [
             {
               model: User,
@@ -396,6 +398,7 @@ exports.GetAllServices = async (req, res) => {
         ]
       })
     ]);
+    console.log(hotels)
 
     return res.status(200).json({
       success: true,
@@ -433,9 +436,9 @@ exports.GetHotel = async (req, res) => {
               attributes: ["name"]
             },
             {
-              model:Claim,
-              as:"claim",
-              attributes:["id","reason","message","status"]
+              model: Claim,
+              as: "claim",
+              attributes: ["id", "reason", "message", "status"]
             }
           ]
         }
@@ -446,11 +449,12 @@ exports.GetHotel = async (req, res) => {
     }
     const images = await ImageService.findAll({ where: { type: "hotel", service_id: hotel.id } })
     const data = { ...hotel.toJSON(), images }
-    const review = await Reviews.findAll({where: 
-      {hotel_id:hotel.id,status:"approuvée"},
-      attributes:["rate"]
+    const review = await Reviews.findAll({
+      where:
+        { hotel_id: hotel.id, status: "approuvée" },
+      attributes: ["rate"]
     }
-  );
+    );
     return res.json({ message: "hotel found", hotel: data, review });
   } catch (err) {
     console.log(err)
@@ -521,29 +525,29 @@ exports.AddRoom = [
   }
 ]
 
-exports.DeleteRoom =  async (req, res) => {
-    try {
-      const userId = req.userId;
-      const {id} = req.params;
-      const hotel = await Hotel.findOne({ where: { partner_id: userId } });
-      const room = await Room.findByPk(id);
-      if(!room){
-        return res.status(404).json({ message: "room not found" });
-      }
-      if (!hotel) {
-        return res.status(404).json({ message: "hotel not found" });
-      }
-      if(room.hotel_id !== hotel.id){
-        return res.status(403).json({ message: "you don't have the access to delete this room" });
-      }
-      const existingBooking = await HotelBookingDetails.findOne({
+exports.DeleteRoom = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { id } = req.params;
+    const hotel = await Hotel.findOne({ where: { partner_id: userId } });
+    const room = await Room.findByPk(id);
+    if (!room) {
+      return res.status(404).json({ message: "room not found" });
+    }
+    if (!hotel) {
+      return res.status(404).json({ message: "hotel not found" });
+    }
+    if (room.hotel_id !== hotel.id) {
+      return res.status(403).json({ message: "you don't have the access to delete this room" });
+    }
+    const existingBooking = await HotelBookingDetails.findOne({
       where: { room_id: id },
       include: [
         {
           model: Booking,
-          as:"HotelDetailsBooking",
+          as: "HotelDetailsBooking",
           where: {
-            status: ["en attente", "confirmée"], 
+            status: ["en attente", "confirmée"],
             deleted_at: null
           }
         }
@@ -555,35 +559,35 @@ exports.DeleteRoom =  async (req, res) => {
         message: "Impossible de supprimer cette chambre, elle a des réservations en cours"
       });
     }
-      await room.destroy();
-      return res.json({ message: "hotel created" });
-    } catch(err) {
-      console.log(err)
-      return res.status(500).send({ message: "error server" })
-    }
+    await room.destroy();
+    return res.json({ message: "hotel created" });
+  } catch (err) {
+    console.log(err)
+    return res.status(500).send({ message: "error server" })
+  }
 }
 
-exports.VisibilityRoom =  async (req, res) => {
-    try {
-      const userId = req.userId;
-      const {id} = req.params;
-      const hotel = await Hotel.findOne({ where: { partner_id: userId } });
-      const room = await Room.findByPk(id);
-      if(!room){
-        return res.status(404).json({ message: "room not found" });
-      }
-      if (!hotel) {
-        return res.status(404).json({ message: "hotel not found" });
-      }
-      if(room.hotel_id !== hotel.id){
-        return res.status(403).json({ message: "you don't have the access to delete this room" });
-      }
-      const status = room.status === "active" ? "inactive" : "active"
-      await room.update({status});
-      return res.json({ message: "room is change there visibility" });
-    } catch {
-      return res.status(500).send({ message: "error server" })
+exports.VisibilityRoom = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { id } = req.params;
+    const hotel = await Hotel.findOne({ where: { partner_id: userId } });
+    const room = await Room.findByPk(id);
+    if (!room) {
+      return res.status(404).json({ message: "room not found" });
     }
+    if (!hotel) {
+      return res.status(404).json({ message: "hotel not found" });
+    }
+    if (room.hotel_id !== hotel.id) {
+      return res.status(403).json({ message: "you don't have the access to delete this room" });
+    }
+    const status = room.status === "active" ? "inactive" : "active"
+    await room.update({ status });
+    return res.json({ message: "room is change there visibility" });
+  } catch {
+    return res.status(500).send({ message: "error server" })
+  }
 }
 
 exports.GetRoom = async (req, res) => {
@@ -1302,9 +1306,9 @@ exports.GetAgency = async (req, res) => {
           model: Offer,
           as: "offers",
           required: false,
-          include:[{
-            model:Package,
-            as:"packages",
+          include: [{
+            model: Package,
+            as: "packages",
           }]
         },
 
@@ -1341,6 +1345,140 @@ exports.GetAgency = async (req, res) => {
   }
 
 };
+
+
+exports.UpdateOffer = async (req, res) => {
+  const { id } = req.params
+  const {
+    title, location, description,
+    category, difficulty,
+    packages,
+    removed_images,
+    removed_package
+  } = req.body
+
+  const inclusions = req.body["inclusions[]"] || []
+  const available_dates = req.body["available_dates[]"] || []
+
+  try {
+    await Offer.update(
+      {
+        title, location, description,
+        category, difficulty,
+        inclusions: Array.isArray(inclusions) ? inclusions : [inclusions],
+        available_dates: Array.isArray(available_dates) ? available_dates : [available_dates],
+      },
+      { where: { id } }
+    )
+
+    if (removed_images) {
+      const ids = JSON.parse(removed_images)
+      if (ids.length > 0) {
+        const toDelete = await ImageService.findAll({ where: { id: ids } })
+        toDelete.forEach((img) => {
+          const filePath = path.join(__dirname, "../uploads", img.image_url)
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
+        })
+        await ImageService.destroy({ where: { id: ids } })
+      }
+    }
+
+    if (req.files && req.files?.service_doc?.length > 0) {
+      const imageRecords = req.files.service_doc.map((file) => ({
+        image_url: file.filename,
+        type: "offer",
+        service_id: id,
+      }))
+      await ImageService.bulkCreate(imageRecords)
+    }
+
+    if (removed_package) {
+      const packIds = JSON.parse(removed_package)
+      if (packIds.length > 0) {
+        for (const id of packIds) {
+          const pkg = await Package.findByPk(id)
+          pkg.destroy();
+        }
+      }
+
+    }
+    if (packages) {
+      const pkgs = JSON.parse(packages)
+
+      for (const pkg of pkgs) {
+        const existing = await Package.findByPk(pkg.id)
+
+        if (!existing) {
+          const createdPackage = await Package.create({
+            title: pkg.title,
+            month: pkg.month,
+            year: Number(pkg.year),
+            type: pkg.type,
+            departureDate: pkg.departureDate,
+            departureTime: pkg.departureTime,
+            departureAirport: pkg.departureAirport,
+            returnDate: pkg.returnDate,
+            returnTime: pkg.returnTime,
+            returnAirport: pkg.returnAirport,
+            price: pkg.price,
+            number_place: pkg.seats,
+            installment: pkg.installment,
+            offer_id: id,
+          })
+
+          if (pkg.destinations?.length > 0) {
+            const destinationsData = pkg.destinations.map(d => ({
+              name: d.name,
+              rating: d.rating || 3,
+              nights: d.nights || 1,
+              package_id: createdPackage.id,
+            }))
+
+            await Destination.bulkCreate(destinationsData)
+          }
+
+        } else {
+          await existing.update({
+            title: pkg.title,
+            month: pkg.month,
+            year: Number(pkg.year),
+            type: pkg.type,
+            departureDate: pkg.departureDate,
+            departureTime: pkg.departureTime,
+            departureAirport: pkg.departureAirport,
+            returnDate: pkg.returnDate,
+            returnTime: pkg.returnTime,
+            returnAirport: pkg.returnAirport,
+            price: pkg.price,
+            number_place: pkg.seats,
+            installment: pkg.installment,
+          })
+
+          await Destination.destroy({
+            where: { package_id: pkg.id }
+          })
+
+          if (pkg.destinations?.length > 0) {
+            const destinationsData = pkg.destinations.map(d => ({
+              name: d.name,
+              rating: d.rating || 3,
+              nights: d.nights || 1,
+              package_id: pkg.id,
+            }))
+
+            await Destination.bulkCreate(destinationsData)
+          }
+        }
+      }
+    }
+
+    return res.json({ message: "offer updated." })
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({ message: "Erreur serveur." })
+  }
+}
+
 
 exports.AddOffer = [
   body("title").notEmpty().withMessage("title is required"),
@@ -1895,21 +2033,21 @@ exports.GetVoyage = async (req, res) => {
         {
           model: Circuit,
           as: "circuits",
-          required:false,
-          where:{
-            deletedAt:null
+          required: false,
+          where: {
+            deletedAt: null
           },
           include: [
             {
               model: Package,
               as: "packagesCircuit",
-             required:false,
+              required: false,
 
               include: [
                 {
                   model: Destination,
                   as: "destination",
-                  required:false,
+                  required: false,
 
                 }
               ]
@@ -2000,6 +2138,7 @@ exports.UpdateCircuit = async (req, res) => {
     category, difficulty,
     packages,
     removed_images,
+    removed_package
   } = req.body
 
   const inclusions = req.body["inclusions[]"] || []
@@ -2019,30 +2158,101 @@ exports.UpdateCircuit = async (req, res) => {
     if (removed_images) {
       const ids = JSON.parse(removed_images)
       if (ids.length > 0) {
-        const toDelete = await Image.findAll({ where: { id: ids } })
+        const toDelete = await ImageService.findAll({ where: { id: ids } })
         toDelete.forEach((img) => {
           const filePath = path.join(__dirname, "../uploads", img.image_url)
           if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
         })
-        await Image.destroy({ where: { id: ids } })
+        await ImageService.destroy({ where: { id: ids } })
       }
     }
 
-    if (req.files && req.files.length > 0) {
-      const imageRecords = req.files.map((file) => ({
+    if (req.files && req.files.service_doc.length > 0) {
+      const imageRecords = req.files.service_doc.map((file) => ({
         image_url: file.filename,
         type: "circuit",
         service_id: id,
       }))
-      await Image.bulkCreate(imageRecords)
+      await ImageService.bulkCreate(imageRecords)
     }
 
-    // ── 4. Sync packages if provided ──
-    if (packages) {
-      const pkgs = JSON.parse(packages)
-      // You can add your own sync logic here —
-      // e.g. update existing ones, create new ones
+    if (removed_package) {
+      for (const id of removed_package) {
+        const pkg = await Package.findByPk(id)
+        pkg.destroy();
+      }
     }
+
+        if (packages) {
+      const pkgs = JSON.parse(packages)
+
+      for (const pkg of pkgs) {
+        const existing = await Package.findByPk(pkg.id)
+
+        if (!existing) {
+          const createdPackage = await Package.create({
+            title: pkg.title,
+            month: pkg.month,
+            year: Number(pkg.year),
+            type: pkg.type,
+            departureDate: pkg.departureDate,
+            departureTime: pkg.departureTime,
+            departureAirport: pkg.departureAirport,
+            returnDate: pkg.returnDate,
+            returnTime: pkg.returnTime,
+            returnAirport: pkg.returnAirport,
+            price: pkg.price,
+            number_place: pkg.seats,
+            installment: pkg.installment,
+            offer_id: id,
+          })
+
+          if (pkg.destinations?.length > 0) {
+            const destinationsData = pkg.destinations.map(d => ({
+              name: d.name,
+              rating: d.rating || 3,
+              nights: d.nights || 1,
+              package_id: createdPackage.id,
+            }))
+
+            await Destination.bulkCreate(destinationsData)
+          }
+
+        } else {
+          await existing.update({
+            title: pkg.title,
+            month: pkg.month,
+            year: Number(pkg.year),
+            type: pkg.type,
+            departureDate: pkg.departureDate,
+            departureTime: pkg.departureTime,
+            departureAirport: pkg.departureAirport,
+            returnDate: pkg.returnDate,
+            returnTime: pkg.returnTime,
+            returnAirport: pkg.returnAirport,
+            price: pkg.price,
+            number_place: pkg.seats,
+            installment: pkg.installment,
+          })
+
+          await Destination.destroy({
+            where: { package_id: pkg.id }
+          })
+
+          if (pkg.destinations?.length > 0) {
+            const destinationsData = pkg.destinations.map(d => ({
+              name: d.name,
+              rating: d.rating || 3,
+              nights: d.nights || 1,
+              package_id: pkg.id,
+            }))
+
+            await Destination.bulkCreate(destinationsData)
+          }
+        }
+      }
+    }
+
 
     return res.json({ message: "Circuit mis à jour avec succès." })
   } catch (err) {
@@ -2060,11 +2270,11 @@ exports.GetPublicVoyage = async (req, res) => {
           model: Circuit,
           as: "circuits",
           required: true,
-          include:[
+          include: [
             {
-              model:Package,
-              as:"packagesCircuit",
-              attributes:["price"]
+              model: Package,
+              as: "packagesCircuit",
+              attributes: ["price"]
             }
           ]
         }
@@ -2106,44 +2316,44 @@ exports.GetPublicVoyage = async (req, res) => {
   }
 };
 
-exports.DeleteCircuit = async (req,res) => {
-  try{
-    const {id} = req.params;
+exports.DeleteCircuit = async (req, res) => {
+  try {
+    const { id } = req.params;
     const partner_id = req.userId;
     const circuit = await Circuit.findByPk(id);
-    if(!circuit){
-      return res.status(404).json({message:"circuit not found"})
+    if (!circuit) {
+      return res.status(404).json({ message: "circuit not found" })
     }
-    if(circuit.partner_id != partner_id){
-      return res.status(403).json({message:"you don't have access to this circuit"})
+    if (circuit.partner_id != partner_id) {
+      return res.status(403).json({ message: "you don't have access to this circuit" })
     }
     await circuit.destroy();
-      return res.json({message:"circuit deleted"})
-  }catch{
-    return res.status(500).json({message:"error service"})
+    return res.json({ message: "circuit deleted" })
+  } catch {
+    return res.status(500).json({ message: "error service" })
   }
 }
 
-exports.DeleteOffer = async (req,res) => {
-  try{
-    const {id} = req.params;
+exports.DeleteOffer = async (req, res) => {
+  try {
+    const { id } = req.params;
     const partner_id = req.userId;
-    const offer = await Offer.findByPk(id,{
-      include:{
-        model:Agence,
-        as:"agencyOffer"
+    const offer = await Offer.findByPk(id, {
+      include: {
+        model: Agence,
+        as: "agencyOffer"
       }
     });
-    if(!offer){
-      return res.status(404).json({message:"offer not found"})
+    if (!offer) {
+      return res.status(404).json({ message: "offer not found" })
     }
-    if(offer.agencyOffer.partner_id != partner_id){
-      return res.status(403).json({message:"you don't have access to this offer"})
+    if (offer.agencyOffer.partner_id != partner_id) {
+      return res.status(403).json({ message: "you don't have access to this offer" })
     }
     await offer.destroy();
-      return res.json({message:"offer deleted"})
-  }catch{
-    return res.status(500).json({message:"error service"})
+    return res.json({ message: "offer deleted" })
+  } catch {
+    return res.status(500).json({ message: "error service" })
   }
 }
 exports.AddCircuit = [

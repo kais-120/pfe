@@ -38,7 +38,6 @@ const PACKAGES_DATA = [
     ],
     price: 5451,
     installment: "6X",
-    type: "haj",
   },
   {
     id: 2,
@@ -78,7 +77,6 @@ const PACKAGES_DATA = [
     ],
     price: 5306,
     installment: "6X",
-    type: "haj",
   },
   {
     id: 4,
@@ -98,7 +96,6 @@ const PACKAGES_DATA = [
     ],
     price: 4950,
     installment: "6X",
-    type: "haj",
   },
 ]
 

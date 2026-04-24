@@ -2,6 +2,9 @@ import { useEffect, useState } from "react"
 import {
   Box, Container, Text, Image, Flex, Grid, Button,
   Badge, VStack, HStack, IconButton, Skeleton, SkeletonText,
+  Dialog,
+  Portal,
+  CloseButton,
 } from "@chakra-ui/react"
 import {
   LuChevronLeft, LuChevronRight, LuPencil, LuTrash2,
@@ -11,6 +14,7 @@ import {
   LuTwitter,
   LuImages,
   LuPen,
+  LuShieldAlert,
 } from "react-icons/lu"
 import { useNavigate } from "react-router-dom"
 import { AxiosToken, imageURL } from "../../../../Api/Api"
@@ -18,11 +22,6 @@ import { toaster } from "../../../../components/ui/toaster"
 
 const IMAGE_BASE = `${imageURL}/services/`
 
-const AGENCY_STATUS = {
-  accept: { colorScheme: "green", label: "Approuvée" },
-  refuse: { colorScheme: "red", label: "Refusée" },
-  "En attente": { colorScheme: "yellow", label: "En attente" },
-}
 
 const OFFER_TYPES = [
   { value: "circuit", label: "Circuit" },
@@ -172,18 +171,85 @@ function OfferCard({ offer, onEdit, onDelete }) {
               onClick={() => onEdit?.(offer)}>
               <LuPencil size={12} />
             </IconButton>
-            <IconButton size="xs" variant="outline" borderRadius="lg"
-              color="red.400" borderColor="red.200" _hover={{ bg: "red.50" }}
-              onClick={() => onDelete?.(offer.id)}>
-              <LuTrash2 size={12} />
-            </IconButton>
+
+            <Dialog.Root>
+              <Dialog.Trigger asChild>
+                <IconButton size="xs" variant="outline" borderRadius="lg"
+                  color="red.400" borderColor="red.200" _hover={{ bg: "red.50" }}
+                >
+                  <LuTrash2 size={12} />
+                </IconButton>
+
+              </Dialog.Trigger>
+              <Portal>
+                <Dialog.Backdrop />
+                <Dialog.Positioner>
+                  <Dialog.Content borderRadius="2xl" overflow="hidden">
+                    {/* Dialog header */}
+                    <Box bg="red.50" px={6} py={5}
+                      borderBottom="1px solid" borderColor="red.100">
+                      <Flex align="center" gap={3}>
+                        <Flex w="36px" h="36px" borderRadius="xl"
+                          bg="red.100" color="red.500"
+                          align="center" justify="center" flexShrink={0}>
+                          <LuShieldAlert size={16} />
+                        </Flex>
+                        <Dialog.Title fontSize="md" fontWeight={700} color="gray.900">
+                          Supprimer la chambre
+                        </Dialog.Title>
+                      </Flex>
+                    </Box>
+
+                    <Dialog.Body px={6} py={5}>
+                      <Text fontSize="sm" color="gray.600" lineHeight="1.7">
+                        Vous êtes sur le point de supprimer{" "}
+                        <Text as="span" fontWeight={700} color="gray.800">
+                          {offer.name}
+                        </Text>
+                        . Cette action est <Text as="span" color="red.500" fontWeight={600}>irréversible</Text> — toutes les données associées seront définitivement perdues.
+                      </Text>
+                    </Dialog.Body>
+
+                    <Dialog.Footer
+                      px={6} py={4}
+                      borderTop="1px solid" borderColor="gray.100"
+                      gap={3}
+                    >
+                      <Dialog.ActionTrigger asChild>
+                        <Button variant="outline" borderRadius="xl"
+                          size="sm" color="gray.500">
+                          Annuler
+                        </Button>
+                      </Dialog.ActionTrigger>
+                      <Button
+                        colorScheme="red" borderRadius="xl"
+                        size="sm" fontWeight={700}
+                        onClick={() => onDelete?.(offer.id)}
+                      >
+                        <Flex align="center" gap={1.5}>
+                          <LuTrash2 size={13} />
+                          Supprimer définitivement
+                        </Flex>
+                      </Button>
+                    </Dialog.Footer>
+
+                    <Dialog.CloseTrigger asChild>
+                      <CloseButton size="sm" position="absolute" top={3} right={3} />
+                    </Dialog.CloseTrigger>
+                  </Dialog.Content>
+                </Dialog.Positioner>
+              </Portal>
+            </Dialog.Root>
+
+
+
           </HStack>
         </Flex>
       </Box>
     </Box>
   )
 }
-function CircuitCard({ offer, onDelete,onEdit }) {
+function CircuitCard({ offer, onDelete, onEdit }) {
   const mainImg = offer.imagesOffer?.[0]?.image_url
     ? `${imageURL}/services/${offer.imagesOffer[0]?.image_url}`
     : null
@@ -206,20 +272,86 @@ function CircuitCard({ offer, onDelete,onEdit }) {
           </Flex>
         )}
         <HStack position="absolute" top={2} right={2}>
-        <Button size="xs"
-          variant="solid" bg="blackAlpha.600" color="white"
-          borderRadius="lg" _hover={{ bg: "red.500" }}
-          onClick={() => onDelete?.(offer.id)}>
-          <LuTrash2 size={12} />
-        </Button>
-        <Button size="xs"
-          variant="solid" bg="blackAlpha.600" color="white"
-          borderRadius="lg" _hover={{ bg: "blue.500" }}
-          onClick={onEdit}
+
+          <Dialog.Root>
+              <Dialog.Trigger asChild>
+
+                <Button size="xs"
+                  variant="solid" bg="blackAlpha.600" color="white"
+                  borderRadius="lg" _hover={{ bg: "red.500" }}
+                 >
+                  <LuTrash2 size={12} />
+                </Button>
+
+              </Dialog.Trigger>
+              <Portal>
+                <Dialog.Backdrop />
+                <Dialog.Positioner>
+                  <Dialog.Content borderRadius="2xl" overflow="hidden">
+                    {/* Dialog header */}
+                    <Box bg="red.50" px={6} py={5}
+                      borderBottom="1px solid" borderColor="red.100">
+                      <Flex align="center" gap={3}>
+                        <Flex w="36px" h="36px" borderRadius="xl"
+                          bg="red.100" color="red.500"
+                          align="center" justify="center" flexShrink={0}>
+                          <LuShieldAlert size={16} />
+                        </Flex>
+                        <Dialog.Title fontSize="md" fontWeight={700} color="gray.900">
+                          Supprimer la chambre
+                        </Dialog.Title>
+                      </Flex>
+                    </Box>
+
+                    <Dialog.Body px={6} py={5}>
+                      <Text fontSize="sm" color="gray.600" lineHeight="1.7">
+                        Vous êtes sur le point de supprimer{" "}
+                        <Text as="span" fontWeight={700} color="gray.800">
+                          {offer.title}
+                        </Text>
+                        . Cette action est <Text as="span" color="red.500" fontWeight={600}>irréversible</Text> — toutes les données associées seront définitivement perdues.
+                      </Text>
+                    </Dialog.Body>
+
+                    <Dialog.Footer
+                      px={6} py={4}
+                      borderTop="1px solid" borderColor="gray.100"
+                      gap={3}
+                    >
+                      <Dialog.ActionTrigger asChild>
+                        <Button variant="outline" borderRadius="xl"
+                          size="sm" color="gray.500">
+                          Annuler
+                        </Button>
+                      </Dialog.ActionTrigger>
+                      <Button
+                        colorScheme="red" borderRadius="xl"
+                        size="sm" fontWeight={700}
+                        onClick={() => onDelete?.(offer.id)}
+                      >
+                        <Flex align="center" gap={1.5}>
+                          <LuTrash2 size={13} />
+                          Supprimer définitivement
+                        </Flex>
+                      </Button>
+                    </Dialog.Footer>
+
+                    <Dialog.CloseTrigger asChild>
+                      <CloseButton size="sm" position="absolute" top={3} right={3} />
+                    </Dialog.CloseTrigger>
+                  </Dialog.Content>
+                </Dialog.Positioner>
+              </Portal>
+            </Dialog.Root>
+
+          <Button size="xs"
+            variant="solid" bg="blackAlpha.600" color="white"
+            borderRadius="lg" _hover={{ bg: "blue.500" }}
+            onClick={onEdit}
           >
-          <LuPen size={12} />
-        </Button>
-      </HStack>
+            <LuPen size={12} />
+          </Button>
+        </HStack>
       </Box>
 
       <Box p={4}>
@@ -231,7 +363,7 @@ function CircuitCard({ offer, onDelete,onEdit }) {
           <Text fontSize="xs" color="gray.500" noOfLines={1}>{offer.destination}</Text>
         </Flex>
         <Text fontSize="sm" color="gray.600" lineHeight="1.6" noOfLines={2} mb={3}>
-          {offer.description && offer.description.length < 25 ? offer.description : offer.description.slice(0,25) + "..."}
+          {offer.description && offer.description.length < 25 ? offer.description : offer.description.slice(0, 25) + "..."}
         </Text>
 
         <Grid templateColumns="1fr 1fr 1fr" gap={2} mb={3}>
@@ -341,7 +473,6 @@ const ServiceAgency = () => {
   const minPrice = offers.length
     ? Math.min(...offers.map(o => Number(o.price || 0)))
     : null
-  const as = AGENCY_STATUS[agency.status] ?? { colorScheme: "gray", label: agency.status }
   const XIcon = () => (
     <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
       <path d="M18.244 2H21l-6.5 7.43L22 22h-6.828l-5.34-6.98L3.5 22H1l6.96-7.96L2 2h6.828l4.86 6.36L18.244 2z" />
@@ -422,10 +553,7 @@ const ServiceAgency = () => {
 
             {/* Status badge */}
             <Flex align="center" gap={2} mt={1}>
-              <Badge colorScheme={as.colorScheme} borderRadius="full"
-                px={2.5} py={0.5} fontSize="xs" fontWeight={600}>
-                {as.label}
-              </Badge>
+
               <Text fontSize="xs" color="gray.400">
                 Créée le {new Date(agency.createdAt).toLocaleDateString("fr-FR", {
                   day: "numeric", month: "long", year: "numeric"

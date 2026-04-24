@@ -5,13 +5,14 @@ import { AxiosToken, socketBaseURL } from '../../Api/Api';
 import { LuChevronDown, LuSettings, LuLogOut, LuBell, LuCheck, LuFileText, LuInfo } from 'react-icons/lu';
 import Cookies from 'universal-cookie';
 import { io } from 'socket.io-client';
-import { Banknote, CalendarCheck } from 'lucide-react';
+import { Banknote, CalendarCheck, MessageCircleWarning } from 'lucide-react';
 import { useProfile } from '../../Context/useProfile';
 
 const NOTIF_META = {
-  document: { Icon: LuFileText,color: "blue", bg: "blue.50"   },
-  booking: { Icon: CalendarCheck, color: "red",  bg: "red.50"    },
-  payment:{ Icon: Banknote,color: "gray", bg: "gray.50"   },
+  document: { Icon: LuFileText,color: "blue", bg: "blue.50"},
+  booking: { Icon: CalendarCheck, color: "red",  bg: "red.50"},
+  payment:{ Icon: Banknote,color: "gray", bg: "gray.50"},
+  claim:{ Icon: MessageCircleWarning,color: "red", bg: "gray.50"},
 }
 const getMeta = (type) => NOTIF_META[type] ?? NOTIF_META.info
 
@@ -30,7 +31,7 @@ const Topbar = () => {
   const navigate = useNavigate()
   const cookie  = new Cookies()
 
-  const {user} = useProfile();
+  const {user,setUser} = useProfile();
 
   const unreadCount = notifications.filter(n => !n.is_read).length
 
@@ -82,9 +83,11 @@ const Topbar = () => {
   }
 
   const handleLogout = () => {
-    cookie.remove("auth");
+    cookie.remove("auth", {
+      path: "/"
+    });
+    setUser(null)
       navigate("/login");
-      window.location.reload(); 
   }
   const initials = user?.name?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
 
@@ -178,7 +181,16 @@ const Topbar = () => {
                       </Flex>
 
                       {/* Content */}
-                      <Box flex={1} minW={0}>
+                      <Box onClick={()=>{
+                        if(notif.type === "booking"){
+                          navigate("/partner/dashboard/bookings")
+                        }else if(notif.type === "claim"){
+                          navigate("/dashboard/review")
+                        }else if(notif.type === "document")
+                          navigate("/dashboard/document/partner")
+                        }
+
+                      } flex={1} minW={0}>
                         <Flex align="center" justify="space-between" gap={2} mb={0.5}>
                           <Text fontSize="sm"
                             fontWeight={notif.is_read ? 500 : 700}

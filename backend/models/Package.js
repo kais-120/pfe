@@ -59,9 +59,6 @@ const Package = sequelize.define("packages", {
       type: DataTypes.STRING,
     },
 
-    type: {
-      type: DataTypes.STRING,
-    },
     deleted_at:{
       type: DataTypes.DATE,
     },

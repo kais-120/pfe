@@ -392,7 +392,7 @@ const toggleSelect = (pkg) => {
       {/* ── ADD TAB ── */}
       {tab === "add" && (
         <Box>
-          <AddPackage ontTab={setTab} onChange={setAllPackages} />
+          <AddPackage ontTab={setTab} onChange={setAllPackages} type={"offer"} />
         </Box>
       )}
     </Box>

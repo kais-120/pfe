@@ -494,7 +494,19 @@ exports.GetPartnerBookingAgency = async (req, res) => {
                 },
                 {
                     model: User,
-                    as: "userBooking"
+                    as: "userBooking",
+                    attributes:["id","name","phone"]
+                },
+                {
+                    model:Payment,
+                    as:"payment",
+                    attributes:{
+                        exclude:["reference"]
+                    }
+                },
+                {
+                    model:PaymentInstallments,
+                    as:"paymentInstallments"
                 }
             ]
         });
@@ -512,7 +524,11 @@ exports.GetClientBooking = async (req, res) => {
         const client_id = req.userId;
         const bookings = await Booking.findAll({
             where: { client_id },
-            order:[["createdAt","DESC"]],
+            order:[
+                ["createdAt","DESC"],
+                  [{ model: PaymentInstallments, as: "paymentInstallments" }, "installment_number", "DESC"]
+
+        ],
             include: [
                 {
                     model: HotelBookingDetails,
@@ -611,7 +627,8 @@ exports.GetClientBooking = async (req, res) => {
                 },
                 {
                     model:PaymentInstallments,
-                    as:"paymentInstallments"
+                    as:"paymentInstallments",
+
                 }
             ]
         });

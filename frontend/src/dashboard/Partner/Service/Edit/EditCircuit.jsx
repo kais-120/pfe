@@ -178,7 +178,7 @@ function PackageRow({ pkg, onSelect, selected }) {
 }
 
 // ── PackagesPanel ──────────────────────────────────────────────────────
-function PackagesPanel({ selectedPackages, onSelectionChange, allPackages, setAllPackages }) {
+function PackagesPanel({ selectedPackages, onSelectionChange, allPackages, setAllPackages,removedPackageIds,setRemovedPackageIds }) {
   const [tab, setTab] = useState("list")
   const [search, setSearch] = useState("")
   const [editingPkg, setEditingPkg] = useState(null)
@@ -209,7 +209,11 @@ function PackagesPanel({ selectedPackages, onSelectionChange, allPackages, setAl
 
   const handleDeleteSelected = () => {
     const selectedIds = new Set(selectedPackages.map((p) => p.id))
+    selectedIds.forEach((id)=>{
+      setRemovedPackageIds(prev => [...prev,id])
+    })
     setAllPackages((prev) => prev.filter((p) => !selectedIds.has(p.id)))
+    
     onSelectionChange([])
   }
 
@@ -335,6 +339,7 @@ const EditCircuit = () => {
 
   const [existingImages, setExistingImages] = useState([])
   const [removedImageIds, setRemovedImageIds] = useState([])
+  const [removedPackageIds, setRemovedPackageIds] = useState([])
   const [newFiles, setNewFiles] = useState([])
   const [newPreviews, setNewPreviews] = useState([])
 
@@ -360,8 +365,8 @@ const EditCircuit = () => {
         })
 
         // ── Packages ──
-        if (selectedPackages.length > 0)
-          fd.append("packages", JSON.stringify(selectedPackages))
+        if (allPackages.length > 0)
+          fd.append("packages", JSON.stringify(allPackages))
 
         // ── New images (only if user selected new ones) ──
         newFiles.forEach(file => fd.append("service_doc", file))
@@ -369,6 +374,10 @@ const EditCircuit = () => {
         // ── IDs of existing images to delete ──
         if (removedImageIds.length > 0)
           fd.append("removed_images", JSON.stringify(removedImageIds))
+
+         if (removedPackageIds.length > 0){
+          fd.append("removed_package", JSON.stringify(removedPackageIds))
+        }
 
         await AxiosToken.put(`/service/voyage/circuit/update/${id}`, fd)
         toaster.create({ description: "Circuit modifié avec succès.", type: "success", closable: true })

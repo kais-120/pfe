@@ -9,6 +9,7 @@ import Cookies from "universal-cookie"
 import {
   LuMail, LuLock, LuChevronRight,
   LuShieldCheck, LuHeadphones, LuTrendingUp,
+  LuChevronLeft,
 } from "react-icons/lu"
 import { FaHotel } from "react-icons/fa"
 import { LucideAlertCircle } from "lucide-react"
@@ -83,7 +84,9 @@ const Login = () => {
         setError(false)
         setLoading(true)
         const response = await Axios.post("/auth/login", values)
-        cookie.set("auth", response.data.token)
+        cookie.set("auth", response.data.token, {
+          path: "/"
+        })
         if (response.data.role === "admin" || response.data.role === "partner") {
           navigate("/dashboard")
         } else {
@@ -102,6 +105,7 @@ const Login = () => {
       <Helmet><title>Connexion — H-Care</title></Helmet>
 
       <Flex minH="100vh" bg="#f5f6fa">
+        
 
         {/* ── Left panel ── */}
         <Box
@@ -151,8 +155,19 @@ const Login = () => {
         </Box>
 
         {/* ── Right panel — form ── */}
+        
+        
         <Flex flex={1} align="center" justify="center" px={{ base: 4, md: 8 }} py={10}>
+
+          
           <Box w="full" maxW="420px">
+            <Flex as={Link} to="/" align="center" gap={1.5}
+                    color="gray.400" fontSize="sm" mb={8}
+                    _hover={{ color: "blue.500" }} transition="color 0.15s"
+                    display="inline-flex">
+                    <LuChevronLeft size={14} />
+                    Retour à la accueil
+                  </Flex>
 
             {/* Mobile logo */}
             <Flex align="center" gap={2} mb={8} display={{ base: "flex", lg: "none" }}>

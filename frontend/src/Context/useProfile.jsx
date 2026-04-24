@@ -33,7 +33,7 @@ export const ProfileProvider = ({ children }) => {
   }, []);
 
   return (
-    <ProfileContext.Provider value={{ user,loading }}>
+    <ProfileContext.Provider value={{ user,loading,setUser }}>
       {children}
     </ProfileContext.Provider>
   );
