@@ -30,8 +30,9 @@ exports.CreatePayment = async (amount, booking_id, client_id, installment = 0, t
         });
         if (type === "installment") {
             const totalWithFee = amount * 1.05;
+            const payment = await Payment.create({ amount: totalWithFee, client_id, booking_id })
             await PaymentInstallments.create({
-                booking_id: booking_id,
+                payment_id: payment.id,
                 amount: part,
                 installment_number: 1,
                 due_date: new Date(Date.now()),
@@ -40,16 +41,15 @@ exports.CreatePayment = async (amount, booking_id, client_id, installment = 0, t
             });
             for (let i = 1; i < installment; i++) {
                 await PaymentInstallments.create({
-                    booking_id: booking_id,
+                    payment_id: payment.id,
                     amount: part,
                     installment_number: i + 1,
                     due_date: new Date(Date.now() + i * 30 * 24 * 60 * 60 * 1000),
                     status: "en attente"
                 });
             }
-            await Payment.create({ amount: totalWithFee, client_id, booking_id })
-        } else {
-            await Payment.create({ amount, client_id, booking_id, reference: session.id })
+        }else{
+             await Payment.create({ amount, client_id, booking_id, reference: session.id })
         }
         return session.url
 
@@ -140,7 +140,7 @@ exports.CreatePayment = async (amount, booking_id, client_id, installment = 0, t
 // ];
 
 exports.VerifyPayment = [
-    body("reference").notEmpty().withMessage("payment id is required"),
+    body("reference").notEmpty().withMessage("reference is required"),
     body("booking_id").notEmpty().withMessage("booking id is required"),
     async (req, res) => {
         const errors = validationResult(req);
@@ -166,17 +166,19 @@ exports.VerifyPayment = [
                     await Activity.create({ type: "payment", titre: "paiement est annulée" })
                 }
             } else {
+                const p = await Payment.findOne({where :{booking_id}})
                 const payment = await PaymentInstallments.findOne({ where: { reference } });
                 const session = await stripe.checkout.sessions.retrieve(reference);
                 if (session.payment_status === "paid") {
                     await payment.update({ status: "payé" })
                     await Activity.create({ type: "payment", titre: "Paiement de tranche confirmé" })
                     const allInstallments = await PaymentInstallments.findAll({
-                        where: { booking_id }
+                        where: { payment_id:p.id }
                     })
                     const allPaid = allInstallments.every(p => p.status === "payé")
                     if (allPaid) {
                         await booking.update({ status: "confirmée" })
+                        await p.update({ status: "confirmée" })
                         await Activity.create({
                             type: "payment",
                             titre: "Tous les paiements sont confirmés (réservation validée)"

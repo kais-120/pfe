@@ -1,5 +1,6 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../configs/db");
+const Payment = require("./Payment");
 
 const PaymentInstallments = sequelize.define("payment_installments", {
     id: {
@@ -28,11 +29,11 @@ const PaymentInstallments = sequelize.define("payment_installments", {
         type:DataTypes.STRING,
         allowNull:true,
     },
-    booking_id: {
+    payment_id: {
         type: DataTypes.BIGINT,
         allowNull: false,
         references: {
-            model: "booking",
+            model: Payment,
             key: "id"
         }
     },

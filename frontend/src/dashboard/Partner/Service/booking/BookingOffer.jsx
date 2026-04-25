@@ -479,7 +479,7 @@ function BookingOfferCard({ booking, index }) {
         <PaymentMethodSection
           payment_method={booking.payment_method}
           total_price={booking.total_price}
-          paymentInstallments={booking.paymentInstallments}
+          paymentInstallments={booking?.payment?.[0]?.paymentInstallments}
         />
       </Box>
     </Box>

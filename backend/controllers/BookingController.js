@@ -261,7 +261,7 @@ exports.BookingOffer = [
         .isNumeric().withMessage("package should be numeric"),
     body("total_price").notEmpty().withMessage("price is required")
         .isNumeric().withMessage("price should be numeric"),
-    body("payment_method").notEmpty().withMessage("price is required")
+    body("payment_method").notEmpty().withMessage("payment method is required")
     , async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -280,7 +280,7 @@ exports.BookingOffer = [
                 }]
             });
             if (!offer) {
-                return res.status(404).send({ message: "offer not found" })
+                return res.status(404).send({ message: "offer not found 1" })
             }
             const package = await Package.findByPk(package_id);
             if (!package) {
@@ -398,12 +398,18 @@ exports.GetPartnerBookingCircuit = async (req, res) => {
                 },
                 {
                     model:Payment,
-                    as:"payment"
+                    as:"payment",
+                    attributes:{
+                        exclude:["reference"]
+                    },
+                    include:[
+                        {
+                            model:PaymentInstallments,
+                            as:"paymentInstallments"
+                        }
+                    ]
                 },
-                {
-                    model:PaymentInstallments,
-                    as:"paymentInstallments"
-                }
+                
             ]
         });
         return res.send({ booking: bookings })
@@ -502,12 +508,15 @@ exports.GetPartnerBookingAgency = async (req, res) => {
                     as:"payment",
                     attributes:{
                         exclude:["reference"]
-                    }
+                    },
+                    include:[
+                        {
+                            model:PaymentInstallments,
+                            as:"paymentInstallments"
+                        }
+                    ]
                 },
-                {
-                    model:PaymentInstallments,
-                    as:"paymentInstallments"
-                }
+                
             ]
         });
         return res.send({ booking: bookings })
@@ -524,11 +533,15 @@ exports.GetClientBooking = async (req, res) => {
         const client_id = req.userId;
         const bookings = await Booking.findAll({
             where: { client_id },
-            order:[
-                ["createdAt","DESC"],
-                  [{ model: PaymentInstallments, as: "paymentInstallments" }, "installment_number", "DESC"]
-
-        ],
+            order: [
+            ["createdAt", "DESC"],
+            [
+                { model: Payment, as: "payment" },
+                { model: PaymentInstallments, as: "paymentInstallments" },
+                "installment_number",
+                "DESC"
+            ]
+            ],
             include: [
                 {
                     model: HotelBookingDetails,
@@ -626,8 +639,14 @@ exports.GetClientBooking = async (req, res) => {
                     ]
                 },
                 {
-                    model:PaymentInstallments,
-                    as:"paymentInstallments",
+                    model:Payment,
+                    as:"payment",
+                    include:[
+                        {
+                            model:PaymentInstallments,
+                            as:"paymentInstallments"
+                        }
+                    ]
 
                 }
             ]

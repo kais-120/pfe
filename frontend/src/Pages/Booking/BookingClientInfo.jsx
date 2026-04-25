@@ -328,7 +328,7 @@ function AddReviewModal({ id }) {
 }
 
 function BookingCard({ booking }) {
-  const { id, status, type, total_price, payment_method, paymentInstallments } = booking
+  const { id, status, type, total_price, payment_method, payment } = booking
   const statusLower = status.toLowerCase()
   const { label, color } = STATUS_CONFIG[statusLower] ?? STATUS_CONFIG["confirmée"]
   const bookingTypeInfo = BOOKING_TYPES[type] || { icon: FaHotel, label: type, color: "#666" }
@@ -368,17 +368,17 @@ function BookingCard({ booking }) {
 
           {/* Travel Circuit Booking */}
           {type === "voyages circuits" && booking.circuitBooking?.length > 0 && (
-            <CircuitBookingContent booking={booking} fmt={fmt} payment_method={payment_method} paymentInstallments={paymentInstallments} />
+            <CircuitBookingContent booking={booking} fmt={fmt} payment_method={payment_method} paymentInstallments={payment?.[0]?.paymentInstallments} />
           )}
 
           {/* Travel Offer Booking */}
           {type === "agence de voyage" && booking.offerBooking?.length > 0 && (
-            <OfferBookingContent booking={booking} fmt={fmt} payment_method={payment_method} paymentInstallments={paymentInstallments} />
+            <OfferBookingContent booking={booking} fmt={fmt} payment_method={payment_method} paymentInstallments={payment?.[0]?.paymentInstallments} />
           )}
 
           {/* Payment Method Section for Offer/Circuit */}
           {(type === "agence de voyage" || type === "voyages circuits") && (
-            <PaymentMethodSection payment_method={payment_method} total_price={total_price} paymentInstallments={paymentInstallments} />
+            <PaymentMethodSection payment_method={payment_method} total_price={total_price} paymentInstallments={payment?.[0]?.paymentInstallments} />
           )}
 
           {/* Footer with Price and Actions */}
@@ -406,6 +406,7 @@ function BookingCard({ booking }) {
 
 function PaymentMethodSection({ payment_method, total_price, paymentInstallments }) {
   const isInstallment = payment_method === "installment"
+  console.log(paymentInstallments)
   const handlePayment = async (id,amount) => {
     try{
       const res = await AxiosToken.put(`/payment/${id}`,{amount})

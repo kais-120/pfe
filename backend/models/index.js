@@ -365,13 +365,13 @@ Payment.belongsTo(Booking,{
     as:"bookingPayment"
 })
 
-Booking.hasMany(PaymentInstallments,{
-    foreignKey:"booking_id",
+Payment.hasMany(PaymentInstallments,{
+    foreignKey:"payment_id",
     as:"paymentInstallments"
 })
-PaymentInstallments.belongsTo(Booking,{
-    foreignKey:"booking_id",
-    as:"bookingPaymentInstallments"
+PaymentInstallments.belongsTo(Payment,{
+    foreignKey:"payment_id",
+    as:"paymentOfInstallments"
 })
 
 Reviews.hasOne(Claim,{
