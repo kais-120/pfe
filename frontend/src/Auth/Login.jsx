@@ -87,8 +87,10 @@ const Login = () => {
         cookie.set("auth", response.data.token, {
           path: "/"
         })
-        if (response.data.role === "admin" || response.data.role === "partner") {
+        if (response.data.role === "admin" || response.data.role === "agent") {
           navigate("/dashboard")
+        }else if(response.data.role === "partner"){
+          navigate("/partner/dashboard")
         } else {
           navigate("/")
         }

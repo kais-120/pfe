@@ -1,7 +1,7 @@
-import { Box, Container, Heading, Table, Text, Badge, Flex, Grid, Skeleton, SkeletonText, VStack } from "@chakra-ui/react";
+import { Box, Container, Heading, Table, Text, Badge, Flex, Grid, Skeleton, VStack } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { AxiosToken } from "../../../../Api/Api";
-import { LuCalendarDays, LuMapPin, LuHash, LuTrendingUp, LuUser, LuClock, LuCheck, LuCreditCard } from "react-icons/lu";
+import { LuCalendarDays, LuMapPin, LuHash, LuTrendingUp, LuUser, LuClock, LuCheck, LuCreditCard, LuPlane } from "react-icons/lu";
 import { FaCheckCircle, FaCheckDouble, FaHourglassHalf, FaTimesCircle } from "react-icons/fa";
 
 const formatDate = (d) => {
@@ -32,13 +32,13 @@ function StatusBadge({ status }) {
         </Flex>
     )
 }
+
 const PAYMENT_COLORS = {
     "total": "blue",
     "installment": "purple",
 }
 
 function PaymentBadge({ method }) {
-    console.log(method)
     const color = PAYMENT_COLORS[method?.toLowerCase()] ?? "gray"
     return (
         <Badge
@@ -125,11 +125,6 @@ function PaymentMethodSection({ payment_method, total_price, paymentInstallments
         return statusMap[status?.toLowerCase()] || statusMap["en attente"]
     }
 
-    const handlePayment = (installmentId) => {
-        console.log(`Processing payment for installment ${installmentId}`)
-        // Add your payment logic here
-    }
-
     return (
         <Box mt={5} pt={5} borderTop="1px solid" borderColor="gray.100">
             <Flex align="center" gap={2} mb={4}>
@@ -191,7 +186,6 @@ function PaymentMethodSection({ payment_method, total_price, paymentInstallments
                             const StatusIcon = statusInfo.Icon
                             const isPaymentDay = isTodayPaymentDay(inst.due_date)
                             const isPaid = inst.status === "payé"
-                            const canPay = isPaymentDay && !isPaid
 
                             return (
                                 <Table.Row key={inst.id} _hover={{ bg: "gray.50" }} borderTop="1px solid" borderColor="gray.100">
@@ -222,7 +216,6 @@ function PaymentMethodSection({ payment_method, total_price, paymentInstallments
                                             </Badge>
                                         </Flex>
                                     </Table.Cell>
-                                    
                                 </Table.Row>
                             )
                         })}
@@ -234,8 +227,14 @@ function PaymentMethodSection({ payment_method, total_price, paymentInstallments
 }
 
 function BookingCard({ booking, index }) {
-    const circuits = booking.circuitBooking ?? []
-    const firstPkg = circuits[0]?.circuitDetails?.packagesCircuit?.[0]
+    const flights = booking.flightBooking ?? []
+    const firstFlight = flights[0]?.detailsFlight
+
+    const totalPassengers = flights.reduce((sum, f) => sum + (f.adult_passenger_count || 0) + (f.children_passenger_count || 0), 0)
+    const airportToCity = (airport) => {
+        const cities = { "tun": "Tunisie", "paris": "Paris", "cdg": "Paris CDG", "nyc": "New York", "lhr": "Londres" }
+        return cities[airport?.toLowerCase()] || airport?.toUpperCase() || "—"
+    }
 
     return (
         <Box bg="white" borderRadius="2xl" border="1px solid" borderColor="gray.100"
@@ -260,7 +259,7 @@ function BookingCard({ booking, index }) {
                     </Box>
                 </Flex>
                 <Flex gap={2} align="center" flexWrap="wrap">
-                    <Badge colorScheme="blue" borderRadius="full" px={2.5} py={0.5} fontSize="xs">{booking?.payment_method}</Badge>
+                    <PaymentBadge method={booking.payment_method} />
                     <StatusBadge status={booking.status} />
                 </Flex>
             </Flex>
@@ -271,51 +270,50 @@ function BookingCard({ booking, index }) {
                     <Box bg="blue.50" borderRadius="xl" p={3}>
                         <Flex align="center" gap={1.5} mb={1}><LuCalendarDays size={11} color="#3182CE" />
                             <Text fontSize="9px" fontWeight={700} color="blue.500" textTransform="uppercase" letterSpacing="wider">Départ</Text></Flex>
-                        <Text fontSize="sm" fontWeight={700} color="gray.800">{formatDate(firstPkg?.departureDate)}</Text>
-                        <Text fontSize="xs" color="gray.400">{firstPkg?.departureAirport}</Text>
+                        <Text fontSize="sm" fontWeight={700} color="gray.800">{formatDate(firstFlight?.departure)}</Text>
+                        <Text fontSize="xs" color="gray.400">{airportToCity(firstFlight?.departure_airport)}</Text>
                     </Box>
                     <Box bg="blue.50" borderRadius="xl" p={3}>
                         <Flex align="center" gap={1.5} mb={1}><LuCalendarDays size={11} color="#3182CE" />
-                            <Text fontSize="9px" fontWeight={700} color="blue.500" textTransform="uppercase" letterSpacing="wider">Retour</Text></Flex>
-                        <Text fontSize="sm" fontWeight={700} color="gray.800">{formatDate(firstPkg?.returnDate)}</Text>
-                        <Text fontSize="xs" color="gray.400">{firstPkg?.returnAirport}</Text>
+                            <Text fontSize="9px" fontWeight={700} color="blue.500" textTransform="uppercase" letterSpacing="wider">Arrivée</Text></Flex>
+                        <Text fontSize="sm" fontWeight={700} color="gray.800">{formatDate(firstFlight?.arrival)}</Text>
+                        <Text fontSize="xs" color="gray.400">{airportToCity(firstFlight?.arrival_airport)}</Text>
                     </Box>
                     <Box bg="gray.50" borderRadius="xl" p={3}>
-                        <Flex align="center" gap={1.5} mb={1}><LuClock size={11} color="gray" />
-                            <Text fontSize="9px" fontWeight={700} color="gray.500" textTransform="uppercase" letterSpacing="wider">Durée</Text></Flex>
-                        <Text fontSize="sm" fontWeight={700} color="gray.800">{circuits[0].circuitDetails.duration ? `${circuits[0].circuitDetails.duration} jours` : "—"}</Text>
+                        <Flex align="center" gap={1.5} mb={1}><LuPlane size={11} color="gray" />
+                            <Text fontSize="9px" fontWeight={700} color="gray.500" textTransform="uppercase" letterSpacing="wider">Passagers</Text></Flex>
+                        <Text fontSize="sm" fontWeight={700} color="gray.800">{totalPassengers}</Text>
                     </Box>
                     <Box bg="gray.50" borderRadius="xl" p={3}>
                         <Flex align="center" gap={1.5} mb={1}><LuHash size={11} color="gray" />
-                            <Text fontSize="9px" fontWeight={700} color="gray.500" textTransform="uppercase" letterSpacing="wider">Tranche</Text></Flex>
-                        <Text fontSize="sm" fontWeight={700} color="gray.800">{firstPkg?.installment ? `${firstPkg.installment}` : "—"}</Text>
+                            <Text fontSize="9px" fontWeight={700} color="gray.500" textTransform="uppercase" letterSpacing="wider">Classe</Text></Flex>
+                        <Text fontSize="sm" fontWeight={700} color="gray.800">{flights[0]?.seat_class ?? "—"}</Text>
                     </Box>
                 </Grid>
 
-                {/* Circuits table */}
+                {/* Flights table */}
                 <Box border="1px solid" borderColor="gray.100" borderRadius="xl" overflow="hidden" mb={4}>
                     <Table.Root size="sm">
                         <Table.Header>
                             <Table.Row bg="gray.50">
-                                {["Circuit", "Destination", "Catégorie", "Difficulté", "Trajet", "Durée"].map(h => (
+                                {["Vol", "Trajet", "Départ", "Arrivée", "Durée", "Sièges"].map(h => (
                                     <Table.ColumnHeader key={h} px={4} py={3} fontSize="xs" fontWeight={700} color="gray.500" textTransform="uppercase" letterSpacing="wider">{h}</Table.ColumnHeader>
                                 ))}
                             </Table.Row>
                         </Table.Header>
                         <Table.Body>
-                            {circuits.map((c) => {
-                                const cd = c.circuitDetails
-                                const pkg = cd?.packagesCircuit?.[0]
+                            {flights.map((f) => {
+                                const fd = f.detailsFlight
                                 return (
-                                    <Table.Row key={c.id} _hover={{ bg: "gray.50" }} borderTop="1px solid" borderColor="gray.100">
-                                        <Table.Cell px={4} py={3}><Text fontSize="sm" fontWeight={600} color="gray.700">{cd?.title ?? "—"}</Text></Table.Cell>
+                                    <Table.Row key={f.id} _hover={{ bg: "gray.50" }} borderTop="1px solid" borderColor="gray.100">
+                                        <Table.Cell px={4} py={3}><Text fontSize="sm" fontWeight={600} color="gray.700">{fd?.flight_number ?? "—"}</Text></Table.Cell>
                                         <Table.Cell px={4} py={3}>
-                                            <Flex align="center" gap={1}><LuMapPin size={12} color="gray" /><Text fontSize="sm" color="gray.700">{cd?.location ?? "—"}</Text></Flex>
+                                            <Flex align="center" gap={1}><LuPlane size={12} color="gray" /><Text fontSize="sm" color="gray.700">{airportToCity(fd?.departure_airport)} → {airportToCity(fd?.arrival_airport)}</Text></Flex>
                                         </Table.Cell>
-                                        <Table.Cell px={4} py={3}><Text fontSize="sm" color="gray.700">{cd?.category ?? "—"}</Text></Table.Cell>
-                                        <Table.Cell px={4} py={3}><Badge colorScheme="orange" borderRadius="full" fontSize="xs">{cd?.difficulty ?? "—"}</Badge></Table.Cell>
-                                        <Table.Cell px={4} py={3}><Text fontSize="sm" color="gray.700">{pkg ? `${pkg.departureAirport} → ${pkg.returnAirport}` : "—"}</Text></Table.Cell>
-                                        <Table.Cell px={4} py={3}><Text fontSize="sm" color="gray.700">{pkg?.duration ? `${pkg.duration} j` : "—"}</Text></Table.Cell>
+                                        <Table.Cell px={4} py={3}><Text fontSize="sm" color="gray.700">{formatDate(fd?.departure)}</Text></Table.Cell>
+                                        <Table.Cell px={4} py={3}><Text fontSize="sm" color="gray.700">{formatDate(fd?.arrival)}</Text></Table.Cell>
+                                        <Table.Cell px={4} py={3}><Text fontSize="sm" color="gray.700">{fd?.duration ? `${fd.duration}h` : "—"}</Text></Table.Cell>
+                                        <Table.Cell px={4} py={3}><Badge colorScheme="blue" borderRadius="full" fontSize="xs">{f.adult_passenger_count + f.children_passenger_count}</Badge></Table.Cell>
                                     </Table.Row>
                                 )
                             })}
@@ -343,7 +341,7 @@ function BookingCard({ booking, index }) {
     )
 }
 
-export default function BookingCircuits() {
+export default function AirlineBooking() {
     const [bookings, setBookings] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
@@ -352,10 +350,10 @@ export default function BookingCircuits() {
         const fetchData = async () => {
             try {
                 setLoading(true)
-                const response = await AxiosToken.get("/booking/get/partner/voyage")
+                const response = await AxiosToken.get("/booking/get/partner/flight")
                 setBookings(response.data.booking ?? [])
             } catch {
-                setError("Impossible de charger les réservations.")
+                setError("Impossible de charger les réservations de vol.")
             } finally {
                 setLoading(false)
             }
@@ -364,19 +362,22 @@ export default function BookingCircuits() {
     }, [])
 
     const totalRevenue = bookings.reduce((s, b) => s + (Number(b.total_price) || 0), 0)
+    const totalPassengers = bookings.reduce((s, b) => {
+        return s + (b.flightBooking?.reduce((pSum, f) => pSum + (f.adult_passenger_count || 0) + (f.children_passenger_count || 0), 0) || 0)
+    }, 0)
 
     return (
         <Container py={8}>
             <Box mb={7}>
                 <Text fontSize="xs" fontWeight={700} color="blue.500" textTransform="uppercase" letterSpacing="widest" mb={1}>Tableau de bord</Text>
-                <Heading size="xl" color="gray.900" fontWeight={900}>Réservations circuits</Heading>
+                <Heading size="xl" color="gray.900" fontWeight={900}>Réservations vols</Heading>
             </Box>
 
             {!loading && bookings.length > 0 && (
                 <Grid templateColumns={{ base: "1fr 1fr", md: "repeat(3, 1fr)" }} gap={3} mb={7}>
                     <StatCard icon={LuHash} label="Total réservations" value={bookings.length} color="blue" />
                     <StatCard icon={LuTrendingUp} label="Revenus totaux" value={`${totalRevenue} TND`} color="green" />
-                    <StatCard icon={LuHash} label="Circuits uniques" value={new Set(bookings.flatMap(b => b.circuitBooking?.map(c => c.circuit_id) ?? [])).size} color="purple" />
+                    <StatCard icon={LuPlane} label="Passagers totaux" value={totalPassengers} color="purple" />
                 </Grid>
             )}
 
@@ -385,7 +386,7 @@ export default function BookingCircuits() {
             {!loading && !error && bookings.length === 0 && (
                 <Flex direction="column" align="center" justify="center" py={20} gap={3} bg="white" borderRadius="2xl" border="1px dashed" borderColor="gray.200">
                     <Text fontWeight={700} color="gray.700">Aucune réservation</Text>
-                    <Text fontSize="sm" color="gray.400">Les réservations circuits apparaîtront ici.</Text>
+                    <Text fontSize="sm" color="gray.400">Les réservations de vol apparaîtront ici.</Text>
                 </Flex>
             )}
             {!loading && !error && bookings.length > 0 && (

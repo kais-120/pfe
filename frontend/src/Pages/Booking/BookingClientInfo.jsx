@@ -61,11 +61,42 @@ const BookingClientInfo = () => {
     fetchBookings()
   }, [])
 
+  const cancelDisabled = (booking) => {
+  const now = new Date();
+  const limit = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+  const dates = [];
+
+  if (booking.carDetails?.[0]?.pickup_date)
+    dates.push(new Date(booking.carDetails[0].pickup_date));
+
+  if (booking.circuitBooking?.[0]?.departureDate)
+    dates.push(new Date(booking.circuitBooking[0].departureDate));
+
+  if (booking.flightBooking?.[0]?.departure)
+    dates.push(new Date(booking.flightBooking[0].departure));
+
+  if (booking.bookingHotelDetails?.[0]?.check_in_date)
+    dates.push(new Date(booking.bookingHotelDetails[0].check_in_date));
+
+  if (booking.offerBooking?.[0]?.departureDate)
+    dates.push(new Date(booking.offerBooking[0].departureDate));
+
+  if (dates.length === 0) return true; 
+
+  const nearestDate = new Date(
+    Math.min(...dates.map(d => d.getTime()))
+  );
+
+  return nearestDate < limit;
+};
   const filtered = filter === "all" ? bookings : bookings.filter(b => b.status.toLowerCase() === filter)
 
   if (loading) return <Flex justify="center" py={20}><Spinner size="xl" /></Flex>
 
   return (
+    <>
+    <Helmet title="Mes réservation"></Helmet>
     <Box maxW="1000px" mx="auto" px={4} py={8}>
       <Flex as={Link} to="/" align="center" gap={1.5}
         color="gray.400" fontSize="sm" mb={8}
@@ -123,11 +154,12 @@ const BookingClientInfo = () => {
       ) : (
         <VStack spacing={4} align="stretch">
           {filtered.map(booking => (
-            <BookingCard key={booking.id} booking={booking} />
+            <BookingCard key={booking.id} booking={booking} cancelDisabled={cancelDisabled(booking)} />
           ))}
         </VStack>
       )}
     </Box>
+    </>
   )
 }
 
@@ -327,8 +359,9 @@ function AddReviewModal({ id }) {
   )
 }
 
-function BookingCard({ booking }) {
+function BookingCard({ booking,cancelDisabled }) {
   const { id, status, type, total_price, payment_method, payment } = booking
+  console.log(booking)
   const statusLower = status.toLowerCase()
   const { label, color } = STATUS_CONFIG[statusLower] ?? STATUS_CONFIG["confirmée"]
   const bookingTypeInfo = BOOKING_TYPES[type] || { icon: FaHotel, label: type, color: "#666" }
@@ -353,7 +386,7 @@ function BookingCard({ booking }) {
         <Box p={5}>
           {/* Hotel Booking */}
           {type === "hotel" && booking.bookingHotelDetails?.length > 0 && (
-            <HotelBookingContent booking={booking} fmt={fmt} today={today} />
+            <HotelBookingContent booking={booking} fmt={fmt} today={today} disabled={cancelDisabled} />
           )}
 
           {/* Flight Booking */}
@@ -390,8 +423,8 @@ function BookingCard({ booking }) {
               <Text fontSize="xs" color="gray.400">TND</Text>
             </Box>
             <VStack spacing={2} align="stretch" minW="140px">
-              <Button size="sm" colorScheme="blue" bg={"red.500"} _hover={{bg:"red.600"}} borderRadius="lg" fontWeight={600}>Annuler</Button>
-              <QrCodeModal value={`${type}-${id}`} />
+              <Button size="sm" disabled={cancelDisabled} colorScheme="blue" bg={"red.500"} _hover={{bg:"red.600"}} borderRadius="lg" fontWeight={600}>Annuler</Button>
+              <QrCodeModal value={id} />
               {type === "hotel" &&
                 <AddReviewModal id={id} />
               }
@@ -590,7 +623,7 @@ function PaymentMethodSection({ payment_method, total_price, paymentInstallments
   )
 }
 
-function HotelBookingContent({ booking, fmt, today }) {
+function HotelBookingContent({ booking, fmt, today,disabled }) {
   const detail = booking.bookingHotelDetails[0]
   const hotelName = detail?.RoomHotelBooking?.hotelRoom?.name ?? "Hôtel inconnu"
   const address = detail?.RoomHotelBooking?.hotelRoom?.address
@@ -645,8 +678,8 @@ function HotelBookingContent({ booking, fmt, today }) {
               <Text fontSize="xs" color="gray.400">TND</Text>
             </Box>
             <VStack spacing={2} align="stretch" minW="140px">
-              <Button  size="sm" colorScheme="blue" bg={"red.500"} _hover={{bg:"red.600"}} borderRadius="lg" fontWeight={600}>Annuler</Button>
-              <QrCodeModal  />
+              <Button disabled={disabled}  size="sm" colorScheme="blue" bg={"red.500"} _hover={{bg:"red.600"}} borderRadius="lg" fontWeight={600}>Annuler</Button>
+              <QrCodeModal value={booking.id}  />
                 <AddReviewModal id={booking.bookingHotelDetails[0].RoomHotelBooking.id} />
               
             </VStack>
@@ -752,6 +785,7 @@ function CarBookingContent({ booking, fmt }) {
 function CircuitBookingContent({ booking, fmt }) {
   const circuit = booking.circuitBooking[0]
   const details = circuit?.circuitDetails
+  console.log(booking)
 
   return (
     <Flex justify="space-between" align="flex-start" gap={4} flexWrap="wrap">

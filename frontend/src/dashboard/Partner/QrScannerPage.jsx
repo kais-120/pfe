@@ -4,14 +4,13 @@ import { Scanner } from "@yudiel/react-qr-scanner"
 import {
   LuScanLine,
   LuRefreshCw, LuCopy, LuChevronLeft,
-  LuZap, LuCamera,
+  LuZap, LuCamera, LuEye, LuEyeOff,
 } from "react-icons/lu"
 import { useNavigate } from "react-router-dom"
 import { AxiosToken } from "../../Api/Api"
 import { toaster } from "../../components/ui/toaster"
 import { LucideCheckCircle, LucideXCircle } from "lucide-react"
 
-/* ── Status config ──────────────────────────────────────────────── */
 const STATUS = {
   idle: { color: "blue", label: "Prêt à scanner" },
   scanning: { color: "blue", label: "Scan en cours…" },
@@ -26,6 +25,7 @@ export default function QrScannerPage() {
   const [paused, setPaused] = useState(false)
   const [error, setError] = useState("")
   const [camErr, setCamErr] = useState(false)
+  const [showScanner, setShowScanner] = useState(false)
   const navigate = useNavigate()
   const cooldown = useRef(false)
 
@@ -40,8 +40,8 @@ export default function QrScannerPage() {
     setResult(text)
 
     try {
-      // Send scanned value to your API — adjust endpoint as needed
-      const res = await AxiosToken.post("/booking/scan/qr", { code: text })
+      // Send booking_id to your backend for validation
+      const res = await AxiosToken.post("/booking/scanner", { booking_id: text })
       setStatus("success")
       toaster.create({
         description: res.data.message ?? "Réservation validée avec succès.",
@@ -72,6 +72,14 @@ export default function QrScannerPage() {
     toaster.create({ description: "Copié dans le presse-papiers.", type: "info", closable: true })
   }
 
+  /* ── Toggle scanner visibility ── */
+  const toggleScanner = () => {
+    setShowScanner(!showScanner)
+    if (!showScanner) {
+      handleReset()
+    }
+  }
+
   const s = STATUS[status]
 
   return (
@@ -100,131 +108,146 @@ export default function QrScannerPage() {
 
         <VStack gap={4} align="stretch">
 
-          {/* ── Camera card ── */}
-          <Box bg="white" borderRadius="2xl"
-            border="1.5px solid"
-            borderColor={
-              status === "success" ? "green.300"
-                : status === "error" ? "red.300"
-                  : "gray.100"
-            }
-            boxShadow="0 2px 16px rgba(0,0,0,0.08)"
-            overflow="hidden"
-            transition="border-color 0.3s">
+          {/* ── Show/Hide Scanner Button ── */}
+          <Button
+            w="full"
+            colorScheme={showScanner ? "red" : "blue"}
+            borderRadius="xl"
+            fontWeight={700}
+            size="lg"
+            onClick={toggleScanner}
+            leftIcon={showScanner ? <LuEyeOff size={16} /> : <LuEye size={16} />}
+          >
+            {showScanner ? "Masquer le scanner" : "Afficher le scanner"}
+          </Button>
 
-            {/* Status bar */}
-            <Flex
-              px={5} py={3}
-              bg={`${s.color}.50`}
-              borderBottom="1px solid"
-              borderColor={`${s.color}.100`}
-              align="center" justify="space-between">
-              <Flex align="center" gap={2}>
-                <Box color={`${s.color}.500`}>
-                  {status === "success" ? <LucideCheckCircle size={15} />
-                    : status === "error" ? <LucideXCircle size={15} />
-                      : status === "loading" ? <LuZap size={15} />
-                        : <LuScanLine size={15} />}
-                </Box>
-                <Text fontSize="sm" fontWeight={600} color={`${s.color}.700`}>
-                  {s.label}
-                </Text>
-              </Flex>
-              <Badge colorScheme={s.color} borderRadius="full" px={2.5} py={0.5}
-                fontSize="xs" fontWeight={700}>
-                {status === "scanning" || status === "idle" ? "En direct" : status.toUpperCase()}
-              </Badge>
-            </Flex>
+          {/* ── Camera card (conditionally rendered) ── */}
+          {showScanner && (
+            <Box bg="white" borderRadius="2xl"
+              border="1.5px solid"
+              borderColor={
+                status === "success" ? "green.300"
+                  : status === "error" ? "red.300"
+                    : "gray.100"
+              }
+              boxShadow="0 2px 16px rgba(0,0,0,0.08)"
+              overflow="hidden"
+              transition="border-color 0.3s">
 
-            {/* Scanner viewport */}
-            <Box position="relative" bg="black">
-              {camErr ? (
-                <Flex h="300px" direction="column" align="center" justify="center"
-                  gap={3} bg="gray.900">
-                  <Box color="gray.500"><LuCamera size={40} /></Box>
-                  <Text color="gray.400" fontSize="sm" textAlign="center" px={6}>
-                    Impossible d'accéder à la caméra.
-                    Vérifiez les autorisations dans votre navigateur.
+              {/* Status bar */}
+              <Flex
+                px={5} py={3}
+                bg={`${s.color}.50`}
+                borderBottom="1px solid"
+                borderColor={`${s.color}.100`}
+                align="center" justify="space-between">
+                <Flex align="center" gap={2}>
+                  <Box color={`${s.color}.500`}>
+                    {status === "success" ? <LucideCheckCircle size={15} />
+                      : status === "error" ? <LucideXCircle size={15} />
+                        : status === "loading" ? <LuZap size={15} />
+                          : <LuScanLine size={15} />}
+                  </Box>
+                  <Text fontSize="sm" fontWeight={600} color={`${s.color}.700`}>
+                    {s.label}
                   </Text>
-                  <Button size="sm" colorScheme="blue" borderRadius="xl"
-                    onClick={() => { setCamErr(false); handleReset() }}>
-                    Réessayer
-                  </Button>
                 </Flex>
-              ) : (
-                <Box
-                  h="300px" overflow="hidden"
-                  opacity={paused ? 0.4 : 1}
-                  transition="opacity 0.3s"
-                  sx={{
-                    "& video": { width: "100%", height: "300px", objectFit: "cover" },
-                    "& svg": { display: "none" },
-                  }}>
-                  <Scanner
-                    onScan={handleScan}
-                    paused={paused}
-                    onError={() => setCamErr(true)}
-                    styles={{ container: { width: "100%", height: "300px" } }}
-                    components={{ audio: false }}
-                  />
-                </Box>
-              )}
+                <Badge colorScheme={s.color} borderRadius="full" px={2.5} py={0.5}
+                  fontSize="xs" fontWeight={700}>
+                  {status === "scanning" || status === "idle" ? "En direct" : status.toUpperCase()}
+                </Badge>
+              </Flex>
 
-              {/* Scan frame overlay */}
-              {!paused && !camErr && (
-                <Box position="absolute" inset={0}
-                  display="flex" alignItems="center" justifyContent="center"
-                  pointerEvents="none">
+              {/* Scanner viewport */}
+              <Box position="relative" bg="black">
+                {camErr ? (
+                  <Flex h="300px" direction="column" align="center" justify="center"
+                    gap={3} bg="gray.900">
+                    <Box color="gray.500"><LuCamera size={40} /></Box>
+                    <Text color="gray.400" fontSize="sm" textAlign="center" px={6}>
+                      Impossible d'accéder à la caméra.
+                      Vérifiez les autorisations dans votre navigateur.
+                    </Text>
+                    <Button size="sm" colorScheme="blue" borderRadius="xl"
+                      onClick={() => { setCamErr(false); handleReset() }}>
+                      Réessayer
+                    </Button>
+                  </Flex>
+                ) : (
                   <Box
-                    w="200px" h="200px" position="relative"
-                    borderRadius="xl"
-                    boxShadow="0 0 0 9999px rgba(0,0,0,0.45)"
-                  >
-                    {/* Corner marks */}
-                    {[
-                      { top: 0, left: 0, borderTop: "3px solid", borderLeft: "3px solid" },
-                      { top: 0, right: 0, borderTop: "3px solid", borderRight: "3px solid" },
-                      { bottom: 0, left: 0, borderBottom: "3px solid", borderLeft: "3px solid" },
-                      { bottom: 0, right: 0, borderBottom: "3px solid", borderRight: "3px solid" },
-                    ].map((style, i) => (
-                      <Box key={i} position="absolute" w="22px" h="22px"
-                        borderColor="white" borderRadius="2px"
-                        {...style} />
-                    ))}
-
-                    {/* Animated scan line */}
-                    <Box
-                      position="absolute" left="4px" right="4px" h="2px"
-                      bg="linear-gradient(90deg, transparent, #3182CE, transparent)"
-                      borderRadius="full"
-                      animation="scanline 2s ease-in-out infinite"
-                      sx={{
-                        "@keyframes scanline": {
-                          "0%": { top: "10px", opacity: 0 },
-                          "10%": { opacity: 1 },
-                          "90%": { opacity: 1 },
-                          "100%": { top: "176px", opacity: 0 },
-                        }
-                      }}
+                    h="300px" overflow="hidden"
+                    opacity={paused ? 0.4 : 1}
+                    transition="opacity 0.3s"
+                    sx={{
+                      "& video": { width: "100%", height: "300px", objectFit: "cover" },
+                      "& svg": { display: "none" },
+                    }}>
+                    <Scanner
+                      onScan={handleScan}
+                      paused={paused}
+                      onError={() => setCamErr(true)}
+                      styles={{ container: { width: "100%", height: "300px" } }}
+                      components={{ audio: false }}
                     />
                   </Box>
-                </Box>
-              )}
+                )}
 
-              {/* Paused overlay */}
-              {paused && !camErr && (
-                <Flex position="absolute" inset={0}
-                  align="center" justify="center"
-                  bg="blackAlpha.600" direction="column" gap={2}>
-                  {status === "success" && <LucideCheckCircle size={48} color="#68D391" />}
-                  {status === "error" && <LucideXCircle size={48} color="#FC8181" />}
-                  {status === "loading" && (
-                    <Box color="white" fontSize="xs">Traitement…</Box>
-                  )}
-                </Flex>
-              )}
+                {/* Scan frame overlay */}
+                {!paused && !camErr && (
+                  <Box position="absolute" inset={0}
+                    display="flex" alignItems="center" justifyContent="center"
+                    pointerEvents="none">
+                    <Box
+                      w="200px" h="200px" position="relative"
+                      borderRadius="xl"
+                      boxShadow="0 0 0 9999px rgba(0,0,0,0.45)"
+                    >
+                      {/* Corner marks */}
+                      {[
+                        { top: 0, left: 0, borderTop: "3px solid", borderLeft: "3px solid" },
+                        { top: 0, right: 0, borderTop: "3px solid", borderRight: "3px solid" },
+                        { bottom: 0, left: 0, borderBottom: "3px solid", borderLeft: "3px solid" },
+                        { bottom: 0, right: 0, borderBottom: "3px solid", borderRight: "3px solid" },
+                      ].map((style, i) => (
+                        <Box key={i} position="absolute" w="22px" h="22px"
+                          borderColor="white" borderRadius="2px"
+                          {...style} />
+                      ))}
+
+                      {/* Animated scan line */}
+                      <Box
+                        position="absolute" left="4px" right="4px" h="2px"
+                        bg="linear-gradient(90deg, transparent, #3182CE, transparent)"
+                        borderRadius="full"
+                        animation="scanline 2s ease-in-out infinite"
+                        sx={{
+                          "@keyframes scanline": {
+                            "0%": { top: "10px", opacity: 0 },
+                            "10%": { opacity: 1 },
+                            "90%": { opacity: 1 },
+                            "100%": { top: "176px", opacity: 0 },
+                          }
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                )}
+
+                {/* Paused overlay */}
+                {paused && !camErr && (
+                  <Flex position="absolute" inset={0}
+                    align="center" justify="center"
+                    bg="blackAlpha.600" direction="column" gap={2}>
+                    {status === "success" && <LucideCheckCircle size={48} color="#68D391" />}
+                    {status === "error" && <LucideXCircle size={48} color="#FC8181" />}
+                    {status === "loading" && (
+                      <Box color="white" fontSize="xs">Traitement…</Box>
+                    )}
+                  </Flex>
+                )}
+              </Box>
             </Box>
-          </Box>
+          )}
 
           {/* ── Result card ── */}
           {result && (
@@ -237,21 +260,7 @@ export default function QrScannerPage() {
                 Contenu scanné
               </Text>
 
-              <Flex align="center" gap={3}
-                bg="gray.50" borderRadius="xl" px={4} py={3}
-                border="1px solid" borderColor="gray.200">
-                <Text fontSize="sm" color="gray.700" flex={1}
-                  fontFamily="mono" noOfLines={3} wordBreak="break-all">
-                  {result}
-                </Text>
-                <Button size="xs" variant="ghost" color="gray.500"
-                  borderRadius="lg" flexShrink={0}
-                  _hover={{ bg: "gray.100", color: "gray.700" }}
-                  onClick={handleCopy}>
-                  <LuCopy size={13} />
-                </Button>
-              </Flex>
-
+              
               {/* Error message */}
               {status === "error" && error && (
                 <Flex align="center" gap={2} mt={3} bg="red.50"
@@ -287,17 +296,11 @@ export default function QrScannerPage() {
                 </Flex>
               </Button>
             )}
-            {!paused && (
-              <Button flex={1} variant="outline" borderRadius="xl"
-                fontWeight={600} color="gray.500" borderColor="gray.200"
-                onClick={() => navigate(-1)}>
-                Annuler
-              </Button>
-            )}
+            
           </Flex>
 
           {/* Hint */}
-          {!paused && (
+          {!paused && showScanner && (
             <Text fontSize="xs" color="gray.400" textAlign="center">
               Maintenez le QR code bien éclairé et stable devant la caméra
             </Text>

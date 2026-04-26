@@ -87,20 +87,19 @@ function PaymentMethodSelector({ pkg, onConfirm, onCancel, isLoading }) {
             <HStack justify="space-between" align="center" gap={4}>
               <VStack align="start" gap={1} flex={1}>
                 <HStack gap={2}>
-                  <Box
+                  <Flex
                     w="18px"
                     h="18px"
                     borderRadius="full"
                     border="2px solid"
                     borderColor={paymentMethod === "total" ? "#E91E8C" : "gray.300"}
-                    display="flex"
                     align="center"
                     justify="center"
                     bg={paymentMethod === "total" ? "#E91E8C" : "transparent"}
                     flexShrink={0}
                   >
                     {paymentMethod === "total" && <LuCheck size={11} color="white" />}
-                  </Box>
+                  </Flex>
                   <Text fontWeight={700} color="gray.900" fontSize="sm">
                     Paiement unique
                   </Text>
@@ -135,20 +134,19 @@ function PaymentMethodSelector({ pkg, onConfirm, onCancel, isLoading }) {
             <HStack justify="space-between" align="center" gap={4}>
               <VStack align="start" gap={1} flex={1}>
                 <HStack gap={2}>
-                  <Box
+                  <Flex
                     w="18px"
                     h="18px"
                     borderRadius="full"
                     border="2px solid"
                     borderColor={paymentMethod === "installment" ? "#E91E8C" : "gray.300"}
-                    display="flex"
                     align="center"
                     justify="center"
                     bg={paymentMethod === "installment" ? "#E91E8C" : "transparent"}
                     flexShrink={0}
                   >
                     {paymentMethod === "installment" && <LuCheck size={11} color="white" />}
-                  </Box>
+                  </Flex>
                   <Text fontWeight={700} color="gray.900" fontSize="sm">
                     {installmentCount} fois
                   </Text>

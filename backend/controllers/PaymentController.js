@@ -1,5 +1,5 @@
 const { body, validationResult } = require("express-validator");
-const { Payment, Booking, Users, Notification, PaymentInstallments } = require("../models");
+const { Payment, Booking, Users, Notification, PaymentInstallments, Package, OfferBookingDetails, CarRentalBookingDetails, HotelBookingDetails, FlightBookingDetails, CircuitBookingDetails, Flight } = require("../models");
 const Activity = require("../models/Activity");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
@@ -48,8 +48,8 @@ exports.CreatePayment = async (amount, booking_id, client_id, installment = 0, t
                     status: "en attente"
                 });
             }
-        }else{
-             await Payment.create({ amount, client_id, booking_id, reference: session.id })
+        } else {
+            await Payment.create({ amount, client_id, booking_id, reference: session.id })
         }
         return session.url
 
@@ -166,14 +166,14 @@ exports.VerifyPayment = [
                     await Activity.create({ type: "payment", titre: "paiement est annulée" })
                 }
             } else {
-                const p = await Payment.findOne({where :{booking_id}})
+                const p = await Payment.findOne({ where: { booking_id } })
                 const payment = await PaymentInstallments.findOne({ where: { reference } });
                 const session = await stripe.checkout.sessions.retrieve(reference);
                 if (session.payment_status === "paid") {
                     await payment.update({ status: "payé" })
                     await Activity.create({ type: "payment", titre: "Paiement de tranche confirmé" })
                     const allInstallments = await PaymentInstallments.findAll({
-                        where: { payment_id:p.id }
+                        where: { payment_id: p.id }
                     })
                     const allPaid = allInstallments.every(p => p.status === "payé")
                     if (allPaid) {
@@ -290,51 +290,159 @@ exports.cashPayment = async (req, res) => {
 
 exports.PaymentInstallments = [
     body("amount").notEmpty().withMessage("amount is required")
-    .isInt().withMessage("amount should be integer"),
-    async(req,res)=>{
+        .isInt().withMessage("amount should be integer"),
+    async (req, res) => {
         const error = validationResult(req);
-            if(!error.isEmpty()){
-              return res.status(422).send({message:error.array().map(err => err.msg)})
-            }
-        const { amount } = req.body
-        const { id } = req.params;
-        const payment = await PaymentInstallments.findByPk(id)
-            if(!payment){
-            return res.status(404).send({ message:"payment not found" })
-            }
-            if(payment.status === "payé"){
-            return res.status(400).send({ message:"payment is already payed" })
-            }
-
+        if (!error.isEmpty()) {
+            return res.status(422).send({ message: error.array().map(err => err.msg) })
+        }
         try {
-            const session = await stripe.checkout.sessions.create({
-            mode: "payment",
-            locale: "fr",
-
-            line_items: [
-                {
-                    price_data: {
-                        currency: "tnd",
-                        product_data: {
-                            name: `Booking #${payment.booking_id}`
-                        },
-                        unit_amount: amount * 1000
-                    },
-                    quantity: 1
-                }
-            ],
-            success_url: `http://localhost:5173/payment/success?booking=${payment.booking_id}&session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `http://localhost:5173/payment/cancel?booking=${payment.booking_id}&session_id={CHECKOUT_SESSION_ID}`,
-
-            metadata: {
-                booking_id: payment.booking_id
+            const { amount } = req.body
+            const { id } = req.params;
+            const payment = await PaymentInstallments.findByPk(id)
+            if (!payment) {
+                return res.status(404).send({ message: "payment not found" })
             }
-        });
-            payment.update({reference:session.id})
-            return res.send({ message:"payment url", url:session.url })
+            if (payment.status === "payé") {
+                return res.status(400).send({ message: "payment is already payed" })
+            }
+
+            const session = await stripe.checkout.sessions.create({
+                mode: "payment",
+                locale: "fr",
+
+                line_items: [
+                    {
+                        price_data: {
+                            currency: "tnd",
+                            product_data: {
+                                name: `Booking #${payment.booking_id}`
+                            },
+                            unit_amount: amount * 1000
+                        },
+                        quantity: 1
+                    }
+                ],
+                success_url: `http://localhost:5173/payment/success?booking=${payment.booking_id}&session_id={CHECKOUT_SESSION_ID}`,
+                cancel_url: `http://localhost:5173/payment/cancel?booking=${payment.booking_id}&session_id={CHECKOUT_SESSION_ID}`,
+
+                metadata: {
+                    booking_id: payment.booking_id
+                }
+            });
+            payment.update({ reference: session.id })
+            return res.send({ message: "payment url", url: session.url })
 
         } catch (err) {
             return res.status(500).send({ message: "error server" })
         }
-}
+    }
 ]
+
+
+
+exports.CancelPayment = async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { id } = req.params
+        const booking = await Booking.findByPk(id, {
+            include: [
+                {
+                    model: Payment,
+                    as: "payment",
+                    include: [
+                        {
+                            model: PaymentInstallments,
+                            as: "paymentInstallments"
+                        }
+                    ]
+                },
+                {
+                    model: CarRentalBookingDetails,
+                    as: "carDetails",
+                },
+                {
+                    model: CircuitBookingDetails,
+                    as: "circuitBooking",
+                    include: [
+                        {
+                            model: Package,
+                            as: "bookingPackageCircuit",
+                        }
+                    ]
+                },
+                {
+                    model: FlightBookingDetails,
+                    as: "flightBooking",
+                    include: [
+                        {
+                            model: Flight,
+                            as: "detailsFlight"
+                        }
+                    ]
+                }, {
+                    model: HotelBookingDetails,
+                    as: "bookingHotelDetails",
+                },
+                {
+                    model: OfferBookingDetails,
+                    as: "offerBooking",
+                    include: [
+                        {
+                            model: Package,
+                            as: "bookingPackageOffer",
+                        }
+                    ]
+                }
+            ]
+        })
+        if (!booking) {
+            return res.status(404).send({ message: "booking not found" })
+        }
+        if (booking.client_id !== userId) {
+            return res.status(403).send({ message: "you don't have access to cancel this" })
+        }
+        const now = new Date();
+        const limit = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        // return res.send({booking})
+        const dates = [];
+
+        if (booking.carDetails?.pickup_date)
+        dates.push(new Date(booking.carDetails[0].pickup_date));
+
+        if (booking.circuitBooking[0]?.departureDate)
+        dates.push(new Date(booking.circuitBooking[0].departureDate));
+
+        if (booking.flightBooking[0]?.departure)
+        dates.push(new Date(booking.flightBooking[0].departure));
+
+        if (booking.bookingHotelDetails[0]?.check_in_date)
+        dates.push(new Date(booking.bookingHotelDetails[0].check_in_date));
+
+        if (booking.offerBooking[0]?.departureDate)
+        dates.push(new Date(booking.offerBooking[0].departureDate));
+
+        const nearestDate = new Date(Math.min(...dates.map(d => d.getTime())));
+
+        if (nearestDate < limit) {
+        return res.status(403).send({
+            message: "Cancellation not allowed (less than 24h before booking)"
+        });
+        }
+
+        
+        if (booking.payment_method === "total") {
+            console.log(booking.payment[0].reference)
+            // const refund = await stripe.refunds.create({
+            // payment_intent: booking.payment[0].reference
+            // });
+            // booking.update({status:"annulée"});
+            // booking.payment[0].update({status:"annulée"})
+
+        }
+        return res.send({ message: "booking is cancel" })
+    } catch (err) {
+        console.log(err)
+        return res.status(500).send({ message: "error server" })
+    }
+}

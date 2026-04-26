@@ -110,8 +110,6 @@ exports.DeleteService = async (req, res) => {
 
 }
 
-
-
 exports.GetSearchHotels = [
   body("destination").notEmpty().withMessage("destination is required"),
   body("checkIn").notEmpty().isDate().withMessage("checkIn should be date"),
@@ -323,6 +321,7 @@ exports.GetAllHotel = async (req, res) => {
   }
 
 }
+
 exports.GetAllServices = async (req, res) => {
   try {
     const [
@@ -416,6 +415,7 @@ exports.GetAllServices = async (req, res) => {
   }
 
 }
+
 exports.GetHotel = async (req, res) => {
   try {
     const partner_id = req.userId;
@@ -462,6 +462,7 @@ exports.GetHotel = async (req, res) => {
   }
 
 }
+
 exports.AddHotel = [
   body("name").notEmpty().withMessage("name is required"),
   body("description").notEmpty().withMessage("description is required"),
@@ -737,7 +738,6 @@ exports.GetLocation = async (req, res) => {
 
 }
 
-
 exports.SearchVehicle = [
   body("pickupLocation").notEmpty().withMessage("Pickup location is required"),
   body("pickupDate").notEmpty().withMessage("Pickup date is required"),
@@ -824,6 +824,7 @@ exports.SearchVehicle = [
     }
   }
 ];
+
 exports.GetPublicLocation = async (req, res) => {
   try {
     const locationData = await Location.findAll({
@@ -1295,7 +1296,6 @@ exports.GetOfferById = async (req, res) => {
   }
 };
 
-
 exports.GetAgency = async (req, res) => {
   try {
     const partner_id = req.userId;
@@ -1345,7 +1345,6 @@ exports.GetAgency = async (req, res) => {
   }
 
 };
-
 
 exports.UpdateOffer = async (req, res) => {
   const { id } = req.params
@@ -1478,7 +1477,6 @@ exports.UpdateOffer = async (req, res) => {
     return res.status(500).json({ message: "Erreur serveur." })
   }
 }
-
 
 exports.AddOffer = [
   body("title").notEmpty().withMessage("title is required"),
@@ -1673,6 +1671,7 @@ exports.GetAirline = async (req, res) => {
   }
 
 };
+
 exports.GetFlightById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -1726,7 +1725,6 @@ exports.GetPublicAirline = async (req, res) => {
     return res.status(500).send({ message: "server error" });
   }
 };
-
 
 exports.GetSearchAirline = [
   body("type")
@@ -1842,6 +1840,7 @@ exports.GetSearchAirline = [
     }
   }
 ];
+
 exports.AddFlight = [
   body("flight_number").notEmpty().withMessage("Flight number is required"),
   body("type_flight").notEmpty().withMessage("type Flight is required"),
@@ -2024,6 +2023,7 @@ exports.AddVoyage = [
 
   }
 ];
+
 exports.GetVoyage = async (req, res) => {
   try {
     const partner_id = req.userId;
@@ -2166,15 +2166,15 @@ exports.UpdateCircuit = async (req, res) => {
         await ImageService.destroy({ where: { id: ids } })
       }
     }
+    if (req.files && req.files.service_doc && req.files.service_doc.length > 0) {
+  const imageRecords = req.files.service_doc.map((file) => ({
+    image_url: file.filename,
+    type: "circuit",
+    service_id: id,
+  }));
 
-    if (req.files && req.files.service_doc.length > 0) {
-      const imageRecords = req.files.service_doc.map((file) => ({
-        image_url: file.filename,
-        type: "circuit",
-        service_id: id,
-      }))
-      await ImageService.bulkCreate(imageRecords)
-    }
+  await ImageService.bulkCreate(imageRecords);
+}
 
     if (removed_package) {
       for (const id of removed_package) {
@@ -2204,7 +2204,7 @@ exports.UpdateCircuit = async (req, res) => {
             price: pkg.price,
             number_place: pkg.seats,
             installment: pkg.installment,
-            offer_id: id,
+            circuit_id: id,
           })
 
           if (pkg.destinations?.length > 0) {
@@ -2356,6 +2356,7 @@ exports.DeleteOffer = async (req, res) => {
     return res.status(500).json({ message: "error service" })
   }
 }
+
 exports.AddCircuit = [
   body("title").notEmpty().withMessage("Title is required"),
   body("location").notEmpty().withMessage("Location is required"),

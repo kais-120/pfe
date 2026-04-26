@@ -359,6 +359,50 @@ exports.GetPartnerBookingHotel = async (req, res) => {
     }
 }
 
+exports.GetPartnerBookingAirline = async (req, res) => {
+    try {
+        const partner_id = req.userId;
+        const bookings = await Booking.findAll({
+            order: [["createdAt", "DESC"]],
+            include: [
+                {
+                    model: FlightBookingDetails,
+                    as: "flightBooking",
+                    required: true,
+                    include: [
+                        {
+                            model: Flight,
+                            as: "detailsFlight",
+                            required: true,
+                            include: [
+                                {
+                                    model: Compagnie,
+                                    as: "compagnieFlight",
+                                    where: { partner_id },
+                                    required: true,
+                                    attributes: ["id"]
+                                },
+                                
+                            ]
+                        }
+                    ]
+                },
+                {
+                    model: User,
+                    as: "userBooking",
+                    attributes:["id","name","email","phone"]
+
+                }
+            ]
+        });
+        return res.send({ booking: bookings })
+
+    } catch (err) {
+        console.log(err)
+        return res.status(500).send({ message: "error server" })
+    }
+}
+
 exports.GetPartnerBookingCircuit = async (req, res) => {
     try {
         const partner_id = req.userId;
@@ -527,7 +571,6 @@ exports.GetPartnerBookingAgency = async (req, res) => {
     }
 }
 
-
 exports.GetClientBooking = async (req, res) => {
     try {
         const client_id = req.userId;
@@ -658,3 +701,66 @@ exports.GetClientBooking = async (req, res) => {
         return res.status(500).send({ message: "error server" })
     }
 }
+
+exports.ScannerBooking = [
+    body("booking_id").notEmpty().withMessage("booking is required"),
+    async (req, res) => {
+         const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(422).json({ errors: errors.array().map(err => err.msg) });
+        }
+    try {
+        const { booking_id } = req.body;
+        const booking = await Booking.findByPk(booking_id, {
+        include: [
+            {
+            model: Payment,
+            as: "payment",
+            include:[
+                {
+                    model: PaymentInstallments,
+                    as: "paymentInstallments"
+                    }
+            ]
+            }
+            
+        ]
+        });
+        if(!booking){
+            return res.status(404).send({ message : "booking not found" });
+        }
+        if (booking.payment_method === "installment") {
+            const today = new Date();
+
+            const installments = booking.payment[0].paymentInstallments;
+
+            const unpaidPastInstallment = installments.find(item => {
+                return (
+                    item.status !== "payé" &&
+                    new Date(item.due_date) < today
+                );
+            });
+
+            if (unpaidPastInstallment) {
+                return res.status(403).send({
+                    message: "Client has unpaid past installments",
+                    installment: unpaidPastInstallment
+                });
+            }
+
+            return res.send({ message: "booking is ok" });
+        }
+        if(booking.status === "annulée"){
+            return res.status(410).send({ message : "booking is canceled" });
+        }
+        else if(booking.status === "en attente"){
+            return res.status(403).send({ message : "booking is pending" });
+        }
+        return res.send({ message : "booking is ok" });
+
+    } catch (err) {
+        console.log(err)
+        return res.status(500).send({ message: "error server" })
+    }
+}
+]

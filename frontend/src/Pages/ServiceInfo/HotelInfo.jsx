@@ -394,6 +394,10 @@ function RoomCard({ slotIndex, room, nights, selected, onSelect }) {
 
 function BookingSummary({ selections, nights, totalRooms, id, checkIn, checkOut, guestRooms }) {
   const { user } = useProfile();
+  const formatDate = (date) => {
+  return new Date(date).toISOString().split("T")[0];
+};
+
   const handlePayment = async () => {
     try {
       const updatedGuestRooms = guestRooms.map((guest, index) => {
@@ -403,8 +407,8 @@ function BookingSummary({ selections, nights, totalRooms, id, checkIn, checkOut,
         };
       });
       const res = await AxiosToken.post(`/booking/hotel/${id}`, {
-        check_in_date: checkIn,
-        check_out_date: checkOut,
+        check_in_date: formatDate(checkIn),
+        check_out_date: formatDate(checkOut),
         rooms: updatedGuestRooms
       });
       window.location = res.data.url

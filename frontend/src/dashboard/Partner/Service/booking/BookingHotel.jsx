@@ -5,7 +5,7 @@ import {
     LuCalendarDays, LuUser, LuCreditCard, LuBed,
     LuUsers, LuBaby, LuHash, LuTrendingUp,
 } from "react-icons/lu";
-import { FaCheckCircle, FaHourglassHalf, FaTimesCircle } from "react-icons/fa";
+import { FaCheckCircle, FaCheckDouble, FaHourglassHalf, FaTimesCircle } from "react-icons/fa";
 
 /* ── Helpers ────────────────────────────────────────────────────── */
 const formatDate = (date) =>
@@ -16,34 +16,16 @@ const nightsBetween = (a, b) => {
     return diff > 0 ? diff : 0
 }
 
-/* ── Payment method badge ───────────────────────────────────────── */
-const PAYMENT_COLORS = {
-    cash: "orange",
-    card: "blue",
-    virement: "purple",
-    en_ligne: "blue",
-}
 
-function PaymentBadge({ method }) {
-    const color = PAYMENT_COLORS[method?.toLowerCase()] ?? "gray"
-    return (
-        <Badge
-            colorScheme={color} borderRadius="full"
-            px={2.5} py={0.5} fontSize="xs" fontWeight={600}
-            textTransform="capitalize"
-        >
-            {method ?? "—"}
-        </Badge>
-    )
-}
 
 /* ── Status badge ───────────────────────────────────────────────── */
 function StatusBadge({ status }) {
     const map = {
-        confirmed: { color: "green", Icon: FaCheckCircle, label: "Confirmé" },
-        pending: { color: "yellow", Icon: FaHourglassHalf, label: "En attente" },
-        cancelled: { color: "red", Icon: FaTimesCircle, label: "Annulé" },
-    }
+        "confirmée": { color: "green", Icon: FaCheckCircle, label: "Confirmé" },
+        "en attente": { color: "yellow", Icon: FaHourglassHalf, label: "En attente" },
+        "annulée": { color: "red", Icon: FaTimesCircle, label: "Annulé" },
+        "terminée": { color: "blue", Icon: FaCheckDouble, label: "Terminée" }
+        };
     const s = map[status?.toLowerCase()] ?? map.pending
     const Icon = s.Icon
     return (
@@ -150,7 +132,6 @@ function BookingCard({ booking, index }) {
                 </Flex>
 
                 <Flex align="center" gap={2}>
-                    <PaymentBadge method={booking.method_payment} />
                     {booking.status && <StatusBadge status={booking.status} />}
                 </Flex>
             </Flex>

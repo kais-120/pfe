@@ -53,7 +53,7 @@ router.delete("/voyage/circuit/:id",[AuthenticateToken,AuthenticatePartner],Dele
 router.get("/voyage/circuit/public/get/:id",GetCircuitById);
 router.delete("/circuit/:id",DeleteCircuit);
 router.post("/voyage/circuit/add",[AuthenticateToken,AuthenticatePartner,upload.fields([{name:"service_doc",maxCount:15}])],AddCircuit);
-router.post("/voyage/circuit/update/:id",[AuthenticateToken,AuthenticatePartner,upload.fields([{name:"service_doc",maxCount:15}])],UpdateCircuit);
+router.put("/voyage/circuit/update/:id",[AuthenticateToken,AuthenticatePartner,upload.fields([{name:"service_doc",maxCount:15}])],UpdateCircuit);
 
 
 

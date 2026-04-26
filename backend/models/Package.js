@@ -24,11 +24,11 @@ const Package = sequelize.define("packages", {
     },
 
     departureDate: {
-      type: DataTypes.STRING,
+      type: DataTypes.DATEONLY,
     },
 
     departureTime: {
-      type: DataTypes.STRING,
+      type: DataTypes.TIME,
     },
 
     departureAirport: {
@@ -36,11 +36,11 @@ const Package = sequelize.define("packages", {
     },
 
     returnDate: {
-      type: DataTypes.STRING,
+      type: DataTypes.DATEONLY,
     },
 
     returnTime: {
-      type: DataTypes.STRING,
+      type: DataTypes.TIME,
     },
 
     returnAirport: {
