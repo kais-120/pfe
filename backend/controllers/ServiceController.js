@@ -23,11 +23,13 @@ exports.GetPublicHotel = async (req, res) => {
         {
           model: Room,
           as: "rooms"
+
         },
         {
           model: Reviews,
           as: "hotelReview",
           where: { status: "approuvée" },
+          required:false,
           include: [
             {
               model: User,
@@ -132,7 +134,7 @@ exports.GetSearchHotels = [
         (new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)
 
       const hotels = await Hotel.findAll({
-        where: { destination },
+        where: { destination:destination.toLowerCase() },
         include: [
           { model: Room, as: "rooms" }
         ]
@@ -207,13 +209,11 @@ exports.GetSearchRooms = [
     }
 
     try {
-      const { id } = req.params; // hotel id
+      const { id } = req.params; 
       const { checkIn, checkOut, rooms } = req.body;
 
-      // حساب عدد الليالي
       const nights = (new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24);
 
-      // جلب كل الغرف للفندق المحدد
       const hotel = await Hotel.findOne({
         where: { id },
         attributes: ["id", "name", "destination"],
@@ -284,14 +284,33 @@ exports.GetSearchRooms = [
   }
 ]
 
+exports.GetDestination = async (req, res) => {
+  try {
+    const data = await Hotel.findAll({
+      attributes: ["destination"],
+      group: ["destination"],
+      raw: true
+    });
+
+  const destinations = data.map(h => h.destination);
+    return res.json({ message: "hotel found", destinations });
+  } catch (err) {
+    console.log(err)
+    return res.status(500).send({ message: "error server" })
+  }
+
+}
+
 exports.GetAllHotel = async (req, res) => {
   try {
     const hotelData = await Hotel.findAll({
-      limit: 9,
+      limit: 6,
       include: [
         {
           model: Room,
-          as: "rooms"
+          as: "rooms",
+          required:true,
+          attributes:[]
         }
       ]
     });
@@ -468,9 +487,9 @@ exports.AddHotel = [
   body("description").notEmpty().withMessage("description is required"),
   body("address").notEmpty().withMessage("address by day is required"),
   body("equipments").notEmpty().withMessage("equipments by day is required"),
-  body("destination").notEmpty().withMessage("destination by day is required"),
-  body("start").notEmpty().withMessage("start is required")
-    .isNumeric().withMessage("start should be numeric"),
+  body("destination").notEmpty().withMessage("destination is required"),
+  body("star").notEmpty().withMessage("star is required")
+    .isNumeric().withMessage("star should be numeric"),
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -478,8 +497,8 @@ exports.AddHotel = [
     }
     try {
       const partner_id = req.userId;
-      const { name, description, address, equipments, destination, start } = req.body;
-      const hotel = await Hotel.create({ name, description, address, equipments, destination, start, partner_id });
+      const { name, description, address, equipments, destination, star } = req.body;
+      const hotel = await Hotel.create({ name, description, address, equipments, destination, star, partner_id });
       const files = req.files.service_doc;
       for (const element of files) {
         await ImageService.create({
@@ -491,6 +510,7 @@ exports.AddHotel = [
       await Activity.create({ type: "service", titre: `Nouvel hôtel a créé` })
       return res.json({ message: "hotel created" });
     } catch (err) {
+      console.log(err)
       return res.status(500).send({ message: "error server" })
     }
 
@@ -1665,6 +1685,21 @@ exports.GetAirline = async (req, res) => {
       return res.status(404).json({ message: "airline not found" });
     }
     return res.json({ message: "airline found", airline });
+  } catch (err) {
+    console.log(err)
+    return res.status(500).send({ message: "error server" })
+  }
+
+};
+
+exports.GetClass = async (req, res) => {
+  try {
+    const partner_id = req.userId;
+    const airline = await Compagnie.findOne({where: { partner_id }});
+    if (!airline) {
+      return res.status(404).json({ message: "airline not found" });
+    }
+    return res.json({ message: "classes found", classes:airline.classes });
   } catch (err) {
     console.log(err)
     return res.status(500).send({ message: "error server" })

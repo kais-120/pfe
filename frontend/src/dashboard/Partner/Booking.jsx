@@ -8,7 +8,7 @@ import { useProfile } from '../../Context/useProfile';
 import BookingCircuits from './Service/booking/BookingCircuits';
 import BookingLocation from './Service/booking/BookingLocation';
 import { Helmet } from 'react-helmet';
-import BookingAirline from './Service/Fetsh/ServiceAirline';
+import BookingAirline from './Service/booking/BookingAirline';
 
 const Booking = () => {
   const { loading, user } = useProfile();

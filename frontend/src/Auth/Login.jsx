@@ -16,7 +16,7 @@ import { LucideAlertCircle } from "lucide-react"
 import logo from "../assets/image.png"
 
 const validationSchema = yup.object().shape({
-  email:    yup.string().email("Email invalide").required("L'email est requis"),
+  email: yup.string().email("Email invalide").required("L'email est requis"),
   password: yup.string().required("Le mot de passe est requis"),
 })
 
@@ -71,10 +71,10 @@ function FormField({ formik, name, label, type = "text", placeholder, icon: Icon
 }
 
 const Login = () => {
-  const [error,   setError]   = useState(false)
+  const [error, setError] = useState(false)
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
-  const cookie   = new Cookies()
+  const cookie = new Cookies()
 
   const formik = useFormik({
     initialValues: { email: "", password: "" },
@@ -89,7 +89,7 @@ const Login = () => {
         })
         if (response.data.role === "admin" || response.data.role === "agent") {
           navigate("/dashboard")
-        }else if(response.data.role === "partner"){
+        } else if (response.data.role === "partner") {
           navigate("/partner/dashboard")
         } else {
           navigate("/")
@@ -104,10 +104,10 @@ const Login = () => {
 
   return (
     <>
-      <Helmet><title>Connexion — H-Care</title></Helmet>
+      <Helmet><title>Connexion</title></Helmet>
 
       <Flex minH="100vh" bg="#f5f6fa">
-        
+
 
         {/* ── Left panel ── */}
         <Box
@@ -129,7 +129,7 @@ const Login = () => {
           <Box position="relative" zIndex={1}>
             {/* Logo */}
             <Flex justify={"center"} align="center" gap={2.5} mb={16}>
-              <img  src={logo} alt="logo" />
+              <img src={logo} alt="logo" />
             </Flex>
 
             <Text fontSize="3xl" fontWeight={900} color="white"
@@ -141,9 +141,9 @@ const Login = () => {
             </Text>
 
             {[
-              { Icon: LuShieldCheck,  text: "Espace sécurisé et chiffré"           },
-              { Icon: LuTrendingUp,   text: "Suivez vos performances en temps réel" },
-              { Icon: LuHeadphones,   text: "Support disponible 7j/7"               },
+              { Icon: LuShieldCheck, text: "Espace sécurisé et chiffré" },
+              { Icon: LuTrendingUp, text: "Suivez vos performances en temps réel" },
+              { Icon: LuHeadphones, text: "Support disponible 7j/7" },
             ].map(({ Icon, text }, i) => (
               <Flex key={i} align="center" gap={3} mb={3}>
                 <Flex w="20px" h="20px" borderRadius="full"
@@ -157,19 +157,19 @@ const Login = () => {
         </Box>
 
         {/* ── Right panel — form ── */}
-        
-        
+
+
         <Flex flex={1} align="center" justify="center" px={{ base: 4, md: 8 }} py={10}>
 
-          
+
           <Box w="full" maxW="420px">
             <Flex as={Link} to="/" align="center" gap={1.5}
-                    color="gray.400" fontSize="sm" mb={8}
-                    _hover={{ color: "blue.500" }} transition="color 0.15s"
-                    display="inline-flex">
-                    <LuChevronLeft size={14} />
-                    Retour à la accueil
-                  </Flex>
+              color="gray.400" fontSize="sm" mb={8}
+              _hover={{ color: "blue.500" }} transition="color 0.15s"
+              display="inline-flex">
+              <LuChevronLeft size={14} />
+              Retour à la accueil
+            </Flex>
 
             {/* Mobile logo */}
             <Flex align="center" gap={2} mb={8} display={{ base: "flex", lg: "none" }}>
@@ -235,7 +235,7 @@ const Login = () => {
                   />
 
                   <Flex justify="flex-end">
-                    <Text onClick={()=>navigate("/forgot-password")} fontSize="xs" color="blue.500" cursor="pointer" fontWeight={500}
+                    <Text onClick={() => navigate("/forgot-password")} fontSize="xs" color="blue.500" cursor="pointer" fontWeight={500}
                       _hover={{ textDecoration: "underline" }}>
                       Mot de passe oublié ?
                     </Text>

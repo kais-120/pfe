@@ -12,6 +12,8 @@ import {
   LuCalendar, LuTag,
 } from "react-icons/lu"
 import { FaStar, FaUsers } from "react-icons/fa"
+import { useEffect, useState } from "react"
+import LoadingPage from "../../../../components/LoadingPage"
 
 const CLASSES = ["Économique", "Affaires", "Première"]
 const STATUSES = [
@@ -103,6 +105,22 @@ function SectionCard({ title, icon: Icon, iconColor = "blue", children }) {
 
 const AddFlight = () => {
   const navigate = useNavigate()
+  const [loading,setLoading] = useState(true);
+  const [classes,setClasses] = useState([]);
+  useEffect(()=>{
+    const classData = async () => {
+    try{
+      const res = await AxiosToken("/service/airline/get/class");
+      setClasses(res.data.classes)
+      setLoading(false)
+    }catch{
+      console.error("error")
+    }finally{
+      setLoading(false)
+    }
+  }
+  classData()
+  },[])
 
   const formik = useFormik({
     initialValues: {
@@ -126,8 +144,10 @@ const AddFlight = () => {
       }
     }
   })
+  if(loading) return <LoadingPage />
 
   return (
+
     <Box>
       {/* Back */}
       <Flex as="button" type="button" align="center" gap={1.5}
@@ -214,7 +234,7 @@ const AddFlight = () => {
 
                 {/* Class pills — green when price is set, blue when selected */}
                 <Flex gap={3} flexWrap="wrap" mb={4}>
-                  {CLASSES.map(cls => {
+                  {classes.map(cls => {
                     const active = formik.values.selectedClass === cls
                     const hasPrice = !!formik.values.classes[cls]
                     return (

@@ -983,13 +983,10 @@ exports.getRevenueChart = async (req, res) => {
 
     const labels = monthlyData.map(d => d.month);
     const monthly = monthlyData.map(d => parseFloat(d.total));
-    const weekly = monthly.map(v => Math.round(v / 4));
-    const daily = monthly.map(v => Math.round(v / 30));
+
 
     return res.json({
       labels,
-      daily,
-      weekly,
       monthly
     });
 

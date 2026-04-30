@@ -1,7 +1,7 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../configs/db");
 
-const ImageService = sequelize.define("ImageService",{
+const ImageService = sequelize.define("image_services",{
     id:{
         type:DataTypes.BIGINT,
         primaryKey: true,

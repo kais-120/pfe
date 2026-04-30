@@ -5,6 +5,7 @@ import { LuFileImage, LuUpload, LuCheck, LuChevronLeft, LuChevronRight, LuCredit
 import * as Yup from 'yup'
 import { AxiosToken } from "../../Api/Api"
 import { useNavigate } from "react-router-dom"
+import { Helmet } from "react-helmet"
 
 const FILE_SIZE = 5 * 1024 * 1024
 const SUPPORTED_FORMATS = ["image/jpg", "image/jpeg", "image/png"]
@@ -286,6 +287,8 @@ const Hotel = () => {
   }
 
   return (
+    <>
+    <Helmet title="File sent"></Helmet>
     <Flex justify="center" px={4} py={8}>
       <Box w="full" maxW="560px">
 
@@ -501,6 +504,7 @@ const Hotel = () => {
         </form>
       </Box>
     </Flex>
+    </>
   )
 }
 

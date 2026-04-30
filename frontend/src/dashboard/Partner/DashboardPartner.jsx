@@ -35,25 +35,45 @@ const STATUS_STYLE = {
 function RevenueChart() {
   const canvasRef = useRef(null)
   const chartRef = useRef(null)
-  const [period, setPeriod] = useState("monthly")
-  const [revenueData, setRevenueData] = useState([])
+
+  const [revenueData, setRevenueData] = useState({
+    labels: [],
+    data: []
+  })
+
+  const [loading, setLoading] = useState(true)
+
   useEffect(() => {
     const FetchData = async () => {
       try {
-        const res = await AxiosToken.get("/dashboard/partner/revenue-chart");
-        setRevenueData(res.data)
-      } catch {
-        console.error("error")
+        const res = await AxiosToken.get("/dashboard/partner/revenue-chart")
+
+        // متأكد أنها فيها labels + data
+        setRevenueData({
+          labels: res.data.labels || [],
+          data: res.data.monthly || []
+        })
+      } catch (err) {
+        console.error("error", err)
+      } finally {
+        setLoading(false)
       }
     }
+
     FetchData()
   }, [])
 
+
   useEffect(() => {
     if (!canvasRef.current) return
-    if (chartRef.current) chartRef.current.destroy()
+
+    // destroy old chart
+    if (chartRef.current) {
+      chartRef.current.destroy()
+    }
 
     const ctx = canvasRef.current.getContext("2d")
+
     const gradient = ctx.createLinearGradient(0, 0, 0, 220)
     gradient.addColorStop(0, "rgba(37,99,235,0.18)")
     gradient.addColorStop(1, "rgba(37,99,235,0.01)")
@@ -62,20 +82,22 @@ function RevenueChart() {
       type: "line",
       data: {
         labels: revenueData.labels,
-        datasets: [{
-          label: "Revenus (TND)",
-          data: revenueData[period],
-          borderColor: "#2563EB",
-          borderWidth: 2.5,
-          pointBackgroundColor: "#fff",
-          pointBorderColor: "#2563EB",
-          pointBorderWidth: 2,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          fill: true,
-          backgroundColor: gradient,
-          tension: 0.45,
-        }]
+        datasets: [
+          {
+            label: "Revenus (TND)",
+            data: revenueData.data,
+            borderColor: "#2563EB",
+            borderWidth: 2.5,
+            pointBackgroundColor: "#fff",
+            pointBorderColor: "#2563EB",
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            fill: true,
+            backgroundColor: gradient,
+            tension: 0.45
+          }
+        ]
       },
       options: {
         responsive: true,
@@ -88,49 +110,65 @@ function RevenueChart() {
             titleFont: { size: 11, weight: "600" },
             bodyFont: { size: 12, weight: "700" },
             callbacks: {
-              label: (ctx) => `  ${ctx.parsed.y.toLocaleString("fr-TN")} TND`
+              label: (ctx) =>
+                `${ctx.parsed.y.toLocaleString("fr-TN")} TND`
             }
           }
         },
         scales: {
-          x: { grid: { display: false }, ticks: { color: "#94A3B8", font: { size: 11 } } },
+          x: {
+            grid: { display: false },
+            ticks: { color: "#94A3B8", font: { size: 11 } }
+          },
           y: {
             grid: { color: "#F1F5F9", drawBorder: false },
             ticks: {
-              color: "#94A3B8", font: { size: 11 },
-              callback: (v) => v >= 1000 ? `${v / 1000}k` : v
+              color: "#94A3B8",
+              font: { size: 11 },
+              callback: (v) => (v >= 1000 ? `${v / 1000}k` : v)
             }
           }
         }
       }
     })
+
     return () => chartRef.current?.destroy()
-  }, [period])
+  }, [revenueData])
+
+  const isEmpty =
+    revenueData.data?.length > 0 &&
+    revenueData.data.every((v) => v === 0)
 
   return (
-    <Box bg="white" borderRadius="2xl" border="1px solid" borderColor="gray.100"
-      boxShadow="0 1px 8px rgba(0,0,0,0.05)" p={5}>
-      <Flex justify="space-between" align="center" mb={4} flexWrap="wrap" gap={2}>
+    <Box
+      bg="white"
+      borderRadius="2xl"
+      border="1px solid"
+      borderColor="gray.100"
+      boxShadow="0 1px 8px rgba(0,0,0,0.05)"
+      p={5}
+    >
+      <Flex
+        justify="space-between"
+        align="center"
+        mb={4}
+        flexWrap="wrap"
+        gap={2}
+      >
         <Box>
-          <Text fontSize="sm" fontWeight={700} color="gray.800">Revenus</Text>
-          <Text fontSize="xs" color="gray.400">Évolution sur 6 mois</Text>
+          <Text fontSize="sm" fontWeight={700} color="gray.800">
+            Revenus
+          </Text>
+          <Text fontSize="xs" color="gray.400">
+            Évolution sur 6 mois
+          </Text>
         </Box>
-        <HStack spacing={1}>
-          {["daily", "weekly", "monthly"].map(p => (
-            <Box key={p} as="button" onClick={() => setPeriod(p)}
-              px={2.5} py={1} borderRadius="lg" fontSize="11px" fontWeight={600}
-              bg={period === p ? "#2563EB" : "gray.100"}
-              color={period === p ? "white" : "gray.500"}
-              transition="all 0.15s" _hover={{ opacity: 0.85 }}>
-              {p === "daily" ? "Jour" : p === "weekly" ? "Semaine" : "Mois"}
-            </Box>
-          ))}
-        </HStack>
       </Flex>
+
       <Box h="200px" position="relative">
         <canvas ref={canvasRef} />
 
-        {revenueData?.[period]?.every(v => v === 0) && (
+        {!loading && isEmpty && (
           <Flex
             position="absolute"
             top="50%"
@@ -151,7 +189,8 @@ function RevenueChart() {
 function BookingsChart() {
   const canvasRef = useRef(null)
   const chartRef = useRef(null)
-  const [bookingData, setBookingData] = useState([])
+  const [bookingData, setBookingData] = useState({ labels: [], values: [] })
+  
   useEffect(() => {
     const FetchData = async () => {
       try {
@@ -163,11 +202,31 @@ function BookingsChart() {
     }
     FetchData()
   }, [])
+
+  console.log(bookingData)
+  
   useEffect(() => {
     if (!canvasRef.current) return
     if (chartRef.current) chartRef.current.destroy()
 
     const ctx = canvasRef.current.getContext("2d")
+    
+    // Ensure we have valid data
+    const hasData = bookingData?.values?.length > 0 && 
+                    bookingData.values.some(v => v !== null && v !== undefined)
+    
+    if (!hasData) {
+      // Render empty chart or return early
+      chartRef.current = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: [],
+          datasets: []
+        }
+      })
+      return
+    }
+    
     chartRef.current = new Chart(ctx, {
       type: "bar",
       data: {
@@ -175,11 +234,13 @@ function BookingsChart() {
         datasets: [{
           label: "Réservations",
           data: bookingData.values,
-          backgroundColor: bookingData?.values?.length > 0 && bookingData?.values?.map((_, i) =>
+          backgroundColor: bookingData.values.map((_, i) =>
             i === bookingData.values.length - 1 ? "#7C3AED" : "#EDE9FE"
           ),
           borderRadius: 8,
           borderSkipped: false,
+          barPercentage: bookingData.values.length === 1 ? 0.3 : 0.7, 
+          categoryPercentage: bookingData.values.length === 1 ? 0.4 : 0.8,
         }]
       },
       options: {
@@ -190,21 +251,44 @@ function BookingsChart() {
           tooltip: {
             backgroundColor: "#1E293B",
             padding: 10,
-            callbacks: { label: (ctx) => `  ${ctx.parsed.y} réservations` }
+            callbacks: { 
+              label: (ctx) => `  ${ctx.parsed.y} réservation${ctx.parsed.y > 1 ? 's' : ''}` 
+            }
           }
         },
         scales: {
-          x: { grid: { display: false }, ticks: { color: "#94A3B8", font: { size: 11 } } },
+          x: { 
+            grid: { display: false }, 
+            ticks: { color: "#94A3B8", font: { size: 11 } },
+           
+            offset: bookingData.values.length === 1,
+          },
           y: {
             grid: { color: "#F8FAFC" },
-            ticks: { color: "#94A3B8", font: { size: 11 } },
+            ticks: { 
+              color: "#94A3B8", 
+              font: { size: 11 },
+              stepSize: 1, 
+              precision: 0,
+            },
             beginAtZero: true,
+            max: bookingData.values.length === 1 ? Math.max(bookingData.values[0] + 1, 5) : undefined, // Add some padding above the bar
+          }
+        },
+        layout: {
+          padding: {
+            left: bookingData.values.length === 1 ? 20 : 0,
+            right: bookingData.values.length === 1 ? 20 : 0,
           }
         }
       }
     })
+    
     return () => chartRef.current?.destroy()
   }, [bookingData])
+
+  const hasNoData = !bookingData?.values?.length || 
+                    bookingData.values.every(v => v === 0 || v === null || v === undefined)
 
   return (
     <Box bg="white" borderRadius="2xl" border="1px solid" borderColor="gray.100"
@@ -216,7 +300,7 @@ function BookingsChart() {
       <Box h="200px" position="relative">
         <canvas ref={canvasRef} />
 
-        {bookingData?.values?.length && bookingData?.values?.every(v => v === 0) && (
+        {hasNoData && (
           <Flex
             position="absolute"
             top="50%"
@@ -258,7 +342,7 @@ const DashboardPartner = () => {
         const resStatus = await AxiosToken.get("/dashboard/partner/status");
         setStatus(resStatus.data.data)
         const resReviews = await AxiosToken.get("/dashboard/partner/last-reviews");
-        setReviews(resReviews.data)
+        setReviews(resReviews.data.reviews)
       } catch (err) {
         console.error(err)
       }
@@ -371,7 +455,7 @@ console.log(reviews)
             </Flex>
             : <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={0}>
 
-              {reviews.reviews.map((r, i) => (
+              {reviews.map((r, i) => (
                 <Box key={i} px={5} py={4}
                   borderRight={{ md: i % 2 === 0 ? "1px solid" : "none" }}
                   borderBottom={i < reviews.length - 2 ? "1px solid" : { base: i < reviews.length - 1 ? "1px solid" : "none", md: "none" }}

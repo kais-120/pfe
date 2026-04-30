@@ -68,7 +68,7 @@ const Sidebar = () => {
     >
       {/* Header with logo and toggle */}
       <Flex
-        justify="space-between"
+        justify="center"
         align="center"
         gap={2.5}
         px={isOpen ? 6 : 3}
@@ -84,6 +84,7 @@ const Sidebar = () => {
         )}
         {!isMobile && (
           <Flex
+          display="flex"
             align="center"
             justify="center"
             w="32px"
@@ -94,6 +95,7 @@ const Sidebar = () => {
             transition="all 0.15s"
             _hover={{ bg: "gray.200" }}
             onClick={() => setIsOpen(!isOpen)}
+            lineHeight={0}
           >
             {isOpen ? (
               <ChevronLeft size={18} strokeWidth={2.5} color="#666" />
@@ -115,7 +117,7 @@ const Sidebar = () => {
       )}
 
       {/* Nav items */}
-      <VStack align="stretch"  gap={1} px={isOpen ? 3 : 1.5} flex={1}>
+      <VStack align="stretch" gap={1} px={isOpen ? 3 : 1.5} flex={1}>
         {!user
           ? Array.from({ length: 3 }).map((_, i) => (
             <Box key={i} h="40px" borderRadius="lg" bg="gray.100" />

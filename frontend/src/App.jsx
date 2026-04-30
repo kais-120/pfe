@@ -73,6 +73,9 @@ import EditOffer from "./dashboard/Partner/Service/Edit/EditOffer";
 import { useColorMode } from "./components/ui/color-mode";
 import { useEffect } from "react";
 import ReviewsManagement from "./dashboard/Admin/ReviewsManagement";
+import PolitiqueConfidentialite from "./Pages/Policy/PolitiqueConfidentialite";
+import ConditionsUtilisation from "./Pages/Policy/ConditionsUtilisation";
+import MentionsLegales from "./Pages/Policy/MentionsLegales";
 
 function App() {
   const { setColorMode } = useColorMode()
@@ -85,6 +88,9 @@ function App() {
       <Route path="/payment/success" element={<SuccessPayment />} />
       <Route path="/add/package" element={<AddPackage />} />
       <Route path="/package" element={<PackagesDialog />} />
+    <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
+  <Route path="/conditions-utilisation" element={<ConditionsUtilisation />} />
+  <Route path="/mentions-legales" element={<MentionsLegales />} />
   <Route path="/setting" element={<Settings/>} />
   <Route path="/test" element={<Test/>} />
   <Route path="/search/hotel" element={<SearchHotels/>} />

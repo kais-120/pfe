@@ -60,11 +60,12 @@ exports.partnerMail = async (to,name,reason,status) => {
     path.join(__dirname, '../public/PartnerEmail.ejs'),
     { name, status,message:reason }
   );
+  subject = `Demande de partenariat ${status === "acceptée" ? "approuvée" : "refusée"}`
 
  await transporter.sendMail({
     from: '"Travel Now" <travelnow@info.com>',
     to,
-    subject: 'Code!',
+    subject,
     html,
   });
 }

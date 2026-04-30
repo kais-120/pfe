@@ -13,6 +13,7 @@ import {
 } from "react-icons/fa"
 import { LuCalendar, LuShieldCheck, LuArrowLeftRight, LuMapPin } from "react-icons/lu"
 import { useNavigate } from "react-router-dom"
+import FooterPage from "./components/home/Footer"
 
 const LOCATIONS = [
   { label: "Tunis", value: "tunis" },
@@ -695,6 +696,7 @@ const HomeLocation = () => {
 
         </Box>
       </Box>
+      <FooterPage />
     </>
   )
 }

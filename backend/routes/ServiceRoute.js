@@ -1,7 +1,7 @@
 const express = require("express");
 const AuthenticateToken = require("../middlewares/AuthenticateToken");
 const AuthenticatePartner = require("../middlewares/AuthenticatePartner");
-const { AddHotel, AddRoom, GetAllServices, GetAllHotel, GetHotel, GetPublicHotel, GetSearchHotels, AddLocation, GetLocation, AddVehicle, AddAgency, GetAgency, AddOffer, AddAirline, GetAirline, AddFlight, AddVoyage, GetVoyage, AddCircuit, GetPublicLocation, checkAvailability, GetVehicleById, GetPublicAgency, GetOfferById, municipalities, GetPublicAirline, GetFlightById, GetPublicVoyage, GetCircuitById, GetSearchRooms, GetSearchAirline, SearchVehicle, DeleteService, GetRoom, UpdateHotel, UpdateVehicle, UpdateCircuit, DeleteCircuit, DeleteRoom, VisibilityRoom, DeleteOffer, DeleteVehicle, UpdateOffer } = require("../controllers/ServiceController");
+const { AddHotel, AddRoom, GetAllServices, GetAllHotel, GetHotel, GetPublicHotel, GetSearchHotels, AddLocation, GetLocation, AddVehicle, AddAgency, GetAgency, AddOffer, AddAirline, GetAirline, AddFlight, AddVoyage, GetVoyage, AddCircuit, GetPublicLocation, checkAvailability, GetVehicleById, GetPublicAgency, GetOfferById, municipalities, GetPublicAirline, GetFlightById, GetPublicVoyage, GetCircuitById, GetSearchRooms, GetSearchAirline, SearchVehicle, DeleteService, GetRoom, UpdateHotel, UpdateVehicle, UpdateCircuit, DeleteCircuit, DeleteRoom, VisibilityRoom, DeleteOffer, DeleteVehicle, UpdateOffer, GetClass, GetDestination } = require("../controllers/ServiceController");
 const upload = require("../middlewares/Uploads");
 const AuthenticateAgent = require("../middlewares/AuthenticateAgent");
 const router = express.Router();
@@ -10,6 +10,7 @@ router.get("/get",[AuthenticateToken,AuthenticateAgent],GetAllServices);
 router.delete("delete/:type/:id",[AuthenticateToken,AuthenticateAgent],DeleteService)
 
 router.get("/get/hotels",GetAllHotel);
+router.get("/get/destination",GetDestination);
 router.post("/get/hotels/search",GetSearchHotels);
 router.post("/get/hotel/room/search/:id",GetSearchRooms);
 router.get("/get/hotel/:id",GetPublicHotel);
@@ -41,6 +42,7 @@ router.put("/agency/offer/update/:id",[AuthenticateToken,AuthenticatePartner,upl
 ;
 router.post("/airline/add",[AuthenticateToken,AuthenticatePartner],AddAirline);
 router.get("/airline/get",[AuthenticateToken,AuthenticatePartner],GetAirline);
+router.get("/airline/get/class",[AuthenticateToken,AuthenticatePartner],GetClass);
 router.post("/airline/search/get",GetSearchAirline);
 router.get("/airline/public/get",GetPublicAirline);
 router.get("/airline/flight/public/get/:id",GetFlightById);

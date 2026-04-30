@@ -336,9 +336,13 @@ const PartnerSignUp = () => {
               {/* Terms */}
               <Text fontSize="xs" color="gray.400" textAlign="center" mb={4}>
                 En vous inscrivant, vous acceptez nos{" "}
+                <Link to={"/politique-confidentialite"}>
                 <Text as="span" color="blue.500" cursor="pointer">conditions d'utilisation</Text>
+                </Link>
                 {" "}et notre{" "}
+                <Link to={"/politique-confidentialite"}>
                 <Text as="span" color="blue.500" cursor="pointer">politique de confidentialité</Text>.
+                </Link>
               </Text>
 
               <Button

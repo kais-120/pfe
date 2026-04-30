@@ -15,6 +15,7 @@ import {
 import Header from "./components/home/Header"
 import { Axios, imageURL } from "./Api/Api"
 import { Helmet } from "react-helmet"
+import FooterPage from "./components/home/Footer"
 
 const TYPE_META = {
   circuit: { color: "blue", label: "Circuit" },
@@ -319,7 +320,7 @@ export default function HomeAgency() {
             <LuCompass size={13} color="white" />
             <Text fontSize="xs" fontWeight={700} color="white"
               textTransform="uppercase" letterSpacing="widest">
-              Voyages & Circuits
+              Voyages
             </Text>
           </Flex>
 
@@ -379,8 +380,6 @@ export default function HomeAgency() {
           ))}
         </Flex>
       </Box>
-
-      {/* ── Offer grid ── */}
       <Box bg="#f5f6fa" minH="60vh">
         <Box maxW="1200px" mx="auto" px={{ base: 4, md: 6 }} py={8}>
 
@@ -431,6 +430,7 @@ export default function HomeAgency() {
 
         </Box>
       </Box>
+      <FooterPage />
     </>
   )
 }

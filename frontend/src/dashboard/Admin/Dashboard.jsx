@@ -364,22 +364,7 @@ const formatted = today.toLocaleDateString("fr-FR", {
            {formatted} · Données en temps réel
           </Text>
         </Box>
-        <Flex gap={1.5} bg="white" borderRadius="xl" p={1}
-          border="1px solid" borderColor="gray.100"
-          boxShadow="0 1px 4px rgba(0,0,0,0.04)">
-          {["jour", "semaine", "mois", "année"].map(p => (
-            <Box key={p} as="button"
-              px={3} py={1.5} borderRadius="lg"
-              fontSize="xs" fontWeight={600}
-              bg={period === p ? "blue.600" : "transparent"}
-              color={period === p ? "white" : "gray.500"}
-              cursor="pointer" transition="all 0.15s"
-              textTransform="capitalize"
-              onClick={() => setPeriod(p)}>
-              {p}
-            </Box>
-          ))}
-        </Flex>
+        
       </Flex>
 
       {/* ── KPI cards ── */}
@@ -414,19 +399,12 @@ const formatted = today.toLocaleDateString("fr-FR", {
                 {value}
               </Text>
               <Text fontSize="xs" color="gray.400">{label}</Text>
-              <Text fontSize="xs" color="gray.300" mt={0.5}>
-                vs. {period} précédent{period === "mois" ? "" : "e"}
-              </Text>
             </Box>
           )
         })}
       </Grid>
 
-      {/* ── Row 2: chart + services + activity ── */}
-      <Grid templateColumns={{ base: "1fr", lg: "1fr 280px 260px" }} gap={5} mb={5}>
-
-        {/* Revenue chart with Chart.js */}
-        <Box bg="white" borderRadius="2xl" p={5}
+      <Box bg="white" borderRadius="2xl" p={5} mb={5}
           border="1px solid" borderColor="gray.100"
           boxShadow="0 1px 8px rgba(0,0,0,0.05)">
           <Flex justify="space-between" align="center" mb={5}>
@@ -447,7 +425,8 @@ const formatted = today.toLocaleDateString("fr-FR", {
           <RevenueChart />
         </Box>
 
-        {/* Services breakdown */}
+      <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={5} mb={5}>
+        
         <Box bg="white" borderRadius="2xl" p={5}
           border="1px solid" borderColor="gray.100"
           boxShadow="0 1px 8px rgba(0,0,0,0.05)">

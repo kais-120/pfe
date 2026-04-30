@@ -1,10 +1,13 @@
 import { Box, Button, Text } from "@chakra-ui/react"
+import { Helmet } from "react-helmet";
 import { LuCheck } from "react-icons/lu"
 import { useNavigate } from "react-router-dom"
 
 const PendingSend = () => {
   const navigate = useNavigate();
   return (
+    <>
+    <Helmet title="File pending"></Helmet>
     <Box
         height={"100vh"}
         textAlign="center" 
@@ -43,6 +46,8 @@ const PendingSend = () => {
         </Button>
     </Box>
       </Box>
+    </>
+
     
   )
 }

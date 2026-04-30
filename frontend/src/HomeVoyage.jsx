@@ -14,6 +14,7 @@ import {
 } from "react-icons/lu"
 import Header from "./components/home/Header"
 import { Axios, imageURL } from "./Api/Api"
+import FooterPage from "./components/home/Footer"
 
 /* ── Category meta ──────────────────────────────────────────────── */
 const CAT_META = {
@@ -428,6 +429,7 @@ export default function HomeVoyage() {
 
         </Box>
       </Box>
+      <FooterPage />
     </>
   )
 }

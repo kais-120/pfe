@@ -1,13 +1,15 @@
-import { Badge, Box, Button, Combobox, DatePicker, Flex, Grid, HStack, Image, parseDate, Portal, Skeleton, SkeletonText, Text, useFilter, useListCollection, VStack } from "@chakra-ui/react"
+import { Badge, Box, Button, Combobox, createListCollection, DatePicker, Flex, Grid, HStack, Image, parseDate, Portal, Skeleton, SkeletonText, Text, useFilter, useListCollection, VStack } from "@chakra-ui/react"
 import Header from "./components/home/Header"
 import { useColorMode } from "./components/ui/color-mode"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 // import DatePicker from "./components/ui/DatePicker"
 import RoomSelector from "./components/ui/RoomSelector"
 import { Axios, imageURL } from "./Api/Api"
 import { FaChevronLeft, FaChevronRight, FaDumbbell, FaMapMarkerAlt, FaParking, FaSearch, FaSpa, FaStar, FaSwimmingPool, FaWifi } from "react-icons/fa"
 import { useNavigate } from "react-router-dom"
 import { LuCalendar } from "react-icons/lu"
+import { Helmet } from "react-helmet"
+import FooterPage from "./components/home/Footer"
 
 
 const EQUIPMENT_LIST = [
@@ -34,46 +36,94 @@ const LOCATIONS = [
 ]
 
 
-/* ── Location combobox (same style as SearchHotels) ─────────────── */
+
+
 function LocationCombobox({ value, onChange }) {
-  const { contains } = useFilter({ sensitivity: "base" })
-  const { collection, filter } = useListCollection({
-    initialItems: LOCATIONS,
-    filter: contains,
+  const [destination, setDestination] = useState([])
+ 
+  useEffect(() => {
+    const dataDestination = async () => {
+      try {
+        const res = await Axios.get("/service/get/destination")
+        console.log("API Response:", res.data.destinations)
+        setDestination(res.data.destinations || [])
+      } catch (error) {
+        console.error("error", error)
+      }
+    }
+    dataDestination()
+  }, [])
+ 
+ const filteredItems = useMemo(() => {
+  if (!value) return destination
+
+  return destination.filter((item) =>
+    item.toLowerCase().includes(value.toLowerCase())
+  )
+}, [destination, value])
+const capitalize = (value) => {
+  if (!value) return ""
+  return value.charAt(0).toUpperCase() + value.slice(1)
+}
+
+
+  const collection = useMemo(() => {
+  return createListCollection({
+    items: filteredItems.map((item) => ({
+      label: capitalize(item),
+      value: item,
+    })),
+    itemToString: (item) => item.label,
+    itemToValue: (item) => item.value,
   })
+}, [filteredItems])
+ 
   return (
     <Box flex={1} minW="180px">
       <Combobox.Root
         width="full"
         collection={collection}
         inputValue={value}
-        onInputValueChange={(e) => { filter(e.inputValue); onChange(e.inputValue) }}
+        onInputValueChange={(e) => onChange(e.inputValue)}
         onValueChange={(e) => onChange(e.value[0] ?? "")}
       >
         <Combobox.Control>
           <Combobox.Input
             placeholder="Où allez-vous ?"
             style={{
-              width: "100%", border: "none", outline: "none",
-              fontSize: "15px", fontWeight: "600",
+              width: "100%",
+              border: "none",
+              outline: "none",
+              fontSize: "15px",
+              fontWeight: "600",
               color: "var(--chakra-colors-gray-800)",
-              background: "transparent", height: "32px",
+              background: "transparent",
+              height: "32px",
             }}
           />
-          <Combobox.IndicatorGroup style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)" }}>
+          <Combobox.IndicatorGroup
+            style={{
+              position: "absolute",
+              right: 8,
+              top: "50%",
+              transform: "translateY(-50%)",
+            }}
+          >
             <Combobox.Trigger />
           </Combobox.IndicatorGroup>
         </Combobox.Control>
         <Portal>
           <Combobox.Positioner>
             <Combobox.Content>
-              <Combobox.Empty>Aucune destination trouvée</Combobox.Empty>
-              {collection.items.map((item) => (
-                <Combobox.Item item={item} key={item.value}>
-                  {item.label}
-                  <Combobox.ItemIndicator />
-                </Combobox.Item>
-              ))}
+              {collection.items.length === 0 ? (
+                <Combobox.Empty>Aucune destination trouvée</Combobox.Empty>
+              ) : (
+                collection.items.map((item) => (
+                  <Combobox.Item key={item.value} item={item}>
+                    {item.label}
+                  </Combobox.Item>
+                ))
+              )}
             </Combobox.Content>
           </Combobox.Positioner>
         </Portal>
@@ -338,6 +388,7 @@ const Home = () => {
 
   return (
     <>
+    <Helmet title="Hôtel"></Helmet>
       <Header />
 
       {/* ── Hero with BA-style search ── */}
@@ -381,7 +432,7 @@ const Home = () => {
                 <Text fontSize="xs" fontWeight={700} color="gray.500">
                   Destination
                 </Text>
-                <LocationCombobox onChange={setDestination} />
+                <LocationCombobox value={destination} onChange={setDestination} />
               </Box>
               {/* <Box px={4} py={3} borderRight="1px solid" borderColor="gray.150"
                 borderLeftRadius="2xl">
@@ -472,7 +523,7 @@ const Home = () => {
         <Flex justify="space-between" align="center" mb={6}>
           <Box>
             <Text fontSize="2xl" fontWeight={800} color="gray.800">
-              Nos Plus Belles Thématiques
+              Nos Bons plans Ventes FLASH
             </Text>
             {!loading && hotels.length > 0 && (
               <Text fontSize="sm" color="gray.500" mt={0.5}>
@@ -505,6 +556,7 @@ const Home = () => {
           </Flex>
         )}
       </Box>
+      <FooterPage />
     </>
   )
 }

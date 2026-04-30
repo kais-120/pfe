@@ -436,7 +436,7 @@ const AddOffer = () => {
       try {
         await AxiosToken.post("/service/agency/offer/add", fd)
         toaster.create({ description: "Offre publiée avec succès.", type: "success", closable: true })
-        // setTimeout(() => navigate(-1), 1800)
+        setTimeout(() => navigate(-1), 1800)
       } catch {
         toaster.create({ description: "Une erreur est survenue.", type: "error", closable: true })
       }

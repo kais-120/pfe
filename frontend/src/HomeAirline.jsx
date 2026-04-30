@@ -19,6 +19,7 @@ import {
 } from "react-icons/lu"
 import Header from "./components/home/Header"
 import { Axios } from "./Api/Api"
+import FooterPage from "./components/home/Footer"
 
 
 const AIRPORTS = [
@@ -732,6 +733,7 @@ export default function HomeAirline() {
 
         </Box>
       </Box>
+      <FooterPage />
     </>
   )
 }

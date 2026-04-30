@@ -345,7 +345,7 @@ exports.AcceptFile = async (req, res) => {
         const { email,name } = await User.findByPk(partnerFiles.partner_id);
         
         partnerFiles.update({ status: "accepté", accepted_by: userId});
-        partnerMail(email, name, null, "acceptée ");
+        partnerMail(email, name, null, "acceptée");
 
         return res.send({ message: "partner file updated" })
 

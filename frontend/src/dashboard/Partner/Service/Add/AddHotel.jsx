@@ -19,13 +19,14 @@ import { toaster } from "../../../../components/ui/toaster";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { Map, Star } from "lucide-react";
+import { Helmet } from "react-helmet";
 
 const validationSchema = Yup.object({
   name: Yup.string().required("Le nom de l'hôtel est requis"),
   description: Yup.string().required("La description est requise"),
   address: Yup.string().required("L'adresse est requise"),
   equipments: Yup.array().min(1, "Veuillez sélectionner au moins un équipement"),
-  state: Yup.string().required("L'état est requise"),
+  destination: Yup.string().required("Le destination est requise"),
   star: Yup.string().required("choisir un étoile"),
   images: Yup.array()
     .min(1, "Veuillez ajouter au moins une image")
@@ -122,80 +123,39 @@ const AddHotel = () => {
   const [previews, setPreviews] = useState([])
 
   const states = [
+  { label: 'Ariana', value: 'ariana' },
+  { label: 'Beja', value: 'beja' },
+  { label: 'Ben Arous', value: 'ben_arous' },
+  { label: 'Bizerte', value: 'bizerte' },
+  { label: 'Gabes', value: 'gabes' },
+  { label: 'Gafsa', value: 'gafsa' },
+  { label: 'Jendouba', value: 'jendouba' },
+  { label: 'Hammamet', value: 'hammamet' },
+  { label: 'Tabarka', value: 'tabarka' },
+  { label: 'Kairouan', value: 'kairouan' },
+  { label: 'Kasserine', value: 'kasserine' },
+  { label: 'Kebili', value: 'kebili' },
+  { label: 'Kef', value: 'kef' },
+  { label: 'Mahdia', value: 'mahdia' },
+  { label: 'Mannouba', value: 'mannouba' },
+  { label: 'Medenine', value: 'medenine' },
+  { label: 'Djerba', value: 'djerba' },
+  { label: 'Kelibia', value: 'kelibia' },
+  { label: 'Korba', value: 'korba' },
+  { label: 'Gammarth', value: 'gammarth' },
+  { label: 'Korbous', value: 'korbous' },
+  { label: 'Monastir', value: 'monastir' },
+  { label: 'Nabeul', value: 'nabeul' },
+  { label: 'Sfax', value: 'sfax' },
+  { label: 'Sidi Bouzid', value: 'sidi_bouzid' },
+  { label: 'Siliana', value: 'siliana' },
+  { label: 'Sousse', value: 'sousse' },
+  { label: 'Tataouine', value: 'tataouine' },
+  { label: 'Tozeur', value: 'tozeur' },
+  { label: 'Tunis', value: 'tunis' },
+  { label: 'Zaghouan', value: 'zaghouan' }
+]
 
-    {
-      "label": "ariana",
-    },
-    {
-      "label": "beja",
-    },
-    {
-      "label": "ben arous",
-    },
-    {
-      "label": "bizerte",
-    },
-    {
-      "label": "gabes",
-    },
-    {
-      "label": "gafsa",
-    },
-    {
-      "label": "jendouba",
-    },
-    {
-      "label": "kairouan",
-    },
-    {
-      "label": "kasserine",
-    },
-    {
-      "label": "kebili",
-    },
-    {
-      "label": "kef",
-    },
-    {
-      "label": "mahdia",
-    },
-    {
-      "label": "mannouba",
-    },
-    {
-      "label": "medenine",
-    },
-    {
-      "label": "monastir",
-    },
-    {
-      "label": "nabeul",
-    },
-    {
-      "label": "sfax",
-    },
-    {
-      "label": "sidi bouzid",
-    },
-    {
-      "label": "siliana",
-    },
-    {
-      "label": "sousse",
-    },
-    {
-      "label": "tataouine",
-    },
-    {
-      "label": "tozeur",
-    },
-    {
-      "label": "tunis",
-    },
-    {
-      "label": "zaghouan",
-    }
-  ]
 
   const { contains } = useFilter({ sensitivity: "base" })
 
@@ -206,7 +166,7 @@ const AddHotel = () => {
 
   const formik = useFormik({
     initialValues: {
-      name: "", description: "", address: "", state: "",star,
+      name: "", description: "", address: "",destination:"" ,star:null,
       equipments: [], images: [],
     },
     validationSchema,
@@ -214,7 +174,7 @@ const AddHotel = () => {
       const formData = new FormData()
       formData.append("name", values.name)
       formData.append("description", values.description)
-      formData.append("state", values.state)
+      formData.append("destination", values.destination)
       formData.append("address", values.address)
       formData.append("star", values.star)
       values.equipments.forEach(eq => formData.append("equipments[]", eq))
@@ -262,11 +222,11 @@ const AddHotel = () => {
     value: n.toString()
   }))
 })
-
+console.log(formik.errors)
   return (
+    <>
+    <Helmet title="add hotel"></Helmet>
     <Container py={2}>
-
-      {/* Back */}
       <Flex as="button" type="button" align="center" gap={1.5}
         color="gray.400" fontSize="sm" mb={6}
         _hover={{ color: "blue.500" }} transition="color 0.15s"
@@ -327,7 +287,7 @@ const AddHotel = () => {
 
                 <Combobox.Root
                   collection={collection}
-                  onInputValueChange={(e) => filter(e.inputValue)}
+                  onInputValueChange={(e) => {filter(e.inputValue);formik.setFieldValue("destination",e.inputValue.toLowerCase())}}
                 >
                   <Combobox.Control>
                     <Combobox.Input outline={"none"} border={"none"} placeholder="Ex: tunis" />
@@ -341,7 +301,7 @@ const AddHotel = () => {
                       <Combobox.Content >
                         <Combobox.Empty>No items found</Combobox.Empty>
                         {collection && collection.items.map((item) => (
-                          <Combobox.Item item={item} key={item.label}>
+                          <Combobox.Item item={item} key={item.value}>
                             {item.label}
                             <Combobox.ItemIndicator />
                           </Combobox.Item>
@@ -372,7 +332,7 @@ const AddHotel = () => {
 
               <FormField formik={formik} name="star" label="Étoile" icon={Star}>
 
-                <Select.Root collection={collectionStar}>
+                <Select.Root collection={collectionStar} onValueChange={(e)=>formik.setFieldValue("star",e.value[0])}>
                   <Select.HiddenSelect/>
                   <Select.Control >
                     <Select.Trigger border={"none"} outline={"none"}>
@@ -567,6 +527,7 @@ const AddHotel = () => {
         </VStack>
       </form>
     </Container>
+    </>
   )
 }
 

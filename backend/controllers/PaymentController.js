@@ -157,13 +157,17 @@ exports.VerifyPayment = [
                 const payment = await Payment.findOne({ where: { reference } });
                 const session = await stripe.checkout.sessions.retrieve(reference);
                 if (session.payment_status === "paid") {
+                    if(payment.status != "confirmée") {
                     await payment.update({ status: "confirmée" })
                     booking.update({ status: "confirmée" })
                     await Activity.create({ type: "payment", titre: "paiement est confirmée" })
+                    }
                 } else {
+                    if(payment.status != "annulée") {
                     await payment.update({ status: "annulée" })
                     booking.update({ status: "annulée" })
                     await Activity.create({ type: "payment", titre: "paiement est annulée" })
+                    }
                 }
             } else {
                 const p = await Payment.findOne({ where: { booking_id } })
