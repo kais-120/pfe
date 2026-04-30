@@ -89,7 +89,7 @@ exports.BookingHotel = [
             await Notification.create({ title: "Nouvelle réservation", message: "un client faire un réservation", type: "booking", user_id: partner_id })
             io.to(`partner-${partner_id}`).emit("newNotification");
             await Activity.create({ type: "booking", titre: `Réservation #RES-${booking.id} en cours` })
-            const url = await CreatePayment(total_price, booking.id, client_id)
+            const url = await CreatePayment(total_price, booking.id, client_id,partner_id)
             return res.send({ message: "booking create",url })
 
         } catch (err) {
@@ -140,7 +140,7 @@ exports.BookingFlight = [
             await Notification.create({ title: "Nouvelle réservation", message: "un client faire un réservation", type: "booking", user_id: flight.compagnieFlight.partner_id })
             io.to(`partner-${flight.compagnieFlight.partner_id}`).emit("newNotification");
             await Activity.create({ type: "booking", titre: `Réservation #RES-${booking.id} en cours` })
-            const url = await CreatePayment(total_price, booking.id, client_id)
+            const url = await CreatePayment(total_price, booking.id, client_id,flight.compagnieFlight.partner_id)
             return res.send({ message: "booking create",url })
 
         } catch (err) {
@@ -185,7 +185,7 @@ exports.BookingLocation = [
             await Notification.create({ title: "Nouvelle réservation", message: "un client faire un réservation", type: "booking", user_id: vehicle.locationVehicle.partner_id })
             io.to(`partner-${vehicle.locationVehicle.partner_id}`).emit("newNotification");
             await Activity.create({ type: "booking", titre: `Réservation #RES-${booking.id} en cours` })
-            const url = await CreatePayment(total_price, booking.id, client_id)
+            const url = await CreatePayment(total_price, booking.id, client_id,vehicle.locationVehicle.partner_id)
             return res.send({ message: "booking create" ,url})
 
         } catch (err) {
@@ -241,9 +241,9 @@ exports.BookingCircuit = [
                 const installmentCount = package.installment || 1;
                 const totalWithFee = total_price * 1.05;
                 const amount = Math.round(totalWithFee / installmentCount);
-                url = await CreatePayment(total_price, booking.id, client_id,package.installment,payment_method,amount)
+                url = await CreatePayment(total_price, booking.id, client_id,circuit.voyagesCircuit.partner_id,package.installment,payment_method,amount)
             }else{
-                url = await CreatePayment(total_price, booking.id, client_id)
+                url = await CreatePayment(total_price, booking.id, client_id,circuit.voyagesCircuit.partner_id)
             }
             
             
@@ -304,9 +304,9 @@ exports.BookingOffer = [
                 const installmentCount = package.installment || 1;
                 const totalWithFee = total_price * 1.05;
                 const amount = Math.round(totalWithFee / installmentCount);
-                url = await CreatePayment(total_price, booking.id, client_id,package.installment,payment_method,amount)
+                url = await CreatePayment(total_price, booking.id, client_id,offer.agencyOffer.partner_id,package.installment,payment_method,amount)
             }else{
-                url = await CreatePayment(total_price, booking.id, client_id)
+                url = await CreatePayment(total_price, booking.id, client_id,offer.agencyOffer.partner_id)
             }
             return res.send({ message: "booking create",url })
 

@@ -3,7 +3,7 @@ const { Payment, Booking, Users, Notification, PaymentInstallments, Package, Off
 const Activity = require("../models/Activity");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
-exports.CreatePayment = async (amount, booking_id, client_id, installment = 0, type = "total", part = 0) => {
+exports.CreatePayment = async (amount, booking_id, client_id,partner_id, installment = 0, type = "total", part = 0) => {
     try {
         const session = await stripe.checkout.sessions.create({
             mode: "payment",
@@ -30,7 +30,7 @@ exports.CreatePayment = async (amount, booking_id, client_id, installment = 0, t
         });
         if (type === "installment") {
             const totalWithFee = amount * 1.05;
-            const payment = await Payment.create({ amount: totalWithFee, client_id, booking_id })
+            const payment = await Payment.create({ amount: totalWithFee, client_id, booking_id,partner_id })
             await PaymentInstallments.create({
                 payment_id: payment.id,
                 amount: part,
@@ -49,7 +49,7 @@ exports.CreatePayment = async (amount, booking_id, client_id, installment = 0, t
                 });
             }
         } else {
-            await Payment.create({ amount, client_id, booking_id, reference: session.id })
+            await Payment.create({ amount, client_id, booking_id, reference: session.id,partner_id })
         }
         return session.url
 

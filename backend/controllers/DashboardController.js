@@ -780,30 +780,12 @@ exports.GetPartnerDashboardStats = async (req, res) => {
     const cleanedInclude = cleanInclude(includeConfig);
 
     const totalRevenue = await Payment.sum("amount", {
-      include: [
-        {
-          model: Booking,
-          as: "bookingPayment",
-          attributes: [],
-          required: true,
-          include: cleanedInclude
-        }
-      ]
+      where:{partner_id}
     }) || 0;
 
     const revenueThisMonth =
       (await Payment.sum("amount", {
-        where: { createdAt: { [Op.gte]: startOfMonth } },
-        include: [
-          {
-            model: Booking,
-            as: "bookingPayment",
-            attributes: [],
-            required: true,
-            include: cleanedInclude
-          }
-        ]
-
+        where: { createdAt: { [Op.gte]: startOfMonth },partner_id },
       })) || 0;
 
     const revenueLastMonth =
@@ -813,16 +795,8 @@ exports.GetPartnerDashboardStats = async (req, res) => {
             [Op.gte]: startOfPrevMonth,
             [Op.lt]: endOfPrevMonth,
           },
+          partner_id
         },
-        include: [
-          {
-            model: Booking,
-            as: "bookingPayment",
-            attributes: [],
-            required: true,
-            include: cleanedInclude
-          }
-        ]
       })) || 0;
 
     const revenueDelta = revenueLastMonth
@@ -932,64 +906,44 @@ exports.GetPartnerDashboardStats = async (req, res) => {
 exports.getRevenueChart = async (req, res) => {
   try {
     const partner_id = req.userId;
-    const partner = await User.findByPk(partner_id,
-      {
-        attributes: [],
-        include: [
-          {
-            model: PartnerFile,
-            as: "partnerInfo",
-            attributes: ["sector"]
-          }
-        ]
-      }
-    );
-    const includeConfig = getIncludeByPartner(partner.partnerInfo[0].sector, partner_id);
 
-    const cleanInclude = (include) => {
-      return include.map(item => ({
-        ...item,
-        attributes: [],
-        required: true,
-        include: item.include ? cleanInclude(item.include) : []
-      }));
-    };
-
-    const includes = [
-      {
-        model: Booking,
-        as: "bookingPayment",
-        attributes: [],
-        required: true,
-        include: cleanInclude(includeConfig)
-      }
-    ];
+    // Calculate date 5 months ago
+    const fiveMonthsAgo = new Date();
+    fiveMonthsAgo.setMonth(fiveMonthsAgo.getMonth() - 5);
+    fiveMonthsAgo.setHours(0, 0, 0, 0);
 
     const monthlyData = await Payment.findAll({
       attributes: [
-        [fn("TO_CHAR", col("payments.createdAt"), "Mon"), "month"],
-        [fn("SUM", col("amount")), "total"]
+        [sequelize.fn("EXTRACT", sequelize.literal(`MONTH FROM "payments"."createdAt"`)), "monthNum"],
+        [sequelize.fn("EXTRACT", sequelize.literal(`YEAR FROM "payments"."createdAt"`)), "year"],
+        [sequelize.fn("SUM", sequelize.col("amount")), "total"]
       ],
       raw: true,
       where: {
+        partner_id: partner_id,
         createdAt: {
-          [Op.gte]: new Date(new Date().setMonth(new Date().getMonth() - 5))
+          [Op.gte]: fiveMonthsAgo
         }
       },
-      include: includes,
-      group: [literal(`TO_CHAR("payments"."createdAt", 'Mon')`)],
-      order: [literal(`MIN("payments"."createdAt") ASC`)]
+      group: [
+        sequelize.literal(`EXTRACT(YEAR FROM "payments"."createdAt")`),
+        sequelize.literal(`EXTRACT(MONTH FROM "payments"."createdAt")`)
+      ],
+      order: [
+        [sequelize.literal(`EXTRACT(YEAR FROM "payments"."createdAt")`), "ASC"],
+        [sequelize.literal(`EXTRACT(MONTH FROM "payments"."createdAt")`), "ASC"]
+      ]
     });
 
-    const labels = monthlyData.map(d => d.month);
+    const monthNames = ["jan", "fév", "mar", "avr", "mai", "juin", "juil", "aoû", "sep", "oct", "nov", "déc"];
+    
+    const labels = monthlyData.map(d => monthNames[parseInt(d.monthNum) - 1]);
     const monthly = monthlyData.map(d => parseFloat(d.total));
-
-
+    
     return res.json({
       labels,
       monthly
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });

@@ -1,5 +1,6 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../configs/db");
+const User = require("./User");
 
 const Payment = sequelize.define("payments", {
     id: {
@@ -33,6 +34,13 @@ const Payment = sequelize.define("payments", {
         allowNull: false,
         references: {
             model: "booking",
+            key: "id"
+        }
+    },
+    partner_id: {
+        type: DataTypes.BIGINT,
+        references: {
+            model: User,
             key: "id"
         }
     },

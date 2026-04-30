@@ -365,6 +365,15 @@ Payment.belongsTo(Booking,{
     as:"bookingPayment"
 })
 
+User.hasMany(Payment,{
+    foreignKey:"partner_id",
+    as:"paymentPartner"
+})
+Payment.belongsTo(User,{
+    foreignKey:"partner_id",
+    as:"partnerPayment"
+})
+
 Payment.hasMany(PaymentInstallments,{
     foreignKey:"payment_id",
     as:"paymentInstallments"
