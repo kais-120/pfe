@@ -488,6 +488,8 @@ exports.AddHotel = [
   body("address").notEmpty().withMessage("address by day is required"),
   body("equipments").notEmpty().withMessage("equipments by day is required"),
   body("destination").notEmpty().withMessage("destination is required"),
+  body("check_in_time").notEmpty().withMessage("check in time is required"),
+  body("check_out_time").notEmpty().withMessage("check on time is required"),
   body("star").notEmpty().withMessage("star is required")
     .isNumeric().withMessage("star should be numeric"),
   async (req, res) => {
@@ -497,8 +499,8 @@ exports.AddHotel = [
     }
     try {
       const partner_id = req.userId;
-      const { name, description, address, equipments, destination, star } = req.body;
-      const hotel = await Hotel.create({ name, description, address, equipments, destination, star, partner_id });
+      const { name, description, address, equipments, destination, star,check_in_time,check_out_time } = req.body;
+      const hotel = await Hotel.create({ name, description, address, equipments, destination, star, partner_id,check_out_time,check_in_time });
       const files = req.files.service_doc;
       for (const element of files) {
         await ImageService.create({

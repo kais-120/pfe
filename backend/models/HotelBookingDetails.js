@@ -8,12 +8,20 @@ const HotelBookingDetails = sequelize.define("hotel_booking_details",{
         primaryKey:true
     },
     check_in_date:{
-        type:DataTypes.DATE,
+        type:DataTypes.DATEONLY,
         allowNull:false,
     },
     check_out_date:{
-        type:DataTypes.DATE,
+        type:DataTypes.DATEONLY,
         allowNull:false,
+    },
+    check_in_time: {
+    type: DataTypes.TIME,
+    allowNull: false,
+    },
+    check_out_time: {
+    type: DataTypes.TIME,
+    allowNull: false,
     },
     number_of_guests_adult:{
         type:DataTypes.INTEGER,

@@ -539,9 +539,7 @@ const ServiceHotel = () => {
             {hotel.name ?? hotel.address}
           </Heading>
           <Flex align="center" gap={2} flexWrap="wrap">
-            <Badge colorScheme="green" borderRadius="full" px={2.5} py={0.5} fontSize="xs">
-              Actif
-            </Badge>
+           
             {avgRating && (
               <Flex align="center" gap={1.5}>
                 <Stars rating={parseFloat(avgRating)} size={12} />
@@ -562,8 +560,8 @@ const ServiceHotel = () => {
       {(hotel.rooms?.length > 0 || minPrice) && (
         <Grid templateColumns={{ base: "1fr 1fr", md: "repeat(4, 1fr)" }} gap={3} mb={8}>
           <StatCard icon={LuBed} label="Chambres" value={hotel.rooms?.length ?? 0} color="blue" />
-          <StatCard icon={LuBanknote} label="Prix min/nuit" value={minPrice ? `${minPrice} TND` : "—"} color="green" />
-          <StatCard icon={FaStar} label="Note moyenne" value={avgRating ? `${avgRating}/5` : "—"} color="yellow" />
+          <StatCard icon={LuBanknote} label="Prix min/nuit" value={minPrice ? `${minPrice} TND` : "-"} color="green" />
+          <StatCard icon={FaStar} label="Note moyenne" value={avgRating ? `${avgRating}/5` : "-"} color="yellow" />
           <StatCard icon={LuUsers} label="Avis clients" value={hotel.hotelReview?.length ?? 0} color="purple" />
         </Grid>
       )}
@@ -654,6 +652,56 @@ const ServiceHotel = () => {
           </Button>
         )}
       </Box>
+
+      {/* ── Check-in & Check-out ── */}
+<Box mb={8}
+  bg="white" borderRadius="2xl" p={6}
+  border="1px solid" borderColor="gray.100"
+  boxShadow="0 1px 8px rgba(0,0,0,0.05)"
+>
+  <Text fontSize="xs" fontWeight={700} color="blue.500" textTransform="uppercase"
+    letterSpacing="widest" mb={2}>
+    Horaires
+  </Text>
+
+  <Grid templateColumns={{ base: "1fr 1fr", md: "repeat(2, 1fr)" }} gap={6}>
+    <Box>
+      <Text fontSize="sm" fontWeight={600} color="gray.700" mb={2}>
+        Heure d'arrivée (Check-in)
+      </Text>
+      <Flex
+        align="center" gap={3}
+        border="1.5px solid" borderColor="gray.200"
+        borderRadius="xl" px={3} py={2.5}
+        bg="white"
+        _hover={{ borderColor: "blue.300" }}
+      >
+        <LuChevronRight size={14} color="#9CA3AF" />
+        <Text fontSize="sm" fontWeight={600} color="gray.700">
+          {hotel.checkInTime || "14:00"}
+        </Text>
+      </Flex>
+    </Box>
+
+    <Box>
+      <Text fontSize="sm" fontWeight={600} color="gray.700" mb={2}>
+        Heure de départ (Check-out)
+      </Text>
+      <Flex
+        align="center" gap={3}
+        border="1.5px solid" borderColor="gray.200"
+        borderRadius="xl" px={3} py={2.5}
+        bg="white"
+        _hover={{ borderColor: "blue.300" }}
+      >
+        <LuChevronLeft size={14} color="#9CA3AF" />
+        <Text fontSize="sm" fontWeight={600} color="gray.700">
+          {hotel.checkOutTime || "11:00"}
+        </Text>
+      </Flex>
+    </Box>
+  </Grid>
+</Box>
 
       <Box mb={8}>
         <SectionHeading>Équipements & services</SectionHeading>

@@ -647,10 +647,13 @@ function HotelBookingContent({ booking, fmt, today,disabled }) {
           <Box bg="blue.50" borderRadius="xl" p={3}>
             <Text fontSize="xs" color="blue.400" fontWeight={600} mb={0.5}>Arrivée</Text>
             <Text fontSize="sm" fontWeight={700} color="gray.700">{fmt(checkIn)}</Text>
+            <Text fontSize="sm" fontWeight={700} color="gray.700">{detail?.check_in_time}</Text>
           </Box>
           <Box bg="blue.50" borderRadius="xl" p={3}>
             <Text fontSize="xs" color="blue.400" fontWeight={600} mb={0.5}>Départ</Text>
             <Text fontSize="sm" fontWeight={700} color="gray.700">{fmt(checkOut)}</Text>
+            <Text fontSize="sm" fontWeight={700} color="gray.700">{detail?.check_out_time}</Text>
+
           </Box>
         </Grid>
 

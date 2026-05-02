@@ -10,7 +10,8 @@ import {
 import { useFormik } from "formik";
 import {
   LuUpload, LuHotel, LuMapPin, LuAlignLeft, LuImage, LuWifi,
-  LuChevronLeft, LuCheck, LuX
+  LuChevronLeft, LuCheck, LuX,
+  LuClock
 } from "react-icons/lu";
 import { FaWifi, FaSwimmingPool, FaDumbbell, FaSpa, FaSnowflake, FaUtensils, FaParking } from "react-icons/fa";
 import * as Yup from "yup";
@@ -31,6 +32,8 @@ const validationSchema = Yup.object({
   images: Yup.array()
     .min(1, "Veuillez ajouter au moins une image")
     .max(15, "Maximum 15 images autorisées"),
+  checkInTime: Yup.string().required("L'heure d'arrivée est requise"),
+  checkOutTime: Yup.string().required("L'heure de départ est requise"),
 });
 
 const EQUIPMENTS = [
@@ -123,38 +126,38 @@ const AddHotel = () => {
   const [previews, setPreviews] = useState([])
 
   const states = [
-  { label: 'Ariana', value: 'ariana' },
-  { label: 'Beja', value: 'beja' },
-  { label: 'Ben Arous', value: 'ben_arous' },
-  { label: 'Bizerte', value: 'bizerte' },
-  { label: 'Gabes', value: 'gabes' },
-  { label: 'Gafsa', value: 'gafsa' },
-  { label: 'Jendouba', value: 'jendouba' },
-  { label: 'Hammamet', value: 'hammamet' },
-  { label: 'Tabarka', value: 'tabarka' },
-  { label: 'Kairouan', value: 'kairouan' },
-  { label: 'Kasserine', value: 'kasserine' },
-  { label: 'Kebili', value: 'kebili' },
-  { label: 'Kef', value: 'kef' },
-  { label: 'Mahdia', value: 'mahdia' },
-  { label: 'Mannouba', value: 'mannouba' },
-  { label: 'Medenine', value: 'medenine' },
-  { label: 'Djerba', value: 'djerba' },
-  { label: 'Kelibia', value: 'kelibia' },
-  { label: 'Korba', value: 'korba' },
-  { label: 'Gammarth', value: 'gammarth' },
-  { label: 'Korbous', value: 'korbous' },
-  { label: 'Monastir', value: 'monastir' },
-  { label: 'Nabeul', value: 'nabeul' },
-  { label: 'Sfax', value: 'sfax' },
-  { label: 'Sidi Bouzid', value: 'sidi_bouzid' },
-  { label: 'Siliana', value: 'siliana' },
-  { label: 'Sousse', value: 'sousse' },
-  { label: 'Tataouine', value: 'tataouine' },
-  { label: 'Tozeur', value: 'tozeur' },
-  { label: 'Tunis', value: 'tunis' },
-  { label: 'Zaghouan', value: 'zaghouan' }
-]
+    { label: 'Ariana', value: 'ariana' },
+    { label: 'Beja', value: 'beja' },
+    { label: 'Ben Arous', value: 'ben_arous' },
+    { label: 'Bizerte', value: 'bizerte' },
+    { label: 'Gabes', value: 'gabes' },
+    { label: 'Gafsa', value: 'gafsa' },
+    { label: 'Jendouba', value: 'jendouba' },
+    { label: 'Hammamet', value: 'hammamet' },
+    { label: 'Tabarka', value: 'tabarka' },
+    { label: 'Kairouan', value: 'kairouan' },
+    { label: 'Kasserine', value: 'kasserine' },
+    { label: 'Kebili', value: 'kebili' },
+    { label: 'Kef', value: 'kef' },
+    { label: 'Mahdia', value: 'mahdia' },
+    { label: 'Mannouba', value: 'mannouba' },
+    { label: 'Medenine', value: 'medenine' },
+    { label: 'Djerba', value: 'djerba' },
+    { label: 'Kelibia', value: 'kelibia' },
+    { label: 'Korba', value: 'korba' },
+    { label: 'Gammarth', value: 'gammarth' },
+    { label: 'Korbous', value: 'korbous' },
+    { label: 'Monastir', value: 'monastir' },
+    { label: 'Nabeul', value: 'nabeul' },
+    { label: 'Sfax', value: 'sfax' },
+    { label: 'Sidi Bouzid', value: 'sidi_bouzid' },
+    { label: 'Siliana', value: 'siliana' },
+    { label: 'Sousse', value: 'sousse' },
+    { label: 'Tataouine', value: 'tataouine' },
+    { label: 'Tozeur', value: 'tozeur' },
+    { label: 'Tunis', value: 'tunis' },
+    { label: 'Zaghouan', value: 'zaghouan' }
+  ]
 
 
   const { contains } = useFilter({ sensitivity: "base" })
@@ -166,8 +169,8 @@ const AddHotel = () => {
 
   const formik = useFormik({
     initialValues: {
-      name: "", description: "", address: "",destination:"" ,star:null,
-      equipments: [], images: [],
+      name: "", description: "", address: "", destination: "", star: null,
+      equipments: [], images: [],checkInTime: "",checkOutTime: ""
     },
     validationSchema,
     onSubmit: async (values) => {
@@ -176,6 +179,8 @@ const AddHotel = () => {
       formData.append("description", values.description)
       formData.append("destination", values.destination)
       formData.append("address", values.address)
+      formData.append("check_in_time", values.checkInTime)
+      formData.append("check_out_time", values.checkOutTime)
       formData.append("star", values.star)
       values.equipments.forEach(eq => formData.append("equipments[]", eq))
       values.images.forEach(img => formData.append("service_doc", img))
@@ -217,316 +222,347 @@ const AddHotel = () => {
   }
   const numbers = [1, 2, 3, 4, 5]
   const collectionStar = createListCollection({
-  items: [1,2,3,4,5].map(n => ({
-    label: n.toString(),
-    value: n.toString()
-  }))
-})
-console.log(formik.errors)
+    items: [1, 2, 3, 4, 5].map(n => ({
+      label: n.toString(),
+      value: n.toString()
+    }))
+  })
+  console.log(formik.errors)
   return (
     <>
-    <Helmet title="add hotel"></Helmet>
-    <Container py={2}>
-      <Flex as="button" type="button" align="center" gap={1.5}
-        color="gray.400" fontSize="sm" mb={6}
-        _hover={{ color: "blue.500" }} transition="color 0.15s"
-        onClick={() => navigate(-1)}
-      >
-        <LuChevronLeft size={15} />
-        Retour
-      </Flex>
+      <Helmet title="add hotel"></Helmet>
+      <Container py={2}>
+        <Flex as="button" type="button" align="center" gap={1.5}
+          color="gray.400" fontSize="sm" mb={6}
+          _hover={{ color: "blue.500" }} transition="color 0.15s"
+          onClick={() => navigate(-1)}
+        >
+          <LuChevronLeft size={15} />
+          Retour
+        </Flex>
 
-      {/* Header */}
-      <Box mb={8}>
-        <Text fontSize="xs" fontWeight={700} color="blue.500"
-          textTransform="uppercase" letterSpacing="widest" mb={1}>
-          Gestion des services
-        </Text>
-        <Heading size="xl" fontWeight={900} color="gray.900" letterSpacing="-0.5px">
-          Ajouter un hôtel
-        </Heading>
-        <Text fontSize="sm" color="gray.400" mt={1}>
-          Renseignez les informations de votre établissement
-        </Text>
-      </Box>
+        {/* Header */}
+        <Box mb={8}>
+          <Text fontSize="xs" fontWeight={700} color="blue.500"
+            textTransform="uppercase" letterSpacing="widest" mb={1}>
+            Gestion des services
+          </Text>
+          <Heading size="xl" fontWeight={900} color="gray.900" letterSpacing="-0.5px">
+            Ajouter un hôtel
+          </Heading>
+          <Text fontSize="sm" color="gray.400" mt={1}>
+            Renseignez les informations de votre établissement
+          </Text>
+        </Box>
 
-      <form onSubmit={formik.handleSubmit}>
-        <VStack gap={4} align="stretch">
+        <form onSubmit={formik.handleSubmit}>
+          <VStack gap={4} align="stretch">
 
-          <Box bg="white" borderRadius="2xl" p={6}
-            border="1px solid" borderColor="gray.100"
-            boxShadow="0 1px 8px rgba(0,0,0,0.05)">
+            <Box bg="white" borderRadius="2xl" p={6}
+              border="1px solid" borderColor="gray.100"
+              boxShadow="0 1px 8px rgba(0,0,0,0.05)">
 
-            <Flex align="center" gap={2} mb={5}>
-              <Flex w="28px" h="28px" borderRadius="lg" bg="blue.50"
-                color="blue.500" align="center" justify="center">
-                <LuHotel size={14} />
-              </Flex>
-              <Text fontSize="sm" fontWeight={700} color="gray.700">
-                Informations générales
-              </Text>
-            </Flex>
-
-            <VStack gap={4} align="stretch">
-              <FormField formik={formik} name="name" label="Nom de l'hôtel" icon={LuHotel}>
-                <Input
-                  name="name" placeholder="Ex: Vincci Helios Beach"
-                  value={formik.values.name}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  border="none" bg="transparent" px={0} h="42px"
-                  outline={"none"}
-                  flex={1} w="full"
-                  fontSize="sm" color="gray.800"
-                  _focus={{ boxShadow: "none" }}
-                  _placeholder={{ color: "gray.300" }}
-                />
-              </FormField>
-
-              <FormField formik={formik} name="state" label="État" icon={Map}>
-
-                <Combobox.Root
-                  collection={collection}
-                  onInputValueChange={(e) => {filter(e.inputValue);formik.setFieldValue("destination",e.inputValue.toLowerCase())}}
-                >
-                  <Combobox.Control>
-                    <Combobox.Input outline={"none"} border={"none"} placeholder="Ex: tunis" />
-                    <Combobox.IndicatorGroup>
-                      <Combobox.ClearTrigger />
-                      <Combobox.Trigger />
-                    </Combobox.IndicatorGroup>
-                  </Combobox.Control>
-                  <Portal>
-                    <Combobox.Positioner>
-                      <Combobox.Content >
-                        <Combobox.Empty>No items found</Combobox.Empty>
-                        {collection && collection.items.map((item) => (
-                          <Combobox.Item item={item} key={item.value}>
-                            {item.label}
-                            <Combobox.ItemIndicator />
-                          </Combobox.Item>
-                        ))}
-                      </Combobox.Content>
-                    </Combobox.Positioner>
-                  </Portal>
-                </Combobox.Root>
-
-
-              </FormField>
-
-            
-              <FormField formik={formik} name="address" label="Adresse" icon={LuMapPin}>
-                <Input
-                  name="address" placeholder="Ex: Midoun Djerba, 4116 Midoun"
-                  value={formik.values.address}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  outline={"none"}
-                  border="none" bg="transparent" px={0} h="42px"
-                  flex={1} w="full"
-                  fontSize="sm" color="gray.800"
-                  _focus={{ boxShadow: "none" }}
-                  _placeholder={{ color: "gray.300" }}
-                />
-              </FormField>
-
-              <FormField formik={formik} name="star" label="Étoile" icon={Star}>
-
-                <Select.Root collection={collectionStar} onValueChange={(e)=>formik.setFieldValue("star",e.value[0])}>
-                  <Select.HiddenSelect/>
-                  <Select.Control >
-                    <Select.Trigger border={"none"} outline={"none"}>
-                      <Select.ValueText placeholder="Ex: 4" />
-                    </Select.Trigger>
-                    <Select.IndicatorGroup >
-                      <Select.Indicator />
-                    </Select.IndicatorGroup>
-                  </Select.Control>
-                  <Select.Positioner>
-                  <Select.Content>
-                    {numbers.map((n) => (
-                      <Select.Item key={n} item={{ label: n.toString(), value: n.toString() }}>
-                        {n}
-                        <Select.ItemIndicator />
-                      </Select.Item>
-                    ))}
-                  </Select.Content>
-                </Select.Positioner>
-                </Select.Root>
-
-
-              </FormField>
-
-              <FormField formik={formik} name="description" label="Description" icon={LuAlignLeft}>
-                <Textarea
-                  name="description"
-                  placeholder="Décrivez votre hôtel : emplacement, ambiance, services..."
-                  value={formik.values.description}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  outline={"none"}
-                  border="none" bg="transparent" px={0}
-                  flex={1} w="full"
-                  minH="120px" fontSize="sm" color="gray.800"
-                  resize="vertical"
-                  _focus={{ boxShadow: "none" }}
-                  _placeholder={{ color: "gray.300" }}
-                />
-              </FormField>
-            </VStack>
-          </Box>
-
-          {/* ── Card 2: Équipements ── */}
-          <Box bg="white" borderRadius="2xl" p={6}
-            border="1px solid"
-            borderColor={formik.touched.equipments && formik.errors.equipments ? "red.200" : "gray.100"}
-            boxShadow="0 1px 8px rgba(0,0,0,0.05)">
-
-            <Flex align="center" gap={2} mb={2}>
-              <Flex w="28px" h="28px" borderRadius="lg" bg="purple.50"
-                color="purple.500" align="center" justify="center">
-                <LuWifi size={14} />
-              </Flex>
-              <Text fontSize="sm" fontWeight={700} color="gray.700">
-                Équipements & services
-              </Text>
-            </Flex>
-            <Text fontSize="xs" color="gray.400" mb={4}>
-              Sélectionnez tout ce que propose votre hôtel
-            </Text>
-
-            <Grid templateColumns={{ base: "1fr 1fr", sm: "repeat(3, 1fr)", md: "repeat(4, 1fr)" }} gap={2}>
-              {EQUIPMENTS.map(({ value, label, Icon }) => {
-                const selected = formik.values.equipments.includes(value)
-                return (
-                  <Flex
-                    key={value}
-                    as="button" type="button"
-                    align="center" gap={2}
-                    px={3} py={2.5}
-                    borderRadius="xl"
-                    border="1.5px solid"
-                    borderColor={selected ? "blue.400" : "gray.200"}
-                    bg={selected ? "blue.50" : "white"}
-                    color={selected ? "blue.600" : "gray.500"}
-                    fontWeight={selected ? 600 : 400}
-                    fontSize="sm"
-                    cursor="pointer"
-                    transition="all 0.15s"
-                    onClick={() => toggleEquipment(value)}
-                    _hover={{
-                      borderColor: selected ? "blue.400" : "gray.300",
-                      bg: selected ? "blue.50" : "gray.50",
-                    }}
-                  >
-                    <Icon size={13} />
-                    {label}
-                    {selected && (
-                      <Box ml="auto" color="blue.500">
-                        <LuCheck size={12} />
-                      </Box>
-                    )}
-                  </Flex>
-                )
-              })}
-            </Grid>
-
-            {formik.touched.equipments && formik.errors.equipments && (
-              <Text fontSize="xs" color="red.500" mt={2}>{formik.errors.equipments}</Text>
-            )}
-          </Box>
-
-          {/* ── Card 3: Images ── */}
-          <Box bg="white" borderRadius="2xl" p={6}
-            border="1px solid"
-            borderColor={formik.touched.images && formik.errors.images ? "red.200" : "gray.100"}
-            boxShadow="0 1px 8px rgba(0,0,0,0.05)">
-
-            <Flex align="center" gap={2} mb={2}>
-              <Flex w="28px" h="28px" borderRadius="lg" bg="orange.50"
-                color="orange.500" align="center" justify="center">
-                <LuImage size={14} />
-              </Flex>
-              <Text fontSize="sm" fontWeight={700} color="gray.700">Photos de l'hôtel</Text>
-            </Flex>
-            <Text fontSize="xs" color="gray.400" mb={4}>
-              Ajoutez jusqu'à 15 photos (.jpg, .png — max 5 MB chacune)
-            </Text>
-
-            <FileUpload.Root
-              maxFiles={15}
-              accept="image/*"
-              onChange={(e) => handleFiles(e.target.files)}
-            >
-              <FileUpload.HiddenInput />
-              <FileUpload.Dropzone
-                w={"full"}
-                border="2px dashed"
-                borderColor={formik.touched.images && formik.errors.images ? "red.300" : "gray.200"}
-                borderRadius="xl"
-                bg="gray.50"
-                py={8}
-                cursor="pointer"
-                transition="all 0.15s"
-                _hover={{ borderColor: "blue.300", bg: "blue.50" }}
-              >
-                <Flex direction="column" align="center" gap={2}>
-                  <Flex w="44px" h="44px" borderRadius="xl" bg="white"
-                    align="center" justify="center"
-                    boxShadow="0 1px 6px rgba(0,0,0,0.08)">
-                    <LuUpload size={18} color="#718096" />
-                  </Flex>
-                  <FileUpload.DropzoneContent>
-                    <Text fontSize="sm" fontWeight={600} color="gray.600">
-                      Glissez vos photos ici
-                    </Text>
-                    <Text fontSize="xs" color="gray.400">
-                      ou cliquez pour parcourir
-                    </Text>
-                  </FileUpload.DropzoneContent>
+              <Flex align="center" gap={2} mb={5}>
+                <Flex w="28px" h="28px" borderRadius="lg" bg="blue.50"
+                  color="blue.500" align="center" justify="center">
+                  <LuHotel size={14} />
                 </Flex>
-              </FileUpload.Dropzone>
-            </FileUpload.Root>
-
-            <ImagePreview files={previews} onRemove={removeImage} />
-
-            {previews.length > 0 && (
-              <Text fontSize="xs" color="gray.400" mt={2}>
-                {previews.length} photo{previews.length > 1 ? "s" : ""} sélectionnée{previews.length > 1 ? "s" : ""}
-              </Text>
-            )}
-
-            {formik.touched.images && formik.errors.images && (
-              <Text fontSize="xs" color="red.500" mt={2}>{formik.errors.images}</Text>
-            )}
-          </Box>
-
-          <Flex gap={3} justify="flex-end" pb={4}>
-            <Button
-              type="button" variant="outline"
-              borderRadius="xl" px={6}
-              color="gray.500" borderColor="gray.200"
-              _hover={{ bg: "gray.50" }}
-              onClick={() => navigate(-1)}
-            >
-              Annuler
-            </Button>
-            <Button
-              type="submit" colorScheme="blue"
-              borderRadius="xl" px={8} fontWeight={700}
-              loading={formik.isSubmitting}
-              loadingText="Enregistrement…"
-            >
-              <Flex align="center" gap={2}>
-                <LuCheck size={14} />
-                Ajouter l'hôtel
+                <Text fontSize="sm" fontWeight={700} color="gray.700">
+                  Informations générales
+                </Text>
               </Flex>
-            </Button>
-          </Flex>
 
-        </VStack>
-      </form>
-    </Container>
+              <VStack gap={4} align="stretch">
+                <FormField formik={formik} name="name" label="Nom de l'hôtel" icon={LuHotel}>
+                  <Input
+                    name="name" placeholder="Ex: Vincci Helios Beach"
+                    value={formik.values.name}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    border="none" bg="transparent" px={0} h="42px"
+                    outline={"none"}
+                    flex={1} w="full"
+                    fontSize="sm" color="gray.800"
+                    _focus={{ boxShadow: "none" }}
+                    _placeholder={{ color: "gray.300" }}
+                  />
+                </FormField>
+
+                <FormField formik={formik} name="state" label="État" icon={Map}>
+
+                  <Combobox.Root
+                    collection={collection}
+                    onInputValueChange={(e) => { filter(e.inputValue); formik.setFieldValue("destination", e.inputValue.toLowerCase()) }}
+                  >
+                    <Combobox.Control>
+                      <Combobox.Input outline={"none"} border={"none"} placeholder="Ex: tunis" />
+                      <Combobox.IndicatorGroup>
+                        <Combobox.ClearTrigger />
+                        <Combobox.Trigger />
+                      </Combobox.IndicatorGroup>
+                    </Combobox.Control>
+                    <Portal>
+                      <Combobox.Positioner>
+                        <Combobox.Content >
+                          <Combobox.Empty>No items found</Combobox.Empty>
+                          {collection && collection.items.map((item) => (
+                            <Combobox.Item item={item} key={item.value}>
+                              {item.label}
+                              <Combobox.ItemIndicator />
+                            </Combobox.Item>
+                          ))}
+                        </Combobox.Content>
+                      </Combobox.Positioner>
+                    </Portal>
+                  </Combobox.Root>
+
+
+                </FormField>
+
+
+                <FormField formik={formik} name="address" label="Adresse" icon={LuMapPin}>
+                  <Input
+                    name="address" placeholder="Ex: Midoun Djerba, 4116 Midoun"
+                    value={formik.values.address}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    outline={"none"}
+                    border="none" bg="transparent" px={0} h="42px"
+                    flex={1} w="full"
+                    fontSize="sm" color="gray.800"
+                    _focus={{ boxShadow: "none" }}
+                    _placeholder={{ color: "gray.300" }}
+                  />
+                </FormField>
+
+                <FormField formik={formik} name="star" label="Étoile" icon={Star}>
+
+                  <Select.Root collection={collectionStar} onValueChange={(e) => formik.setFieldValue("star", e.value[0])}>
+                    <Select.HiddenSelect />
+                    <Select.Control >
+                      <Select.Trigger border={"none"} outline={"none"}>
+                        <Select.ValueText placeholder="Ex: 4" />
+                      </Select.Trigger>
+                      <Select.IndicatorGroup >
+                        <Select.Indicator />
+                      </Select.IndicatorGroup>
+                    </Select.Control>
+                    <Select.Positioner>
+                      <Select.Content>
+                        {numbers.map((n) => (
+                          <Select.Item key={n} item={{ label: n.toString(), value: n.toString() }}>
+                            {n}
+                            <Select.ItemIndicator />
+                          </Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Positioner>
+                  </Select.Root>
+
+
+                </FormField>
+
+                <FormField formik={formik} name="description" label="Description" icon={LuAlignLeft}>
+                  <Textarea
+                    name="description"
+                    placeholder="Décrivez votre hôtel : emplacement, ambiance, services..."
+                    value={formik.values.description}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    outline={"none"}
+                    border="none" bg="transparent" px={0}
+                    flex={1} w="full"
+                    minH="120px" fontSize="sm" color="gray.800"
+                    resize="vertical"
+                    _focus={{ boxShadow: "none" }}
+                    _placeholder={{ color: "gray.300" }}
+                  />
+                </FormField>
+                <Grid templateColumns={{ base: "1fr 1fr", sm: "repeat(2, 1fr)" }} gap={4}>
+                  <FormField formik={formik} name="checkInTime" label="Heure d'arrivée" icon={LuClock} hint="Format: HH:MM">
+                    <Input
+                      name="checkInTime" type="time" placeholder="14:00"
+                      value={formik.values.checkInTime}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      border="none" bg="transparent" px={0} h="42px"
+                      outline={"none"}
+                      flex={1} w="full"
+                      fontSize="sm" color="gray.800"
+                      _focus={{ boxShadow: "none" }}
+                      _placeholder={{ color: "gray.300" }}
+                    />
+                  </FormField>
+
+                  <FormField formik={formik} name="checkOutTime" label="Heure de départ" icon={LuClock} hint="Format: HH:MM">
+                    <Input
+                      name="checkOutTime" type="time" placeholder="11:00"
+                      value={formik.values.checkOutTime}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      border="none" bg="transparent" px={0} h="42px"
+                      outline={"none"}
+                      flex={1} w="full"
+                      fontSize="sm" color="gray.800"
+                      _focus={{ boxShadow: "none" }}
+                      _placeholder={{ color: "gray.300" }}
+                    />
+                  </FormField>
+                </Grid>
+              </VStack>
+            </Box>
+
+            {/* ── Card 2: Équipements ── */}
+            <Box bg="white" borderRadius="2xl" p={6}
+              border="1px solid"
+              borderColor={formik.touched.equipments && formik.errors.equipments ? "red.200" : "gray.100"}
+              boxShadow="0 1px 8px rgba(0,0,0,0.05)">
+
+              <Flex align="center" gap={2} mb={2}>
+                <Flex w="28px" h="28px" borderRadius="lg" bg="purple.50"
+                  color="purple.500" align="center" justify="center">
+                  <LuWifi size={14} />
+                </Flex>
+                <Text fontSize="sm" fontWeight={700} color="gray.700">
+                  Équipements & services
+                </Text>
+              </Flex>
+              <Text fontSize="xs" color="gray.400" mb={4}>
+                Sélectionnez tout ce que propose votre hôtel
+              </Text>
+
+              <Grid templateColumns={{ base: "1fr 1fr", sm: "repeat(3, 1fr)", md: "repeat(4, 1fr)" }} gap={2}>
+                {EQUIPMENTS.map(({ value, label, Icon }) => {
+                  const selected = formik.values.equipments.includes(value)
+                  return (
+                    <Flex
+                      key={value}
+                      as="button" type="button"
+                      align="center" gap={2}
+                      px={3} py={2.5}
+                      borderRadius="xl"
+                      border="1.5px solid"
+                      borderColor={selected ? "blue.400" : "gray.200"}
+                      bg={selected ? "blue.50" : "white"}
+                      color={selected ? "blue.600" : "gray.500"}
+                      fontWeight={selected ? 600 : 400}
+                      fontSize="sm"
+                      cursor="pointer"
+                      transition="all 0.15s"
+                      onClick={() => toggleEquipment(value)}
+                      _hover={{
+                        borderColor: selected ? "blue.400" : "gray.300",
+                        bg: selected ? "blue.50" : "gray.50",
+                      }}
+                    >
+                      <Icon size={13} />
+                      {label}
+                      {selected && (
+                        <Box ml="auto" color="blue.500">
+                          <LuCheck size={12} />
+                        </Box>
+                      )}
+                    </Flex>
+                  )
+                })}
+              </Grid>
+
+              {formik.touched.equipments && formik.errors.equipments && (
+                <Text fontSize="xs" color="red.500" mt={2}>{formik.errors.equipments}</Text>
+              )}
+            </Box>
+
+            {/* ── Card 3: Images ── */}
+            <Box bg="white" borderRadius="2xl" p={6}
+              border="1px solid"
+              borderColor={formik.touched.images && formik.errors.images ? "red.200" : "gray.100"}
+              boxShadow="0 1px 8px rgba(0,0,0,0.05)">
+
+              <Flex align="center" gap={2} mb={2}>
+                <Flex w="28px" h="28px" borderRadius="lg" bg="orange.50"
+                  color="orange.500" align="center" justify="center">
+                  <LuImage size={14} />
+                </Flex>
+                <Text fontSize="sm" fontWeight={700} color="gray.700">Photos de l'hôtel</Text>
+              </Flex>
+              <Text fontSize="xs" color="gray.400" mb={4}>
+                Ajoutez jusqu'à 15 photos (.jpg, .png — max 5 MB chacune)
+              </Text>
+
+              <FileUpload.Root
+                maxFiles={15}
+                accept="image/*"
+                onChange={(e) => handleFiles(e.target.files)}
+              >
+                <FileUpload.HiddenInput />
+                <FileUpload.Dropzone
+                  w={"full"}
+                  border="2px dashed"
+                  borderColor={formik.touched.images && formik.errors.images ? "red.300" : "gray.200"}
+                  borderRadius="xl"
+                  bg="gray.50"
+                  py={8}
+                  cursor="pointer"
+                  transition="all 0.15s"
+                  _hover={{ borderColor: "blue.300", bg: "blue.50" }}
+                >
+                  <Flex direction="column" align="center" gap={2}>
+                    <Flex w="44px" h="44px" borderRadius="xl" bg="white"
+                      align="center" justify="center"
+                      boxShadow="0 1px 6px rgba(0,0,0,0.08)">
+                      <LuUpload size={18} color="#718096" />
+                    </Flex>
+                    <FileUpload.DropzoneContent>
+                      <Text fontSize="sm" fontWeight={600} color="gray.600">
+                        Glissez vos photos ici
+                      </Text>
+                      <Text fontSize="xs" color="gray.400">
+                        ou cliquez pour parcourir
+                      </Text>
+                    </FileUpload.DropzoneContent>
+                  </Flex>
+                </FileUpload.Dropzone>
+              </FileUpload.Root>
+
+              <ImagePreview files={previews} onRemove={removeImage} />
+
+              {previews.length > 0 && (
+                <Text fontSize="xs" color="gray.400" mt={2}>
+                  {previews.length} photo{previews.length > 1 ? "s" : ""} sélectionnée{previews.length > 1 ? "s" : ""}
+                </Text>
+              )}
+
+              {formik.touched.images && formik.errors.images && (
+                <Text fontSize="xs" color="red.500" mt={2}>{formik.errors.images}</Text>
+              )}
+            </Box>
+
+            <Flex gap={3} justify="flex-end" pb={4}>
+              <Button
+                type="button" variant="outline"
+                borderRadius="xl" px={6}
+                color="gray.500" borderColor="gray.200"
+                _hover={{ bg: "gray.50" }}
+                onClick={() => navigate(-1)}
+              >
+                Annuler
+              </Button>
+              <Button
+                type="submit" colorScheme="blue"
+                borderRadius="xl" px={8} fontWeight={700}
+                loading={formik.isSubmitting}
+                loadingText="Enregistrement…"
+              >
+                <Flex align="center" gap={2}>
+                  <LuCheck size={14} />
+                  Ajouter l'hôtel
+                </Flex>
+              </Button>
+            </Flex>
+
+          </VStack>
+        </form>
+      </Container>
     </>
   )
 }

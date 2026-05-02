@@ -11,7 +11,8 @@ import {
 import { useFormik } from "formik";
 import {
   LuUpload, LuHotel, LuMapPin, LuAlignLeft, LuImage, LuWifi,
-  LuChevronLeft, LuCheck, LuX
+  LuChevronLeft, LuCheck, LuX,
+  LuClock
 } from "react-icons/lu";
 import { FaWifi, FaSwimmingPool, FaDumbbell, FaSpa, FaSnowflake, FaUtensils, FaParking } from "react-icons/fa";
 import * as Yup from "yup";
@@ -28,6 +29,8 @@ const validationSchema = Yup.object({
   equipments: Yup.array().min(1, "Veuillez sélectionner au moins un équipement"),
   destination: Yup.string().required("L'état est requise"),
   star: Yup.string().required("choisir un étoile"),
+  checkInTime: Yup.string().required("L'heure d'arrivée est requise"),
+  checkOutTime: Yup.string().required("L'heure de départ est requise"),
   images: Yup.array().test(
     "images-required",
     "Au moins une image est requise",
@@ -52,33 +55,39 @@ const EQUIPMENTS = [
   { value: "parking", label: "Parking", Icon: FaParking },
 ];
 
-const STATES = [
-  { label: "ariana" },
-  { label: "beja" },
-  { label: "ben arous" },
-  { label: "bizerte" },
-  { label: "gabes" },
-  { label: "gafsa" },
-  { label: "jendouba" },
-  { label: "kairouan" },
-  { label: "kasserine" },
-  { label: "kebili" },
-  { label: "hammamet" },
-  { label: "kef" },
-  { label: "mahdia" },
-  { label: "mannouba" },
-  { label: "medenine" },
-  { label: "monastir" },
-  { label: "nabeul" },
-  { label: "sfax" },
-  { label: "sidi bouzid" },
-  { label: "siliana" },
-  { label: "sousse" },
-  { label: "tataouine" },
-  { label: "tozeur" },
-  { label: "tunis" },
-  { label: "zaghouan" },
-];
+ const states = [
+    { label: 'Ariana', value: 'ariana' },
+    { label: 'Beja', value: 'beja' },
+    { label: 'Ben Arous', value: 'ben_arous' },
+    { label: 'Bizerte', value: 'bizerte' },
+    { label: 'Gabes', value: 'gabes' },
+    { label: 'Gafsa', value: 'gafsa' },
+    { label: 'Jendouba', value: 'jendouba' },
+    { label: 'Hammamet', value: 'hammamet' },
+    { label: 'Tabarka', value: 'tabarka' },
+    { label: 'Kairouan', value: 'kairouan' },
+    { label: 'Kasserine', value: 'kasserine' },
+    { label: 'Kebili', value: 'kebili' },
+    { label: 'Kef', value: 'kef' },
+    { label: 'Mahdia', value: 'mahdia' },
+    { label: 'Mannouba', value: 'mannouba' },
+    { label: 'Medenine', value: 'medenine' },
+    { label: 'Djerba', value: 'djerba' },
+    { label: 'Kelibia', value: 'kelibia' },
+    { label: 'Korba', value: 'korba' },
+    { label: 'Gammarth', value: 'gammarth' },
+    { label: 'Korbous', value: 'korbous' },
+    { label: 'Monastir', value: 'monastir' },
+    { label: 'Nabeul', value: 'nabeul' },
+    { label: 'Sfax', value: 'sfax' },
+    { label: 'Sidi Bouzid', value: 'sidi_bouzid' },
+    { label: 'Siliana', value: 'siliana' },
+    { label: 'Sousse', value: 'sousse' },
+    { label: 'Tataouine', value: 'tataouine' },
+    { label: 'Tozeur', value: 'tozeur' },
+    { label: 'Tunis', value: 'tunis' },
+    { label: 'Zaghouan', value: 'zaghouan' }
+  ]
 
 const equipmentsList = createListCollection({
   items: EQUIPMENTS.map(e => ({ label: e.label, value: e.value })),
@@ -247,7 +256,7 @@ const EditHotel = () => {
 
   const { contains } = useFilter({ sensitivity: "base" });
   const { collection, filter } = useListCollection({
-    initialItems: STATES,
+    initialItems: states,
     filter: contains,
   });
 
@@ -260,13 +269,14 @@ const EditHotel = () => {
       star: "",
       equipments: [],
       images: [],
+      checkInTime: "",
+      checkOutTime: ""
     },
     validationSchema,
     validateOnChange: false,
-    validateOnBlur: false, // Never validate on blur - control it manually
+    validateOnBlur: false, 
 
     onSubmit: useCallback(async (values) => {
-      // Validate on submit
       try {
         await validationSchema.validate(values, {
           abortEarly: false,
@@ -290,6 +300,8 @@ const EditHotel = () => {
       formData.append("destination", values.destination);
       formData.append("address", values.address);
       formData.append("star", values.star);
+      formData.append("check_in_time", values.checkInTime)
+      formData.append("check_out_time", values.checkOutTime)
 
       values.equipments.forEach(eq => formData.append("equipments[]", eq));
       values.images.forEach(img => formData.append("service_doc", img));
@@ -326,11 +338,13 @@ const EditHotel = () => {
         const destination = hotel.destination?.toLowerCase().trim() || "";
 
         formik.setValues({
-          name: hotel.name || "",
-          description: hotel.description || "",
-          address: hotel.address || "",
-          destination: destination,
+          name: hotel?.name || "",
+          description: hotel?.description || "",
+          address: hotel?.address || "",
+          destination: hotel?.destination || "",
           star: hotel.star?.toString() || "",
+          checkInTime: hotel?.check_in_time || "",
+          checkOutTime:hotel?.check_out_time || "",
           equipments: hotel.equipments || [],
           images: [],
         });
@@ -573,6 +587,40 @@ const EditHotel = () => {
                   _placeholder={{ color: "gray.300" }}
                 />
               </FormField>
+              <Grid templateColumns={{ base: "1fr 1fr", sm: "repeat(2, 1fr)" }} gap={4}>
+                  <FormField formik={formik} name="checkInTime" label="Heure d'arrivée" icon={LuClock} hint="Format: HH:MM">
+                    <Input
+                      name="checkInTime" type="time" placeholder="14:00"
+                      value={formik.values.checkInTime}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      border="none" bg="transparent" px={0} h="42px"
+                      outline={"none"}
+                      flex={1} w="full"
+                      fontSize="sm" color="gray.800"
+                      _focus={{ boxShadow: "none" }}
+                      _placeholder={{ color: "gray.300" }}
+                    />
+                  </FormField>
+
+                  <FormField formik={formik} name="checkOutTime" label="Heure de départ" icon={LuClock} hint="Format: HH:MM">
+                    <Input
+                      name="checkOutTime" type="time" placeholder="11:00"
+                      value={formik.values.checkOutTime}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      border="none" bg="transparent" px={0} h="42px"
+                      outline={"none"}
+                      flex={1} w="full"
+                      fontSize="sm" color="gray.800"
+                      _focus={{ boxShadow: "none" }}
+                      _placeholder={{ color: "gray.300" }}
+                    />
+                  </FormField>
+                </Grid>
+
+
+
             </VStack>
           </Box>
 

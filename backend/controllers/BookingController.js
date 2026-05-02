@@ -78,6 +78,8 @@ exports.BookingHotel = [
                 await HotelBookingDetails.create({
                     check_in_date,
                     check_out_date,
+                    check_in_time:hotel.check_in_time,
+                    check_out_time:hotel.check_out_time,
                     number_of_guests_adult: r.adults,
                     number_of_guests_children: r.children,
                     booking_id: booking.id,

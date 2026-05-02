@@ -28,6 +28,14 @@ const Hotel = sequelize.define("hotels",{
         type:DataTypes.STRING,
         allowNull:false,
     },
+    check_in_time: {
+    type: DataTypes.TIME,
+    allowNull: false,
+    },
+    check_out_time: {
+    type: DataTypes.TIME,
+    allowNull: false,
+    },
     address:{
         type:DataTypes.STRING,
         allowNull:false,
