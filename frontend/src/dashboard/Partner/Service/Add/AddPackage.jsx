@@ -231,15 +231,18 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing, type }) => {
     }
 
     const dataFormal = (data) => {
-    return new Date(values.departureDate).toISOString().split('T')[0]
-    } 
+        return new Date(data).toISOString().split('T')[0]
+    }
+    
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth();
 
     return (
         <>
         <Helmet title="Ajouter Offre"></Helmet>
         <Container maxW="860px" py={8} px={{ base: 4, md: 8 }}>
 
-            {/* ── Section 1: Informations générales ── */}
             <SectionCard title="Informations générales">
                 <VStack align="stretch" gap={4}>
                     <Field label="Titre du package" required error={touched.title && errors.title}>
@@ -263,11 +266,17 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing, type }) => {
                                 <Portal>
                                     <Select.Positioner>
                                         <Select.Content>
-                                            {monthsCollection.items.map((item) => (
-                                                <Select.Item item={item} key={item.value}>
+                                            {monthsCollection.items.map((item) => {
+                                                const monthIndex = monthsMap[item.label];
+                                                const isDisabled =
+                                                    Number(values.year) === currentYear &&
+                                                    monthIndex < currentMonth;
+                                                    return (
+                                                <Select.Item disabled={isDisabled} item={item} key={item.value}>
                                                     {item.label}<Select.ItemIndicator />
                                                 </Select.Item>
-                                            ))}
+                                                    )
+                                            })}
                                         </Select.Content>
                                     </Select.Positioner>
                                 </Portal>
@@ -303,7 +312,6 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing, type }) => {
                 </VStack>
             </SectionCard>
 
-            {/* ── Section 2: Informations de vol ── */}
             <SectionCard title="Informations de vol">
                 <VStack align="stretch" gap={4}>
                     <Grid templateColumns={{ base: "1fr", md: "1fr 40px 1fr" }} gap={4} alignItems="start">
