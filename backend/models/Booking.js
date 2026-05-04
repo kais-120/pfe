@@ -1,5 +1,6 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../configs/db");
+const User = require("./User");
 
 const Booking = sequelize.define("booking",{
     id:{
@@ -32,6 +33,15 @@ const Booking = sequelize.define("booking",{
             key:"id"
         },
         onDelete:'CASCADE',
+    },
+     partner_id: {
+        type: DataTypes.BIGINT,
+        references: {
+            model: User,
+            key: "id"
+        },
+        onDelete:'CASCADE',
+
     },
     deleted_at:{
         type:DataTypes.DATE,

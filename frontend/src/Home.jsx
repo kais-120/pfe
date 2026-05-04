@@ -36,8 +36,6 @@ const LOCATIONS = [
 ]
 
 
-
-
 function LocationCombobox({ value, onChange }) {
   const [destination, setDestination] = useState([])
  
@@ -45,7 +43,6 @@ function LocationCombobox({ value, onChange }) {
     const dataDestination = async () => {
       try {
         const res = await Axios.get("/service/get/destination")
-        console.log("API Response:", res.data.destinations)
         setDestination(res.data.destinations || [])
       } catch (error) {
         console.error("error", error)

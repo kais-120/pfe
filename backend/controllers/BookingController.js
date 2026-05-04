@@ -51,7 +51,8 @@ exports.BookingHotel = [
             const booking = await Booking.create({
                 total_price: 0,
                 type: "hotel",
-                client_id
+                client_id,
+                partner_id
             });
 
             for (const r of rooms) {
@@ -69,11 +70,7 @@ exports.BookingHotel = [
                     (checkOut - checkIn) / (1000 * 60 * 60 * 24)
                 );
 
-                const basePrice = room.price_by_day * days;
-                const adultPrice = room.price_by_adult * r.adults * days;
-                const childrenPrice = room.price_by_children * r.children * days;
-
-                total_price += basePrice + adultPrice + childrenPrice;
+                total_price = room.price_by_day * days;
 
                 await HotelBookingDetails.create({
                     check_in_date,
@@ -135,7 +132,7 @@ exports.BookingFlight = [
                 return res.status(400).json({ message: "not enough seats" })
             }
 
-            const booking = await Booking.create({ total_price, type: "compagnies aériennes", client_id });
+            const booking = await Booking.create({ total_price, type: "compagnies aériennes", client_id,partner_id });
             await FlightBookingDetails.create({ seat_class:seat_class.toLowerCase(), children_passenger_count,adult_passenger_count, booking_id: booking.id, flight_id: id })
             await flight.update({ seats_available: flight.seats_available - passenger_count })
             await flightClassesSeat.update({ seats_available: flightClassesSeat.seats_available - passenger_count })
@@ -181,7 +178,7 @@ exports.BookingLocation = [
                 return res.status(404).send({ message: "vehicle not found" })
             }
             const client_id = req.userId;
-            const booking = await Booking.create({ total_price, type: "location de voitures", client_id });
+            const booking = await Booking.create({ total_price, type: "location de voitures", client_id,partner_id:vehicle.locationVehicle.partner_id });
             await CarRentalBookingDetails.create({ booking_id: booking.id, pickup_date, return_date, vehicle_id: id })
 
             await Notification.create({ title: "Nouvelle réservation", message: "un client faire un réservation", type: "booking", user_id: vehicle.locationVehicle.partner_id })
@@ -230,7 +227,7 @@ exports.BookingCircuit = [
                 return res.status(400).json({ message: "there no place" })
             }
             const client_id = req.userId;
-            const booking = await Booking.create({ total_price: package.price, type: "voyages circuits", client_id,payment_method });
+            const booking = await Booking.create({ total_price: package.price, type: "voyages circuits", client_id,payment_method,partner_id });
             await CircuitBookingDetails.create({ booking_id: booking.id, package_id, circuit_id: id });
             package.update({ number_place: package.number_place - 1 })
 
@@ -292,7 +289,7 @@ exports.BookingOffer = [
                 return res.status(400).send({ message: "the not place" })
             }
             const client_id = req.userId;
-            const booking = await Booking.create({ total_price, type: "agence de voyage", client_id,payment_method });
+            const booking = await Booking.create({ total_price, type: "agence de voyage", client_id,payment_method,partner_id });
             
             await OfferBookingDetails.create({ booking_id: booking.id,payment_method, offer_id: id, package_id })
             await package.update({ number_place: package.number_place - 1 })

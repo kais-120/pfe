@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   Box, Button, Flex, Grid, Text, Badge,
   Image, Skeleton, SkeletonText, VStack, HStack,
   Combobox, Portal, useFilter, useListCollection,
+  createListCollection,
 } from "@chakra-ui/react"
 import {
   FaMapMarkerAlt, FaSearch, FaWifi,
   FaDumbbell, FaSwimmingPool, FaSpa, FaParking,
   FaChevronLeft, FaChevronRight,
+  FaStar,
 } from "react-icons/fa"
 import {
   LuSlidersHorizontal, LuX, LuUsers, LuCheck,
@@ -17,6 +19,7 @@ import { Axios, imageURL } from "../../Api/Api"
 import DatePicker from "../../components/ui/DatePicker"
 import RoomSelector from "../../components/ui/RoomSelector"
 import Header from "../../components/home/Header"
+import { Star } from "lucide-react"
 
 /* ── Constants ──────────────────────────────────────────────────── */
 const EQUIPMENT_LIST = [
@@ -43,79 +46,151 @@ const PRICE_RANGES = [
 ]
 
 /* ── Destination combobox ───────────────────────────────────────── */
-function DestCombobox({ value, onChange }) {
-  const { contains } = useFilter({ sensitivity: "base" })
-  const { collection, filter } = useListCollection({ initialItems: LOCATIONS, filter: contains })
+function LocationCombobox({ value, onChange }) {
+  const [destination, setDestination] = useState([])
+ 
+  useEffect(() => {
+    const dataDestination = async () => {
+      try {
+        const res = await Axios.get("/service/get/destination")
+        setDestination(res.data.destinations || [])
+      } catch (error) {
+        console.error("error", error)
+      }
+    }
+    dataDestination()
+  }, [])
+ 
+ const filteredItems = useMemo(() => {
+  if (!value) return destination
+
+  return destination.filter((item) =>
+    item.toLowerCase().includes(value.toLowerCase())
+  )
+}, [destination, value])
+const capitalize = (value) => {
+  if (!value) return ""
+  return value.charAt(0).toUpperCase() + value.slice(1)
+}
+
+
+  const collection = useMemo(() => {
+  return createListCollection({
+    items: filteredItems.map((item) => ({
+      label: capitalize(item),
+      value: item,
+    })),
+    itemToString: (item) => item.label,
+    itemToValue: (item) => item.value,
+  })
+}, [filteredItems])
+ 
   return (
-    <Combobox.Root width="full" collection={collection}
-      inputValue={value}
-      onInputValueChange={e => { filter(e.inputValue); onChange(e.inputValue) }}
-      onValueChange={e => onChange(e.value[0] ?? "")}>
-      <Combobox.Control>
-        <Combobox.Input placeholder="Destination…"
-          style={{
-            height: "40px", border: "none", outline: "none",
-            fontSize: "14px", fontWeight: "600",
-            color: "var(--chakra-colors-gray-800)",
-            background: "transparent", width: "100%",
-          }} />
-        <Combobox.IndicatorGroup style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)" }}>
-          <Combobox.ClearTrigger />
-        </Combobox.IndicatorGroup>
-      </Combobox.Control>
-      <Portal>
-        <Combobox.Positioner>
-          <Combobox.Content style={{ zIndex: 9999 }}>
-            <Combobox.Empty>Aucune destination</Combobox.Empty>
-            {collection.items.map(item => (
-              <Combobox.Item item={item} key={item.value}>
-                {item.label}<Combobox.ItemIndicator />
-              </Combobox.Item>
-            ))}
-          </Combobox.Content>
-        </Combobox.Positioner>
-      </Portal>
-    </Combobox.Root>
+    <Box flex={1} minW="180px">
+      <Combobox.Root
+        width="full"
+        collection={collection}
+        inputValue={value}
+        onInputValueChange={(e) => onChange(e.inputValue)}
+        onValueChange={(e) => onChange(e.value[0] ?? "")}
+      >
+        <Combobox.Control>
+          <Combobox.Input
+            placeholder="Où allez-vous ?"
+            style={{
+              width: "100%",
+              border: "none",
+              outline: "none",
+              fontSize: "15px",
+              fontWeight: "600",
+              color: "var(--chakra-colors-gray-800)",
+              background: "transparent",
+              height: "32px",
+            }}
+          />
+          <Combobox.IndicatorGroup
+            style={{
+              position: "absolute",
+              right: 8,
+              top: "50%",
+              transform: "translateY(-50%)",
+            }}
+          >
+            <Combobox.Trigger />
+          </Combobox.IndicatorGroup>
+        </Combobox.Control>
+        <Portal>
+          <Combobox.Positioner>
+            <Combobox.Content>
+              {collection.items.length === 0 ? (
+                <Combobox.Empty>Aucune destination trouvée</Combobox.Empty>
+              ) : (
+                collection.items.map((item) => (
+                  <Combobox.Item key={item.value} item={item}>
+                    {item.label}
+                  </Combobox.Item>
+                ))
+              )}
+            </Combobox.Content>
+          </Combobox.Positioner>
+        </Portal>
+      </Combobox.Root>
+    </Box>
   )
 }
 
-function ImageSlider({ images }) {
+function ImageSlider({ images, hotelId, star }) {
   const [idx, setIdx] = useState(0)
-  if (!images?.length) return (
-    <Flex h="200px" borderRadius="xl" bg="gray.100"
-      align="center" justify="center">
-    </Flex>
-  )
-  const prev = e => { e.stopPropagation(); setIdx(i => (i - 1 + images.length) % images.length) }
-  const next = e => { e.stopPropagation(); setIdx(i => (i + 1) % images.length) }
+
+  if (!images?.length) return <Skeleton height="220px" borderRadius="xl" />
+
+  const prev = (e) => { e.stopPropagation(); setIdx(i => (i - 1 + images.length) % images.length) }
+  const next = (e) => { e.stopPropagation(); setIdx(i => (i + 1) % images.length) }
+
   return (
-    <Box position="relative" h="200px" overflow="hidden" borderRadius="xl">
-      <Image src={`${imageURL}/services/${images[idx].image_url}`}
-        w="100%" h="100%" objectFit="cover" transition="opacity 0.3s" />
+    <Box position="relative" height="220px" overflow="hidden" borderRadius="xl">
+      <Image
+        src={`${imageURL}/services/${images[idx].image_url}`}
+        alt={`hotel-${hotelId}-${idx}`}
+        w="100%" h="100%"
+        objectFit="cover"
+        transition="opacity 0.3s"
+      />
       {images.length > 1 && (
         <>
-          <Button size="xs" position="absolute" left={2} top="50%"
+          <Button
+            size="xs" position="absolute" left={2} top="50%"
             transform="translateY(-50%)" borderRadius="full"
-            bg="blackAlpha.600" color="white" minW="26px" h="26px" p={0}
-            _hover={{ bg: "blackAlpha.800" }} onClick={prev}>
-            <FaChevronLeft size={9} />
-          </Button>
-          <Button size="xs" position="absolute" right={2} top="50%"
+            bg="blackAlpha.600" color="white"
+            minW="28px" h="28px" p={0} _hover={{ bg: "blackAlpha.800" }}
+            onClick={prev}
+          ><FaChevronLeft size={10} /></Button>
+          <Button
+            size="xs" position="absolute" right={2} top="50%"
             transform="translateY(-50%)" borderRadius="full"
-            bg="blackAlpha.600" color="white" minW="26px" h="26px" p={0}
-            _hover={{ bg: "blackAlpha.800" }} onClick={next}>
-            <FaChevronRight size={9} />
-          </Button>
-          <HStack position="absolute" bottom={2} left="50%"
-            transform="translateX(-50%)" spacing={1}>
+            bg="blackAlpha.600" color="white"
+            minW="28px" h="28px" p={0} _hover={{ bg: "blackAlpha.800" }}
+            onClick={next}
+          ><FaChevronRight size={10} /></Button>
+          <HStack position="absolute" bottom={2} left="50%" transform="translateX(-50%)" spacing={1}>
             {images.map((_, i) => (
-              <Box key={i} w={i === idx ? "14px" : "5px"} h="5px" borderRadius="full"
-                bg={i === idx ? "white" : "whiteAlpha.600"} transition="all 0.2s"
-                cursor="pointer" onClick={e => { e.stopPropagation(); setIdx(i) }} />
+              <Box
+                key={i} w={i === idx ? "16px" : "6px"} h="6px"
+                borderRadius="full" bg={i === idx ? "white" : "whiteAlpha.600"}
+                transition="all 0.2s" cursor="pointer"
+                onClick={(e) => { e.stopPropagation(); setIdx(i) }}
+              />
             ))}
           </HStack>
         </>
       )}
+      <Badge
+        position="absolute" top={3} left={3}
+        bg="white" color="orange.400" borderRadius="lg"
+        px={2} py={1} fontSize="xs" fontWeight={700} boxShadow="sm"
+      >
+        <Flex align="center" gap={1}><FaStar size={10} />{star} étoiles</Flex>
+      </Badge>
     </Box>
   )
 }
@@ -145,7 +220,7 @@ function HotelCard({ hotel, nights,rooms,checkIn,checkOut }) {
       transition="transform 0.2s, box-shadow 0.2s"
       _hover={{ transform: "translateY(-3px)", boxShadow: "0 8px 28px rgba(0,0,0,0.1)" }}>
       <Box p={4} pb={3}>
-        <ImageSlider images={hotel.imagesHotel} hotelId={hotel.id} />
+        <ImageSlider images={hotel.imagesHotel} hotelId={hotel.id} star={hotel.star} />
       </Box>
       <VStack align="stretch" px={4} pb={4} spacing={3}>
         <Box>
@@ -257,18 +332,18 @@ export default function SearchHotels() {
   const [checkIn, setCheckIn] = useState(initCheckIn)
   const [checkOut, setCheckOut] = useState(initCheckOut)
   const [room, setRoom] = useState(
-  Array.from({ length: initRooms }, () => ({
-    adults: initAdults,
-    children: initChildren
-  }))
-)
-
+    Array.from({ length: initRooms }, () => ({
+      adults: initAdults,
+      children: initChildren
+    }))
+  )
 
   const [hotels, setHotels] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selEquip, setSelEquip] = useState([])
   const [selPrice, setSelPrice] = useState(null)
+  const [selStar, setSelStar] = useState(null)
   const [mobileFilter, setMobileFilter] = useState(false)
 
   const nights = (() => {
@@ -276,7 +351,8 @@ export default function SearchHotels() {
     const d = (new Date(initCheckOut) - new Date(initCheckIn)) / 86400000
     return d > 0 ? Math.round(d) : null
   })()
-const formatDate = (d) => new Date(d).toISOString().split('T')[0]
+
+  const formatDate = (d) => new Date(d).toISOString().split('T')[0]
 
   useEffect(() => {
     ; (async () => {
@@ -284,9 +360,9 @@ const formatDate = (d) => new Date(d).toISOString().split('T')[0]
         setLoading(true)
         const res = await Axios.post("/service/get/hotels/search", {
           destination: initDest,
-          checkIn:formatDate(initCheckIn),
+          checkIn: formatDate(initCheckIn),
           checkOut: formatDate(initCheckOut),
-          rooms:room
+          rooms: room
         })
         setHotels(res.data.hotels ?? res.data.hotel ?? [])
       } catch {
@@ -303,7 +379,7 @@ const formatDate = (d) => new Date(d).toISOString().split('T')[0]
     const numberAdult = room?.adults ?? initAdults
     const numberChildren = room?.children ?? initChildren
     navigate(
-      `/search"hotel?destination=${destination}` +
+      `/search/hotel?destination=${destination}` +
       `&checkIn=${checkIn ?? ""}` +
       `&checkOut=${checkOut ?? ""}` +
       `&numberAdult=${numberAdult}` +
@@ -318,12 +394,14 @@ const formatDate = (d) => new Date(d).toISOString().split('T')[0]
     const minP = h.rooms?.length
       ? Math.min(...h.rooms.map(r => r.price_by_day)) : null
     const matchPrice = !selPrice || (minP !== null && minP >= selPrice.min && minP <= selPrice.max)
-    return matchEquip && matchPrice
+    const matchStar = !selStar || h.star === selStar
+    return matchEquip && matchPrice && matchStar
   })
 
   const toggleEquip = key => setSelEquip(p => p.includes(key) ? p.filter(k => k !== key) : [...p, key])
-  const activeCount = selEquip.length + (selPrice ? 1 : 0)
-  const resetFilters = () => { setSelEquip([]); setSelPrice(null) }
+  const activeCount = selEquip.length + (selPrice ? 1 : 0) + (selStar ? 1 : 0)
+  const resetFilters = () => { setSelEquip([]); setSelPrice(null); setSelStar(null) }
+  console.log(selEquip)
 
   /* ── Sidebar filter content ── */
   const Filters = () => (
@@ -375,16 +453,37 @@ const formatDate = (d) => new Date(d).toISOString().split('T')[0]
           Classement
         </Text>
         <Flex gap={2} flexWrap="wrap">
-          {[3, 4, 5].map(stars => (
-            <Box key={stars} as="button" type="button"
-              px={3} py={1.5} borderRadius="full"
-              border="1.5px solid" borderColor="gray.200"
-              bg="white" color="gray.600" fontSize="xs" fontWeight={600}
-              cursor="pointer" transition="all 0.15s"
-              _hover={{ borderColor: "yellow.400", bg: "yellow.50", color: "yellow.700" }}>
-              {"★".repeat(stars)}
-            </Box>
-          ))}
+          {[3, 4, 5].map(stars => {
+            const active = selStar === stars
+            return (
+              <Flex
+                onClick={() => setSelStar(active ? null : stars)}
+                key={stars}
+                as="button"
+                type="button"
+                px={3}
+                py={1.5}
+                borderRadius="full"
+                border="1.5px solid"
+                borderColor={active ? "yellow.400" : "gray.200"}
+                bg={active ? "yellow.50" : "white"}
+                color={active ? "yellow.700" : "gray.600"}
+                fontSize="xs"
+                fontWeight={600}
+                cursor="pointer"
+                transition="all 0.15s"
+                _hover={{
+                  borderColor: "yellow.400",
+                  bg: "yellow.50",
+                  color: "yellow.700"
+                }}
+              >
+                {[...Array(stars)].map((_, i) => (
+                  <Star fill="currentColor" size={10} key={i} />
+                ))}
+              </Flex>
+            )
+          })}
         </Flex>
       </Box>
 
@@ -418,7 +517,7 @@ const formatDate = (d) => new Date(d).toISOString().split('T')[0]
                   textTransform="uppercase" letterSpacing="wider" mb={0.5}>
                   Destination
                 </Text>
-                <DestCombobox value={destination} onChange={setDestination} />
+                <LocationCombobox value={destination} onChange={setDestination} />
               </Box>
 
               <Box px={4} py={2.5} borderRight="1px solid" borderColor="gray.150">
@@ -565,12 +664,12 @@ const formatDate = (d) => new Date(d).toISOString().split('T')[0]
                   {selEquip.map(key => {
                     const m = EQUIPMENT_LIST.find(e => e.key === key)
                     return (
-                      <Flex key={key} align="center" gap={1.5}
+                      <Flex cursor={"default"} key={key} align="center" gap={1.5}
                         bg="blue.50" color="blue.600" borderRadius="full"
                         px={3} py={1} fontSize="xs" fontWeight={600}
                         border="1px solid" borderColor="blue.200">
                         {m?.label}
-                        <Box as="button" onClick={() => toggleEquip(key)} ml={1}>
+                        <Box cursor={"pointer"} as="button" onClick={() => toggleEquip(key)} ml={1}>
                           <LuX size={10} />
                         </Box>
                       </Flex>
@@ -583,6 +682,17 @@ const formatDate = (d) => new Date(d).toISOString().split('T')[0]
                       border="1px solid" borderColor="purple.200">
                       {selPrice.label}
                       <Box as="button" onClick={() => setSelPrice(null)} ml={1}>
+                        <LuX size={10} />
+                      </Box>
+                    </Flex>
+                  )}
+                  {selStar && (
+                    <Flex align="center" gap={1.5}
+                      bg="yellow.50" color="yellow.600" borderRadius="full"
+                      px={3} py={1} fontSize="xs" fontWeight={600}
+                      border="1px solid" borderColor="yellow.200">
+                      {selStar} <Star fill="currentColor" size={12} />
+                      <Box as="button" onClick={() => setSelStar(null)} ml={1}>
                         <LuX size={10} />
                       </Box>
                     </Flex>
@@ -606,7 +716,6 @@ const formatDate = (d) => new Date(d).toISOString().split('T')[0]
                 <Flex direction="column" align="center" py={20} gap={3}
                   bg="white" borderRadius="2xl"
                   border="1px dashed" borderColor="gray.200">
-                  <Text fontSize="4xl">🔍</Text>
                   <Text fontWeight={700} color="gray.600">Aucun résultat avec ces filtres</Text>
                   <Text fontSize="sm" color="gray.400">Essayez de retirer certains filtres.</Text>
                   <Button size="sm" colorScheme="blue" variant="outline"

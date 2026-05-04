@@ -8,7 +8,7 @@ import {
 import {
     LuPlus, LuX, LuPlaneTakeoff, LuCalendar,
 } from "react-icons/lu"
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { useFormik } from "formik"
 import * as Yup from "yup"
 import { Helmet } from "react-helmet"
@@ -19,12 +19,7 @@ const validationSchema = Yup.object({
     year: Yup.string().required("L'année est requise"),
     departureDate: Yup.string().required("La date de départ est requise"),
     returnDate: Yup.string()
-        .required("La date de retour est requise")
-        .test("after-departure", "La date de retour doit être après le départ", function (value) {
-            const { departureDate } = this.parent
-            if (!departureDate || !value) return true
-            return new Date(value) > new Date(departureDate)
-        }),
+        .required("La date de retour est requise"),
     departureTime: Yup.string(),
     returnTime: Yup.string(),
     departureAirport: Yup.string(),
@@ -158,8 +153,7 @@ const DEFAULT_VALUES = {
     destinations: [], price: "", seats: "", installment: "6",
 }
 
-const AddPackage = ({ ontTab, onChange, initialValues, isEditing, type }) => {
-
+const AddPackage = ({ ontTab, onChange, initialValues, isEditing, type, duration }) => {
     const formik = useFormik({
         initialValues: initialValues
             ? { ...DEFAULT_VALUES, ...initialValues }
@@ -187,6 +181,18 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing, type }) => {
         setFieldValue, setFieldTouched,
         handleSubmit, isSubmitting,
     } = formik
+    
+    // Auto-calculate return date when departure date or duration changes
+    useEffect(() => {
+        if (values.departureDate && duration) {
+            const depDate = new Date(values.departureDate)
+            const returnDate = new Date(depDate)
+            returnDate.setDate(returnDate.getDate() + duration)
+            const formattedReturnDate = `${returnDate.getFullYear()}-${String(returnDate.getMonth() + 1).padStart(2, '0')}-${String(returnDate.getDate()).padStart(2, '0')}`
+            setFieldValue("returnDate", formattedReturnDate)
+        }
+    }, [values.departureDate, duration, setFieldValue])
+
     const monthsCollection = createListCollection({
         items: [
             { label: "Sélectionner un mois", value: "" },
@@ -322,7 +328,7 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing, type }) => {
                                 <DatePicker.Root
                                     locale="fr-FR"
                                     min={minDate}
-                                    disabled={!values.month}
+                                    disabled={!values.month || !duration}
                                     max={maxDate}
                                     value={values.departureDate ? [parseDate(dataFormal(values.departureDate))] : (minDate ? [minDate] : [])}
                                     onValueChange={(details) => {
@@ -370,37 +376,13 @@ const AddPackage = ({ ontTab, onChange, initialValues, isEditing, type }) => {
 
                         {/* Return */}
                         <VStack align="stretch" gap={4}>
-                            <Field label="Date de retour" required error={touched.returnDate && errors.returnDate}>
-                                <DatePicker.Root 
-                                    locale="fr-FR" 
-                                    min={minDate}
-                                    disabled={!values.month}
-                                    value={values.returnDate ? [parseDate(dataFormal(values.returnDate))] : (minDate ? [minDate] : [])}
-                                    onValueChange={(details) => {
-                                        const date = details.value?.[0]
-                                        if (date) {
-                                            setFieldValue("returnDate", `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`)
-                                        } else {
-                                            setFieldValue("returnDate", "")
-                                        }
-                                    }}
-                                >
-                                    <DatePicker.Control>
-                                        <DatePicker.Input />
-                                        <DatePicker.IndicatorGroup>
-                                            <DatePicker.Trigger><LuCalendar /></DatePicker.Trigger>
-                                        </DatePicker.IndicatorGroup>
-                                    </DatePicker.Control>
-                                    <Portal>
-                                        <DatePicker.Positioner>
-                                            <DatePicker.Content>
-                                                <DatePicker.View view="day"><DatePicker.Header /><DatePicker.DayTable /></DatePicker.View>
-                                                <DatePicker.View view="month"><DatePicker.Header /><DatePicker.MonthTable /></DatePicker.View>
-                                                <DatePicker.View view="year"><DatePicker.Header /><DatePicker.YearTable /></DatePicker.View>
-                                            </DatePicker.Content>
-                                        </DatePicker.Positioner>
-                                    </Portal>
-                                </DatePicker.Root>
+                            <Field label="Date de retour">
+                                <Input 
+                                    value={values.returnDate} 
+                                    disabled 
+                                    {...inputStyle(false)}
+                                    placeholder="Calculée automatiquement"
+                                />
                             </Field>
                             <Field label="Heure de retour">
                                 <Input type="time" name="returnTime" value={values.returnTime}

@@ -236,7 +236,7 @@ function PackageRow({ pkg, onSelect, selected }) {
 }
 
 
-function PackagesPanel({ selectedPackages, onSelectionChange, allPackages,setAllPackages }) {
+function PackagesPanel({ selectedPackages, onSelectionChange, allPackages,setAllPackages, duration }) {
   const [tab, setTab] = useState("list")
   const [search, setSearch] = useState("")
 
@@ -392,7 +392,7 @@ const toggleSelect = (pkg) => {
       {/* ── ADD TAB ── */}
       {tab === "add" && (
         <Box>
-          <AddPackage ontTab={setTab} onChange={setAllPackages} type={"offer"} />
+          <AddPackage ontTab={setTab} onChange={setAllPackages} type={"offer"} duration={duration} />
         </Box>
       )}
     </Box>
@@ -588,6 +588,7 @@ const AddOffer = () => {
             </Flex>
 
             <PackagesPanel
+              duration={formik.values.duration}
               allPackages={allPackages}
               setAllPackages={setAllPackages}
               selectedPackages={selectedPackages}

@@ -16,9 +16,7 @@ import { Helmet } from "react-helmet";
 const validationSchema = Yup.object({
   name: Yup.string().required("Le nom de chambre est requis"),
   capacity: Yup.number().required("La capacité est requise").positive("Doit être positif"),
-  price_by_day: Yup.number().required("Le prix par jour est requis").positive("Doit être positif"),
-  price_by_adult: Yup.number().required("Le prix par adulte est requis").positive("Doit être positif"),
-  price_by_children: Yup.number().required("Le prix par enfant est requis").min(0, "Doit être ≥ 0"),
+  price_by_day: Yup.number().required("Le prix par nuit est requis").positive("Doit être positif"),
   count: Yup.number().required("Le nombre de chambres est requis").positive("Doit être positif"),
 });
 
@@ -91,8 +89,10 @@ const AddRoom = () => {
 
   const formik = useFormik({
     initialValues: {
-      name: "", capacity: "", price_by_day: "",
-      price_by_adult: "", price_by_children: "", count: "",
+      name: "",
+      capacity: "",
+      price_by_day: 0,
+      count: "",
     },
     validationSchema,
     onSubmit: async (values) => {
@@ -116,6 +116,22 @@ const AddRoom = () => {
   })
 
   const isSubmitting = formik.isSubmitting
+
+  /* ── Price preview calculation ── */
+  const calculatePreview = (nights = 3, adults = 2, children = 1) => {
+    const basePrice = Number(formik.values.price_per_night) || 0
+    const extraAdultFee = Number(formik.values.extra_adult_fee_per_night) || 0
+    const childFee = Number(formik.values.child_fee_per_night) || 0
+
+    const baseCost = basePrice * nights
+    const extraAdultsCost = Math.max(0, adults - 2) * extraAdultFee * nights
+    const childrenCost = children * childFee * nights
+    const total = baseCost + extraAdultsCost + childrenCost
+
+    return { total, baseCost, extraAdultsCost, childrenCost, adults, children, nights }
+  }
+
+  const preview = calculatePreview()
 
   return (
     <>
@@ -171,9 +187,17 @@ const AddRoom = () => {
             <Box w={"full"}>
               <FormField formik={formik} name="name" label="Nom de la chambre" icon={LuBed} />
             </Box>
-            <Grid mt={"20px"} templateColumns={{ base: "1fr", sm: "1fr 1fr" }} gap={4}>
+            <Grid mt={"20px"} templateColumns={{ base: "1fr", sm: "1fr 1fr 1fr" }} gap={4}>
               <FormField formik={formik} name="capacity" label="Capacité" type="number" icon={LuUsers} suffix="pers." />
               <FormField formik={formik} name="count" label="Nombre de chambres" type="number" icon={LuHash} suffix="unités" />
+               <FormField
+                formik={formik}
+                name="price_by_day"
+                label="Prix / nuit"
+                type="number"
+                icon={LuBanknote}
+                suffix="TND"
+              />
             </Grid>
           </Box>
 
@@ -192,41 +216,40 @@ const AddRoom = () => {
                 Tarification
               </Text>
             </Flex>
-
-            <Grid templateColumns={{ base: "1fr", sm: "1fr 1fr 1fr" }} gap={4}>
-              <FormField formik={formik} name="price_by_day" label="Prix / nuit" type="number" icon={LuBanknote} suffix="TND" />
-              <FormField formik={formik} name="price_by_adult" label="Prix / adulte" type="number" icon={LuUsers} suffix="TND" />
-              <FormField formik={formik} name="price_by_children" label="Prix / enfant" type="number" icon={LuBaby} suffix="TND" />
-            </Grid>
-
-            {/* Price preview */}
-            {formik.values.price_by_day && formik.values.price_by_adult && (
+   
+            {formik.values.price_by_day && (
               <Box
                 mt={5} p={4} bg="blue.50" borderRadius="xl"
                 border="1px solid" borderColor="blue.100"
               >
                 <Text fontSize="xs" fontWeight={700} color="blue.600"
-                  textTransform="uppercase" letterSpacing="wider" mb={2}>
-                  Aperçu tarifaire — 3 nuits, 2 adultes
-                  {formik.values.price_by_children > 0 ? ", 1 enfant" : ""}
+                  textTransform="uppercase" letterSpacing="wider" mb={3}>
+                  Aperçu tarifaire - {preview.nights} nuits, {formik.values.capacity > 1 ? `${formik.values.capacity} personnes` : "" }
                 </Text>
-                <Flex align="baseline" gap={1.5}>
-                  <Text fontSize="2xl" fontWeight={900} color="blue.700" lineHeight={1}>
-                    {(
-                      Number(formik.values.price_by_day) * 3
-                      + Number(formik.values.price_by_adult) * 2
-                      + (formik.values.price_by_children > 0 ? Number(formik.values.price_by_children) : 0)
-                    ).toFixed(0)}
-                  </Text>
-                  <Text fontSize="sm" color="blue.500" fontWeight={500}>TND total</Text>
-                </Flex>
-                <Text fontSize="xs" color="blue.400" mt={1}>
-                  {formik.values.price_by_day} × 3 nuits
-                  {" "}+ {formik.values.price_by_adult} × 2 adultes
-                  {formik.values.price_by_children > 0
-                    ? ` + ${formik.values.price_by_children} × 1 enfant`
-                    : ""}
-                </Text>
+
+                <VStack align="stretch" gap={2} mb={3}>
+                  {/* Base price */}
+                  <Flex justify="space-between" fontSize="sm">
+                    <Text color="gray.600">
+                      Prix de base : {formik.values.price_by_day ? (Number(formik.values.price_by_day)) : 0} TND × {preview.nights} nuits
+                    </Text>
+                    <Text fontWeight={600} color="gray.800">
+                      {Number(formik.values.price_by_day)} TND
+                    </Text>
+                  </Flex>
+
+                 
+                </VStack>
+
+                {/* Total */}
+                <Box borderTop="1px solid" borderColor="blue.200" pt={3}>
+                  <Flex align="baseline" gap={1.5}>
+                    <Text fontSize="2xl" fontWeight={900} color="blue.700" lineHeight={1}>
+                      {Number(formik.values.price_by_day)}
+                    </Text>
+                    <Text fontSize="sm" color="blue.500" fontWeight={500}>TND total</Text>
+                  </Flex>
+                </Box>
               </Box>
             )}
           </Box>

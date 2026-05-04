@@ -215,10 +215,14 @@ function RoomGuestSelector({ guestRooms, setGuestRooms }) {
   )
 }
 
-
+/* ── RoomCard ───────────────────────────────────────────────────── */
 function RoomCard({ slotIndex, room, nights, selected, onSelect }) {
   const [expanded, setExpanded] = useState(false)
   const isSelected = !!selected
+
+  // API returns snake_case: price_by_day
+  const pricePerNight = room.price_by_day ?? room.priceByDay ?? 0
+  const totalPrice = pricePerNight * (nights ?? 0)
 
   return (
     <Box
@@ -305,15 +309,7 @@ function RoomCard({ slotIndex, room, nights, selected, onSelect }) {
             </VStack>
 
             {/* Price breakdown toggle */}
-            <Box as="button" type="button"
-              onClick={() => setExpanded(e => !e)}
-              fontSize="xs" color="blue.500" fontWeight={600}
-              cursor="pointer" _hover={{ textDecoration: "underline" }}>
-              <Flex align="center" gap={1}>
-                {expanded ? <LuChevronUp size={12} /> : <LuChevronDown size={12} />}
-                {expanded ? "Masquer" : "Voir"} le détail du prix
-              </Flex>
-            </Box>
+        
 
             {expanded && (
               <Box mt={3} p={3} bg="gray.50" borderRadius="xl"
@@ -321,37 +317,17 @@ function RoomCard({ slotIndex, room, nights, selected, onSelect }) {
                 <VStack align="stretch" spacing={1.5}>
                   <Flex justify="space-between">
                     <Text fontSize="xs" color="gray.500">
-                      {room.priceByDay} TND × {nights} nuit{nights > 1 ? "s" : ""}
+                      {pricePerNight} TND × {nights} nuit{nights > 1 ? "s" : ""}
                     </Text>
                     <Text fontSize="xs" fontWeight={600} color="gray.700">
-                      {room.priceByDay * nights} TND
+                      {totalPrice} TND
                     </Text>
                   </Flex>
-                  {room.requestedAdults > 0 && (
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.500">
-                        +{room.priceByAdult} TND × {room.requestedAdults} adulte{room.requestedAdults > 1 ? "s" : ""}
-                      </Text>
-                      <Text fontSize="xs" fontWeight={600} color="gray.700">
-                        {room.priceByAdult * room.requestedAdults} TND
-                      </Text>
-                    </Flex>
-                  )}
-                  {room.requestedChildren > 0 && (
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.500">
-                        +{room.priceByChildren} TND × {room.requestedChildren} enfant{room.requestedChildren > 1 ? "s" : ""}
-                      </Text>
-                      <Text fontSize="xs" fontWeight={600} color="gray.700">
-                        {room.priceByChildren * room.requestedChildren} TND
-                      </Text>
-                    </Flex>
-                  )}
                   <Box borderTop="1px solid" borderColor="gray.200" pt={1.5}>
                     <Flex justify="space-between">
-                      <Text fontSize="xs" fontWeight={700} color="gray.700">Prix / nuit total</Text>
+                      <Text fontSize="xs" fontWeight={700} color="gray.700">Total</Text>
                       <Text fontSize="xs" fontWeight={700} color="blue.600">
-                        {room.pricePerNight} TND
+                        {totalPrice} TND
                       </Text>
                     </Flex>
                   </Box>
@@ -368,19 +344,25 @@ function RoomCard({ slotIndex, room, nights, selected, onSelect }) {
             <Flex align="baseline" gap={1} justify="flex-end">
               <Text fontSize="2xl" fontWeight={900} lineHeight="1.1"
                 color={isSelected ? "blue.600" : "gray.800"}>
-                {room.totalPrice ?? room.pricePerNight}
+                {nights ? totalPrice : pricePerNight}
               </Text>
               <Text fontSize="xs" color="gray.500">TND</Text>
             </Flex>
-            {nights && room.pricePerNight && (
+            {nights && pricePerNight && (
               <Text fontSize="9px" color="gray.400" mt={0.5}>
-                {room.pricePerNight} TND/nuit × {nights}
+                {pricePerNight} TND/nuit × {nights}
               </Text>
             )}
             <Button mt={3} size="sm" borderRadius="xl" px={5} fontWeight={700}
               colorScheme={isSelected ? "red" : "blue"}
               variant={isSelected ? "outline" : "solid"}
-              onClick={() => onSelect(isSelected ? null : room)}>
+              onClick={() => {
+                if (isSelected) {
+                  onSelect(null)
+                } else {
+                  onSelect({ ...room, totalPrice })
+                }
+              }}>
               {isSelected
                 ? <Flex align="center" gap={1.5}><LuX size={12} />Retirer</Flex>
                 : <Flex align="center" gap={1.5}><LuCheck size={12} />Choisir</Flex>}
@@ -392,30 +374,33 @@ function RoomCard({ slotIndex, room, nights, selected, onSelect }) {
   )
 }
 
+/* ── BookingSummary ─────────────────────────────────────────────── */
 function BookingSummary({ selections, nights, totalRooms, id, checkIn, checkOut, guestRooms }) {
-  const { user } = useProfile();
-  const formatDate = (date) => {
-  return new Date(date).toISOString().split("T")[0];
-};
+  const { user } = useProfile()
+
+  const formatDate = (date) => new Date(date).toISOString().split("T")[0]
 
   const handlePayment = async () => {
     try {
-      const updatedGuestRooms = guestRooms.map((guest, index) => {
-        return {
-          ...guest,
-          room_id: selections[index].roomId
-        };
-      });
+      const updatedGuestRooms = guestRooms.map((guest, index) => ({
+        ...guest,
+        room_id: Number(selections[index]?.roomId),
+      }))
+  console.log(selections)
+  console.log(updatedGuestRooms)
+
       const res = await AxiosToken.post(`/booking/hotel/${id}`, {
         check_in_date: formatDate(checkIn),
         check_out_date: formatDate(checkOut),
-        rooms: updatedGuestRooms
-      });
+        rooms: updatedGuestRooms,
+      })
       window.location = res.data.url
     } catch {
-      console.error("error")
+      console.error("Payment error")
     }
   }
+
+
   const selectedCount = Object.values(selections).filter(Boolean).length
   const grandTotal = Object.values(selections)
     .filter(Boolean)
@@ -473,15 +458,13 @@ function BookingSummary({ selections, nights, totalRooms, id, checkIn, checkOut,
               : user.role !== "client"
                 ? "Seuls les clients peuvent effectuer une réservation"
                 : selectedCount < totalRooms
-                  ? `Sélectionnez encore ${totalRooms - selectedCount} chambre${totalRooms - selectedCount > 1 ? "s" : ""
-                  }`
+                  ? `Sélectionnez encore ${totalRooms - selectedCount} chambre${totalRooms - selectedCount > 1 ? "s" : ""}`
                   : "Prêt à réserver"
-          }
-          >
+          }>
             <Button colorScheme="blue" borderRadius="xl" px={7} h="46px"
               onClick={handlePayment}
               fontWeight={700}
-              disabled={((!user || user.role !== "client") || selectedCount < totalRooms)}
+              disabled={(!user || user.role !== "client") || selectedCount < totalRooms}
               isDisabled={selectedCount < totalRooms}>
               <Flex align="center" gap={2}>
                 <LuShoppingCart size={15} />
@@ -508,6 +491,7 @@ function RoomsSection({ id, location }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [selections, setSelections] = useState({})
+
   const formatDate = (d) => new Date(d).toISOString().split('T')[0]
 
   const nights = (() => {
@@ -705,7 +689,7 @@ function avgRating(reviews) {
   return reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
 }
 
-
+/* ── HotelDetail (default export) ──────────────────────────────── */
 export default function HotelDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -829,7 +813,7 @@ export default function HotelDetail() {
             </Box>
           )}
 
-          {/* Rooms — slot-based */}
+          {/* Rooms */}
           <RoomsSection id={hotel.id} location={location.state} />
 
           {/* Reviews */}

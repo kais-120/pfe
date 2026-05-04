@@ -1,5 +1,5 @@
 // controllers/statsController.js
-const { Op, QueryTypes, fn, col, literal } = require("sequelize");
+const { Op, QueryTypes, fn, col, literal, where } = require("sequelize");
 const { User, Booking, Hotel, Agence, Voyage, Compagnie, Location, PartnerFile, HotelBookingDetails, FlightBookingDetails, CarRentalBookingDetails, CircuitBookingDetails, OfferBookingDetails, Room, Vehicle, Flight, Circuit, Offer, Reviews, Package } = require("../models");
 const Payment = require("../models/Payment");
 const Activity = require("../models/Activity");
@@ -480,304 +480,50 @@ exports.GetPartnerDashboardStats = async (req, res) => {
     const now = new Date();
     const partner_id = req.userId;
 
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+const offset = 2; // 
 
+const startOfMonth = new Date(Date.UTC(
+  now.getFullYear(),
+  now.getMonth(),
+  1,
+  -offset, 0, 0
+));   
+const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
     const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const endOfPrevMonth = startOfMonth;
 
-    const partner = await User.findByPk(partner_id,
-      {
-        attributes: [],
-        include: [
-          {
-            model: PartnerFile,
-            as: "partnerInfo",
-            attributes: ["sector"]
-          }
-        ]
-      }
-    );
-    let totalBookings = 0
-    let includeConfig = [];
-    if (partner.partnerInfo[0].sector === "location de voitures") {
-      totalBookings = await Booking.count({
-        include: [
-          {
-            model: CarRentalBookingDetails,
-            as: "carDetails",
-            required: true,
-            include: [
-              {
-                model: Vehicle,
-                as: "vehicleBooking",
-                required: true,
-                include: [
-                  {
-                    model: Location,
-                    as: "locationVehicle",
-                    where: { partner_id },
-                    required: true,
-                  }
-                ]
-              }
-            ]
-          },
-        ]
-      })
-      includeConfig = [
-        {
-          model: CarRentalBookingDetails,
-          as: "carDetails",
-          required: true,
-          include: [
-            {
-              model: Vehicle,
-              as: "vehicleBooking",
-              required: true,
-              include: [
-                {
-                  model: Location,
-                  as: "locationVehicle",
-                  where: { partner_id },
-                  required: true,
-                }
-              ]
-            }
-          ]
-        },
-      ]
+    const partner = await User.findByPk(partner_id);
+    if(!partner){
+      return res.status(404).json({message:"user not found"})
     }
-
-    else if (partner.partnerInfo[0].sector === "agence de voyage") {
-      totalBookings = await Booking.count({
-        include: [
-          {
-            model: OfferBookingDetails,
-            as: "offerBooking",
-            required: true,
-            include: [
-              {
-                model: Offer,
-                as: "bookingDetailsOffer",
-                required: true,
-                include: [
-                  {
-                    model: Agence,
-                    as: "agencyOffer",
-                    where: { partner_id },
-                    required: true,
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      })
-      includeConfig = [
-        {
-          model: OfferBookingDetails,
-          as: "offerBooking",
-          required: true,
-          include: [
-            {
-              model: Offer,
-              as: "bookingDetailsOffer",
-              required: true,
-              include: [
-                {
-                  model: Agence,
-                  as: "agencyOffer",
-                  where: { partner_id },
-                  required: true,
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-
-    else if (partner.partnerInfo[0].sector === "hôtel") {
-      totalBookings = await Booking.count({
-        include: [
-          {
-            model: HotelBookingDetails,
-            as: "bookingHotelDetails",
-            required: true,
-            include: [
-              {
-                model: Room,
-                as: "RoomHotelBooking",
-                required: true,
-                include: [
-                  {
-                    model: Hotel,
-                    as: "hotelRoom",
-                    where: { partner_id },
-                    required: true,
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      })
-      includeConfig = [
-        {
-          model: HotelBookingDetails,
-          as: "bookingHotelDetails",
-          required: true,
-          include: [
-            {
-              model: Room,
-              as: "RoomHotelBooking",
-              required: true,
-              include: [
-                {
-                  model: Hotel,
-                  as: "hotelRoom",
-                  where: { partner_id },
-                  required: true,
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-
-    else if (partner.partnerInfo[0].sector === "compagnies aériennes") {
-      totalBookings = await Booking.count({
-        include: [
-          {
-            model: FlightBookingDetails,
-            as: "flightBooking",
-            required: true,
-            include: [
-              {
-                model: Flight,
-                as: "detailsFlight",
-                required: true,
-                include: [
-                  {
-                    model: Compagnie,
-                    as: "compagnieFlight",
-                    where: { partner_id },
-                    required: true,
-                  }
-                ]
-              }
-            ]
-          },
-        ]
-      })
-      includeConfig = [
-        {
-          model: FlightBookingDetails,
-          as: "flightBooking",
-          required: true,
-          include: [
-            {
-              model: Flight,
-              as: "detailsFlight",
-              required: true,
-              include: [
-                {
-                  model: Compagnie,
-                  as: "compagnieFlight",
-                  where: { partner_id },
-                  required: true,
-                }
-              ]
-            }
-          ]
-        },
-      ]
-    }
-
-    else {
-      totalBookings = await Booking.count({
-        include: [
-          {
-            model: CircuitBookingDetails,
-            as: "circuitBooking",
-            required: true,
-            include: [
-              {
-                model: Circuit,
-                as: "circuitDetails",
-                required: true,
-                include: [
-                  {
-                    model: Voyage,
-                    as: "voyagesCircuit",
-                    where: { partner_id },
-                    required: true,
-                  }
-                ]
-              }
-            ]
-          },
-        ]
-      })
-      includeConfig = [
-        {
-          model: CircuitBookingDetails,
-          as: "circuitBooking",
-          required: true,
-          include: [
-            {
-              model: Circuit,
-              as: "circuitDetails",
-              required: true,
-              include: [
-                {
-                  model: Voyage,
-                  as: "voyagesCircuit",
-                  where: { partner_id },
-                  required: true,
-                }
-              ]
-            }
-          ]
-        },
-      ]
-    }
-
+    const totalBookings = await Booking.count({
+      where: { partner_id }
+    });
 
     const bookingsThisMonth = await Booking.count({
-      where: { createdAt: { [Op.gte]: startOfMonth } },
-      include: includeConfig,
+      where: { createdAt: { [Op.gte]: startOfMonth },partner_id },
       distinct: true,
       col: "id"
     });
+   
 
     const bookingsLastMonth = await Booking.count({
       where: {
+        partner_id,
         createdAt: {
           [Op.gte]: startOfPrevMonth,
           [Op.lt]: endOfPrevMonth,
         },
       },
-      include: includeConfig,
       distinct: true,
       col: "id"
     });
+
 
     const bookingsDelta = bookingsLastMonth
       ? ((bookingsThisMonth - bookingsLastMonth) / bookingsLastMonth) * 100
       : 100;
 
-    function cleanInclude(include) {
-      return include.map(item => ({
-        ...item,
-        attributes: [],
-        required: true,
-        include: item.include ? cleanInclude(item.include) : []
-      }));
-    }
-    const cleanedInclude = cleanInclude(includeConfig);
 
     const totalRevenue = await Payment.sum("amount", {
       where:{partner_id}
@@ -804,7 +550,7 @@ exports.GetPartnerDashboardStats = async (req, res) => {
       : 100;
 
 
-    if (partner.partnerInfo[0].sector === "hôtel") {
+    if (bookingsThisMonth.type === "hotel") {
       const totalReview = await Reviews.count({
         include: {
           model: Hotel,
@@ -906,44 +652,72 @@ exports.GetPartnerDashboardStats = async (req, res) => {
 exports.getRevenueChart = async (req, res) => {
   try {
     const partner_id = req.userId;
+    const now = new Date();
+    const fiveMonthsAgo = new Date(
+      now.getFullYear(),
+      now.getMonth() - 5,
+      1,
+      0, 0, 0
+    );
 
-    // Calculate date 5 months ago
-    const fiveMonthsAgo = new Date();
-    fiveMonthsAgo.setMonth(fiveMonthsAgo.getMonth() - 5);
-    fiveMonthsAgo.setHours(0, 0, 0, 0);
+    // 👇 conversion timezone (UTC -> Europe/Paris)
+    const tzDate = `("payments"."createdAt" AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')`;
 
     const monthlyData = await Payment.findAll({
       attributes: [
-        [sequelize.fn("EXTRACT", sequelize.literal(`MONTH FROM "payments"."createdAt"`)), "monthNum"],
-        [sequelize.fn("EXTRACT", sequelize.literal(`YEAR FROM "payments"."createdAt"`)), "year"],
-        [sequelize.fn("SUM", sequelize.col("amount")), "total"]
+        [
+          fn("EXTRACT", literal(`MONTH FROM ${tzDate}`)),
+          "monthNum"
+        ],
+        [
+          fn("EXTRACT", literal(`YEAR FROM ${tzDate}`)),
+          "year"
+        ],
+        [
+          fn("SUM", col("amount")),
+          "total"
+        ]
       ],
       raw: true,
       where: {
-        partner_id: partner_id,
-        createdAt: {
-          [Op.gte]: fiveMonthsAgo
-        }
+        partner_id,
+        [Op.and]: [
+          where(literal(tzDate), {
+            [Op.gte]: fiveMonthsAgo
+          })
+        ]
       },
       group: [
-        sequelize.literal(`EXTRACT(YEAR FROM "payments"."createdAt")`),
-        sequelize.literal(`EXTRACT(MONTH FROM "payments"."createdAt")`)
+        literal(`EXTRACT(YEAR FROM ${tzDate})`),
+        literal(`EXTRACT(MONTH FROM ${tzDate})`)
       ],
       order: [
-        [sequelize.literal(`EXTRACT(YEAR FROM "payments"."createdAt")`), "ASC"],
-        [sequelize.literal(`EXTRACT(MONTH FROM "payments"."createdAt")`), "ASC"]
+        [literal(`EXTRACT(YEAR FROM ${tzDate})`), "ASC"],
+        [literal(`EXTRACT(MONTH FROM ${tzDate})`), "ASC"]
       ]
     });
 
-    const monthNames = ["jan", "fév", "mar", "avr", "mai", "juin", "juil", "aoû", "sep", "oct", "nov", "déc"];
-    
-    const labels = monthlyData.map(d => monthNames[parseInt(d.monthNum) - 1]);
-    const monthly = monthlyData.map(d => parseFloat(d.total));
-    
+    // 👇 labels
+    const monthNames = [
+      "jan", "fév", "mar", "avr",
+      "mai", "juin", "juil", "aoû",
+      "sep", "oct", "nov", "déc"
+    ];
+
+    const labels = monthlyData.map(
+      d => `${monthNames[parseInt(d.monthNum) - 1]} ${d.year}`
+    );
+
+    const monthly = monthlyData.map(
+      d => parseFloat(d.total)
+    );
+    console.log(monthly)
+
     return res.json({
       labels,
       monthly
     });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -951,87 +725,70 @@ exports.getRevenueChart = async (req, res) => {
 };
 
 
+
 exports.getBookingsChart = async (req, res) => {
   try {
     const partner_id = req.userId;
 
-    const partner = await User.findByPk(partner_id, {
-      attributes: ["createdAt"],
-      include: [
-        {
-          model: PartnerFile,
-          as: "partnerInfo",
-          attributes: ["sector"]
-        }
+    const now = new Date();
+
+    const startDate = new Date(
+      now.getFullYear(),
+      now.getMonth() - 5,
+      1,
+      0, 0, 0
+    );
+
+    // 👇 timezone fix
+    const tzDate = `("booking"."createdAt" AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')`;
+
+    const monthlyData = await Booking.findAll({
+      attributes: [
+        [
+          fn("EXTRACT", literal(`YEAR FROM ${tzDate}`)),
+          "year"
+        ],
+        [
+          fn("EXTRACT", literal(`MONTH FROM ${tzDate}`)),
+          "monthNum"
+        ],
+        [
+          fn("COUNT", col("booking.id")),
+          "total"
+        ]
+      ],
+      raw: true,
+      where: {
+        partner_id,
+        [Op.and]: [
+          where(literal(tzDate), {
+            [Op.gte]: startDate
+          })
+        ]
+      },
+      group: [
+        literal(`EXTRACT(YEAR FROM ${tzDate})`),
+        literal(`EXTRACT(MONTH FROM ${tzDate})`)
+      ],
+      order: [
+        [literal(`EXTRACT(YEAR FROM ${tzDate})`), "ASC"],
+        [literal(`EXTRACT(MONTH FROM ${tzDate})`), "ASC"]
       ]
     });
 
-    if (!partner) {
-      return res.status(404).json({ message: "Partner not found" });
-    }
+    const monthNames = [
+      "jan", "fév", "mar", "avr",
+      "mai", "juin", "juil", "aoû",
+      "sep", "oct", "nov", "déc"
+    ];
 
-    const sector = partner.partnerInfo?.[0]?.sector;
-
-    const includeConfig = getIncludeByPartner(sector, partner_id);
-
-    const cleanInclude = (include) => {
-      return include.map((item) => ({
-        ...item,
-        attributes: [],
-        required: true,
-        include: item.include ? cleanInclude(item.include) : []
-      }));
-    };
-
-    const includes = cleanInclude(includeConfig);
-
-    const now = new Date();
-
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(now.getMonth() - 5);
-
-    const accountCreated = new Date(partner.createdAt);
-
-    const startDate =
-      accountCreated > sixMonthsAgo ? accountCreated : sixMonthsAgo;
-
-    const bookingsData = await Booking.findAll({
-      attributes: [
-        [fn("TO_CHAR", col("booking.createdAt"), "MM"), "month"],
-        [fn("COUNT", literal('DISTINCT "booking"."id"')), "total"]
-      ],
-      where: {
-        createdAt: {
-          [Op.gte]: startDate
-        }
-      },
-      include: includes,
-      group: [literal(`TO_CHAR("booking"."createdAt", 'MM')`)],
-      order: [literal(`MIN("booking"."createdAt") ASC`)],
-      raw: true
-    });
-
-    const MONTHS = [];
-    let tempDate = new Date(startDate);
-
-    while (tempDate <= now) {
-      MONTHS.push(String(tempDate.getMonth() + 1).padStart(2, "0"));
-      tempDate.setMonth(tempDate.getMonth() + 1);
-    }
-
-    // 🔹 map data
-    const dataMap = Object.fromEntries(
-      bookingsData.map((d) => [d.month, parseInt(d.total)])
+    const labels = monthlyData.map(
+      d => `${monthNames[parseInt(d.monthNum) - 1]} ${d.year}`
     );
 
-    const values = MONTHS.map((m) => dataMap[m] || 0);
-
-    // 🔹 labels (Jan, Feb...)
-    const labels = MONTHS.map((m, i) => {
-      const date = new Date(startDate);
-      date.setMonth(date.getMonth() + i);
-      return date.toLocaleString("fr-FR", { month: "short" });
-    });
+    const values = monthlyData.map(
+      d => parseInt(d.total)
+    );
 
     return res.json({
       labels,
@@ -1043,6 +800,95 @@ exports.getBookingsChart = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
+
+// exports.getBookingsChart = async (req, res) => {
+//   try {
+//     const partner_id = req.userId;
+
+//     // Verify partner exists
+//     const partner = await User.findByPk(partner_id, {
+//       attributes: ["createdAt"],
+//     });
+
+//     if (!partner) {
+//       return res.status(404).json({ message: "Partner not found" });
+//     }
+
+//     const now = new Date();
+
+//     // Calculate 6 months ago
+//     const sixMonthsAgo = new Date(
+//       now.getFullYear(),
+//       now.getMonth() - 5,
+//       1
+//     );
+
+//     const accountCreated = new Date(partner.createdAt);
+
+//     // Use account creation date if more recent than 6 months ago
+//     const startDate =
+//       accountCreated > sixMonthsAgo ? accountCreated : sixMonthsAgo;
+
+//     // Timezone conversion: UTC → Europe/Paris
+//     const tzDate = `("booking"."createdAt" AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')`;
+
+//     // Query bookings with partner_id filter
+//     const bookingsData = await Booking.findAll({
+//       attributes: [
+//         [fn("TO_CHAR", literal(tzDate), "YYYY-MM"), "month"],
+//         [fn("COUNT", literal('DISTINCT "booking"."id"')), "total"]
+//       ],
+//       where: {
+//         partner_id, // Filter by partner_id
+//         [Op.and]: [
+//           // Date range: from startDate to now
+//           literal(`${tzDate} >= '${startDate.toISOString().split('T')[0]}'`),
+//           literal(`${tzDate} <= '${now.toISOString().split('T')[0]}'`)
+//         ]
+//       },
+//       group: [literal(`TO_CHAR(${tzDate}, 'YYYY-MM')`)],
+//       order: [literal(`TO_CHAR(${tzDate}, 'YYYY-MM') ASC`)],
+//       raw: true
+//     });
+
+//     // Generate all month keys from startDate to now (YYYY-MM format)
+//     const monthKeys = [];
+//     let tempDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+
+//     while (tempDate <= now) {
+//       const year = tempDate.getFullYear();
+//       const month = String(tempDate.getMonth() + 1).padStart(2, "0");
+//       monthKeys.push(`${year}-${month}`);
+//       tempDate.setMonth(tempDate.getMonth() + 1);
+//     }
+
+//     // Create a map of month -> booking count from query results
+//     const dataMap = Object.fromEntries(
+//       bookingsData.map(d => [d.month, parseInt(d.total)])
+//     );
+
+//     // Build values array (use 0 for months with no bookings)
+//     const values = monthKeys.map(key => dataMap[key] || 0);
+
+//     // Build labels array (French month abbreviations)
+//     const labels = monthKeys.map(key => {
+//       const [year, month] = key.split('-');
+//       const date = new Date(year, parseInt(month) - 1, 1);
+//       return date.toLocaleString("fr-FR", { month: "short" });
+//     });
+
+//     return res.json({
+//       labels,
+//       values
+//     });
+
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
 
 exports.getLastBookings = async (req, res) => {
   try {

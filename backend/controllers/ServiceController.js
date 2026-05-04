@@ -524,8 +524,6 @@ exports.AddRoom = [
     .isNumeric().withMessage("capacity should be numeric"),
   body("price_by_day").notEmpty().withMessage("price by day is required")
     .isNumeric().withMessage("price by day should be a number"),
-  body("price_by_adult").notEmpty().withMessage("price by adult is required")
-    .isNumeric().withMessage("price by adult should be a number"),
   body("count").notEmpty().withMessage("email is required")
     .isNumeric().withMessage("count should be numeric"),
   async (req, res) => {
@@ -534,13 +532,13 @@ exports.AddRoom = [
       return res.status(422).json({ errors: errors.array().map(err => err.msg) });
     }
     try {
-      const { name, capacity, price_by_day, count, price_by_children, price_by_adult } = req.body;
+      const { name, capacity, price_by_day, count } = req.body;
       const userId = req.userId;
       const hotel = await Hotel.findOne({ where: { partner_id: userId } });
       if (!hotel) {
         return res.status(404).json({ message: "hotel not found" });
       }
-      await Room.create({ name, capacity, price_by_day, price_by_adult, price_by_children, count, hotel_id: hotel.id });
+      await Room.create({ name, capacity, price_by_day, count, hotel_id: hotel.id });
       return res.json({ message: "hotel created" });
     } catch {
       return res.status(500).send({ message: "error server" })

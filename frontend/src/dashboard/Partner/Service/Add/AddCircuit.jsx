@@ -191,7 +191,7 @@ function PackageRow({ pkg, onSelect, selected }) {
   )
 }
 
-function PackagesPanel({ selectedPackages, onSelectionChange, allPackages, setAllPackages }) {
+function PackagesPanel({ selectedPackages, onSelectionChange, allPackages, setAllPackages,duration }) {
   const [tab, setTab] = useState("list")
   const [search, setSearch] = useState("")
   const [editingPkg, setEditingPkg] = useState(null)
@@ -308,7 +308,7 @@ function PackagesPanel({ selectedPackages, onSelectionChange, allPackages, setAl
 
       {/* ── ADD TAB ── */}
       {tab === "add" && (
-        <AddPackage ontTab={setTab} onChange={setAllPackages} type={"circuit"} />
+        <AddPackage ontTab={setTab} onChange={setAllPackages} type={"circuit"} duration={duration} />
       )}
 
       {/* ── EDIT TAB ── */}
@@ -560,6 +560,7 @@ const AddCircuit = () => {
             </Flex>
 
             <PackagesPanel
+              duration={formik.values.duration_days}
               allPackages={allPackages}
               setAllPackages={setAllPackages}
               selectedPackages={selectedPackages}

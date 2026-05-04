@@ -19,14 +19,6 @@ const Room = sequelize.define("room", {
     type: DataTypes.FLOAT,
     allowNull: false,
   },
-   price_by_adult: {
-    type: DataTypes.FLOAT,
-    allowNull: false,
-  },
-   price_by_children: {
-    type: DataTypes.FLOAT,
-    defaultValue:0
-  },
   count: {
     type: DataTypes.INTEGER,
   },
