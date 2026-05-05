@@ -755,6 +755,9 @@ exports.ScannerBooking = [
         else if(booking.status === "en attente"){
             return res.status(403).send({ message : "booking is pending" });
         }
+        else if(booking.status === "terminée"){
+            return res.status(409).send({ message : "booking has finish" });
+        }
         return res.send({ message : "booking is ok" });
 
     } catch (err) {

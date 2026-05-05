@@ -63,24 +63,7 @@ function StatCard({ icon: Icon, label, value, color = "blue" }) {
     )
 }
 
-/* ── Skeleton booking card ──────────────────────────────────────── */
-function BookingCardSkeleton() {
-    return (
-        <Box bg="white" borderRadius="2xl" border="1px solid" borderColor="gray.100"
-            boxShadow="0 2px 12px rgba(0,0,0,0.05)" overflow="hidden">
-            <Box px={6} py={4} borderBottom="1px solid" borderColor="gray.100">
-                <SkeletonText noOfLines={1} skeletonHeight={4} w="40%" mb={2} />
-                <SkeletonText noOfLines={1} skeletonHeight={3} w="25%" />
-            </Box>
-            <Box p={6}>
-                <Grid templateColumns={{ base: "1fr", sm: "repeat(3, 1fr)" }} gap={4} mb={5}>
-                    {[1, 2, 3].map(i => <Skeleton key={i} h="60px" borderRadius="xl" />)}
-                </Grid>
-                <Skeleton h="120px" borderRadius="xl" />
-            </Box>
-        </Box>
-    )
-}
+
 
 /* ── Single booking card ────────────────────────────────────────── */
 function BookingCard({ booking, index }) {
@@ -279,6 +262,94 @@ function BookingCard({ booking, index }) {
     )
 }
 
+function BookingCardSkeleton() {
+  return (
+    <Box
+      bg="white" borderRadius="2xl"
+      border="1px solid" borderColor="gray.100"
+      boxShadow="0 2px 12px rgba(0,0,0,0.05)"
+      overflow="hidden"
+    >
+      {/* Card header */}
+      <Box px={6} py={4} bg="gray.50" borderBottom="1px solid" borderColor="gray.100">
+        <SkeletonText noOfLines={1} skeletonHeight={4} w="30%" mb={2} />
+        <SkeletonText noOfLines={1} skeletonHeight={3} w="25%" />
+      </Box>
+
+      <Box px={6} py={5}>
+        {/* Info pills row */}
+        <Grid templateColumns={{ base: "1fr 1fr", sm: "repeat(4, 1fr)" }} gap={3} mb={5}>
+          {[1, 2, 3, 4].map(i => (
+            <Box key={i} bg="gray.50" borderRadius="xl" p={3}>
+              <SkeletonText noOfLines={1} skeletonHeight={3} w="70%" mb={2} />
+              <Skeleton h="20px" w="80%" />
+            </Box>
+          ))}
+        </Grid>
+
+        {/* Rooms table skeleton */}
+        <Box border="1px solid" borderColor="gray.100" borderRadius="xl" overflow="hidden" mb={4}>
+          {/* Table header */}
+          <Box bg="gray.50" px={4} py={3} borderBottom="1px solid" borderColor="gray.100">
+            <Grid templateColumns="40px 1fr 100px 100px" gap={4}>
+              <Skeleton h="14px" />
+              <Skeleton h="14px" />
+              <Skeleton h="14px" />
+              <Skeleton h="14px" />
+            </Grid>
+          </Box>
+
+          {/* Table rows */}
+          {[1, 2, 3].map(i => (
+            <Box key={i} px={4} py={3} borderTop="1px solid" borderColor="gray.100">
+              <Grid templateColumns="40px 1fr 100px 100px" gap={4}>
+                <Skeleton h="14px" />
+                <Skeleton h="14px" />
+                <Skeleton h="14px" />
+                <Skeleton h="14px" />
+              </Grid>
+            </Box>
+          ))}
+        </Box>
+
+        {/* Total price */}
+        <Box textAlign="right">
+          <SkeletonText noOfLines={1} skeletonHeight={6} w="25%" ml="auto" mb={1} />
+          <Skeleton h="14px" w="20%" ml="auto" />
+        </Box>
+      </Box>
+    </Box>
+  )
+}
+function BookingSkeleton() {
+  return (
+    <Container py={8}>
+      {/* Page title */}
+      <Box mb={7}>
+        <SkeletonText noOfLines={1} skeletonHeight={3} w="15%" mb={2} />
+        <Skeleton h="32px" w="25%" mb={1} />
+      </Box>
+
+      {/* Stats cards skeleton */}
+      <Grid templateColumns={{ base: "1fr 1fr", md: "repeat(3, 1fr)" }} gap={3} mb={7}>
+        {[1, 2, 3].map(i => (
+          <Box key={i} bg="white" borderRadius="xl" p={4} border="1px solid" borderColor="gray.100">
+            <SkeletonText noOfLines={1} skeletonHeight={3} w="60%" mb={2} />
+            <Skeleton h="24px" w="50%" />
+          </Box>
+        ))}
+      </Grid>
+
+      {/* Booking cards */}
+      <VStack spacing={5} align="stretch">
+        {[1, 2, 3].map(i => (
+          <BookingCardSkeleton key={i} />
+        ))}
+      </VStack>
+    </Container>
+  )
+}
+
 export default function BookingHotel() {
     const [bookings, setBookings] = useState([])
     const [loading, setLoading] = useState(true)
@@ -287,7 +358,6 @@ export default function BookingHotel() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                setLoading(true)
                 const response = await AxiosToken.get("/booking/get/partner/hotel")
                 setBookings(response.data.booking ?? [])
             } catch {
@@ -304,6 +374,7 @@ export default function BookingHotel() {
     const totalGuests = bookings.reduce((s, b) =>
         s + (b.bookingHotelDetails?.reduce((ss, d) => ss + (d.number_of_guests_adult ?? 0) + (d.number_of_guests_children ?? 0), 0) ?? 0), 0)
 
+    if(loading) return <BookingSkeleton />
     return (
         <Container py={8}>
 

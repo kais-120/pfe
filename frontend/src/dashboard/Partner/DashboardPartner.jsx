@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import {
   Box, Flex, Grid, Text, Badge, VStack, HStack,
   Button,
+  Skeleton,
 } from "@chakra-ui/react"
 import {
   LuUsers, LuArrowUpRight, LuArrowDownRight, LuTicket,
@@ -330,9 +331,61 @@ function Stars({ rating }) {
   )
 }
 
+ 
+const DashboardSkeleton = () => {
+  return (
+    <Box maxW="1200px" mx="auto" px={{ base: 4, md: 6 }} py={6}>
+      {/* Header */}
+      <Box mb={7}>
+        <Skeleton height="14px" width="120px" mb={2} />
+        <Skeleton height="32px" width="240px" mb={2} />
+        <Skeleton height="16px" width="280px" />
+      </Box>
+ 
+      {/* Status Cards */}
+      <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }} gap={5} mb={6}>
+        {[...Array(4)].map((_, i) => (
+          <Box key={i} bg="white" borderRadius="2xl" border="1px solid" borderColor="gray.100" p={5}>
+            <Skeleton height="14px" width="100px" mb={3} />
+            <Skeleton height="28px" width="140px" />
+          </Box>
+        ))}
+      </Grid>
+ 
+      {/* Charts */}
+      <Grid templateColumns={{ base: "1fr", lg: "1fr" }} gap={5} mb={6}>
+        {[...Array(2)].map((_, i) => (
+          <Box key={i} bg="white" borderRadius="2xl" border="1px solid" borderColor="gray.100" p={5}>
+            <Skeleton height="14px" width="140px" mb={1} />
+            <Skeleton height="12px" width="180px" mb={4} />
+            <Box h="200px" bg="gray.50" borderRadius="lg" />
+          </Box>
+        ))}
+      </Grid>
+ 
+      {/* Booking Table */}
+      <Box bg="white" borderRadius="2xl" border="1px solid" borderColor="gray.100" p={5}>
+        <Skeleton height="14px" width="140px" mb={1} />
+        <Skeleton height="12px" width="180px" mb={4} />
+        
+        {[...Array(3)].map((_, i) => (
+          <Box key={i} py={4} borderBottom={i < 2 ? "1px solid" : "none"} borderColor="gray.100">
+            <Grid templateColumns="repeat(4, 1fr)" gap={4}>
+              {[...Array(4)].map((_, j) => (
+                <Skeleton key={j} height="14px" />
+              ))}
+            </Grid>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  )
+}
+
 const DashboardPartner = () => {
   const [status, setStatus] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const { user } = useProfile()
 
@@ -345,6 +398,8 @@ const DashboardPartner = () => {
         setReviews(resReviews.data.reviews)
       } catch (err) {
         console.error(err)
+      }finally{
+        setLoading(false)
       }
     }
     dataFetch()
@@ -380,7 +435,7 @@ const DashboardPartner = () => {
     month: "long",
     year: "numeric",
   });
-console.log(reviews)
+  if(loading) return <DashboardSkeleton />
   return (
     <>
       <Helmet title="Tableau de bord partenaire" />

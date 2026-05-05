@@ -49,6 +49,7 @@ export default function QrScannerPage() {
         closable: true,
       })
     } catch (err) {
+      
       const msg = err?.response?.data?.message ?? "Code invalide ou expiré."
       setStatus("error")
       setError(msg)

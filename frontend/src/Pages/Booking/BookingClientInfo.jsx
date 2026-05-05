@@ -211,7 +211,7 @@ function QrCodeModal({ value }) {
   )
 }
 
-function AddReviewModal({ id }) {
+function AddReviewModal({ id,status }) {
   const [open,setOpen] = useState(false)
   const formik = useFormik({
     initialValues: {
@@ -235,6 +235,7 @@ function AddReviewModal({ id }) {
     <Dialog.Root open={open} onOpenChange={(e) => setOpen(e.open)}>
       <Dialog.Trigger asChild>
         <Button
+        disabled={status !== "terminée"}
           variant="ghost"
           size="sm" colorScheme="blue"
           fontWeight={600}

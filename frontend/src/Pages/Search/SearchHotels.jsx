@@ -20,6 +20,7 @@ import DatePicker from "../../components/ui/DatePicker"
 import RoomSelector from "../../components/ui/RoomSelector"
 import Header from "../../components/home/Header"
 import { Star } from "lucide-react"
+import { Helmet } from "react-helmet"
 
 /* ── Constants ──────────────────────────────────────────────────── */
 const EQUIPMENT_LIST = [
@@ -499,6 +500,7 @@ export default function SearchHotels() {
 
   return (
     <>
+    <Helmet title="Search Hotel"></Helmet>
       <Header />
 
       {/* ── Sticky search bar ── */}
